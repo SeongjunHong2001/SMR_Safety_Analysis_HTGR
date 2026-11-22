@@ -1,0 +1,11 @@
+# TODO: Role 1 provides actual selected HTGR geometry; null means undecided.
+core:
+  axial_cells: null
+  channel_length_m: null
+  flow_area_m2: null
+  elevation_profile_m: null
+heat_exchanger:
+  axial_cells: null
+  heat_transfer_area_m2: null
+compressor:
+  location: null

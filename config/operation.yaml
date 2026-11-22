@@ -1,0 +1,9 @@
+# TODO: Do not interpret these null values as zero.
+reactor:
+  initial_thermal_power_W: null
+primary:
+  initial_pressure_Pa: null
+  initial_temperature_K: null
+  initial_mass_flow_kg_s: null
+compressor:
+  initial_rotation_rate_rad_s: null

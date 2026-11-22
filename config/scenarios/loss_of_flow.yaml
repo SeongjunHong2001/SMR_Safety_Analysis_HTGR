@@ -1,0 +1,4 @@
+name: loss_of_flow
+# TODO: link event to chosen compressor and actual LOFC benchmark.
+# Do not equate setpoint=0 with immediately vanishing mass flow.
+events: []

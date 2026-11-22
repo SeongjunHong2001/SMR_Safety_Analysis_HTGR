@@ -1,0 +1,15 @@
+solver:
+  method: DASSL
+  dt: 0.1  # initial step in seconds
+  max_order: 5
+  rtol: 1.0e-6
+  atol: 1.0e-8
+  min_step: 0.0
+  max_step: 0.5
+  max_steps: 100000
+  max_retries: 12
+  newton_max_iter: 20
+  newton_atol: 1.0e-10
+  newton_rtol: 1.0e-9
+  t_start: 0.0
+  t_end: 5.0
