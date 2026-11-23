@@ -29,9 +29,11 @@ def newton_solve(fun, x0, *, options=None, residual_scale=None,
     """잔차 벡터의 크기와 미지수 수가 같은 비선형 연립방정식 fun(x) = 0을 푼다."""
     options = options or NewtonOptions()
     x = np.asarray(x0, dtype=float).copy()
-    r = np.asarray(fun(x), dtype=float).ravel()
-    if r.size != x.size:
-        raise ValueError("Newton expects square nonlinear system")
+    if x.ndim != 1 or not x.size or not np.all(np.isfinite(x)):
+        raise ValueError("Newton initial state must be a nonempty finite 1-D vector")
+    r = np.asarray(fun(x), dtype=float)
+    if r.shape != x.shape:
+        raise ValueError("Newton residual must be a 1-D vector matching the state")
     scale = np.ones_like(r) if residual_scale is None else np.asarray(residual_scale, dtype=float)
     if scale.shape != r.shape or np.any(scale <= 0) or not np.all(np.isfinite(scale)):
         raise ValueError("residual_scale must be positive, finite and match residual dimension")
@@ -74,7 +76,9 @@ def newton_solve(fun, x0, *, options=None, residual_scale=None,
         while damping >= options.min_damping:
             candidate = x + damping * dx
             try:
-                r_try = np.asarray(fun(candidate), dtype=float).ravel()
+                r_try = np.asarray(fun(candidate), dtype=float)
+                if r_try.shape != r.shape:
+                    raise ValueError("Newton residual shape changed during line search")
                 trial_error = norm(r_try)
             except FloatingPointError:
                 trial_error = np.inf

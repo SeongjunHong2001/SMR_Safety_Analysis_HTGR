@@ -4,6 +4,14 @@ import pytest
 from solvers import DASSL, DASSLPrototype, IntegrationFailure
 from solvers.initialization import consistent_initialize
 
+
+def test_dassl_rejects_nonvector_initial_residual():
+    with pytest.raises(ValueError, match="1-D vector"):
+        DASSL().solve(
+            lambda t, y, yp: np.array([[yp[0] + y[0]]]),
+            t_span=(0.0, 1.0), y0=[1.0], ydot0=[-1.0],
+        )
+
 def test_linear_index1_dae():
     # x'=-2x, z=3x; exact x=e^-2t, z=3e^-2t
     def residual(t,y,ydot):

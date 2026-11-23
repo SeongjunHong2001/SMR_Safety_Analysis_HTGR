@@ -109,11 +109,11 @@ class DASSL:
                     residual, t0, y, mask, ydot_guess=yp, options=self.newton_options,
                     residual_scale=scale, correction_scale=init_scale,
                 )
-            initial_residual = np.asarray(residual(t0, y, yp), dtype=float).ravel()
+            initial_residual = np.asarray(residual(t0, y, yp), dtype=float)
         except (NewtonFailure, FloatingPointError) as exc:
             raise IntegrationFailure(f"Consistent initialization failed at t={t0:.16g}: {exc}") from exc
         if initial_residual.shape != y.shape:
-            raise ValueError("residual size must match y0")
+            raise ValueError("residual must be a 1-D vector matching y0")
         initial_norm = np.max(np.abs(initial_residual / scale))
         initial_target = self.newton_options.atol + self.newton_options.rtol
         if not np.isfinite(initial_norm) or initial_norm > initial_target:
