@@ -63,6 +63,4 @@ class DemoHeatLink(Component):
 
 def make_demo_system():
     components = [DemoHeater(), DemoCooler(), DemoHeatLink()]
-    sys = SystemAssembly(components)
-    sys.context = sys.registry
-    return sys
+    return SystemAssembly(components)

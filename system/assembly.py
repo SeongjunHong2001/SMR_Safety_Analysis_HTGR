@@ -7,11 +7,11 @@ class SystemAssembly:
         """Assemble component residuals and connection callbacks (y, registry)."""
         self.components = tuple(components)
         self.connections = tuple(connections)
-        self.context = context
         self.registry = StateRegistry()
         for component in self.components:
             component.register(self.registry)
         self.registry.freeze()
+        self.context = self.registry if context is None else context
 
     def residual(self, t, y, ydot):
         y = np.asarray(y, dtype=float)
@@ -32,7 +32,9 @@ class SystemAssembly:
 
     @staticmethod
     def _residual_part(values, source):
-        values = np.asarray(values, dtype=float).ravel()
+        values = np.asarray(values, dtype=float)
+        if values.ndim != 1:
+            raise ValueError(f"{source} residual must be a 1-D vector")
         if not np.all(np.isfinite(values)):
             raise FloatingPointError(f"Non-finite residual from {source}")
         return values
