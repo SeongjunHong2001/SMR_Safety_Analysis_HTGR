@@ -19,7 +19,7 @@
 
 ## 아직 확정하지 않은 항목
 
-- 대상 노형, 실제 사고/검증 데이터, Cell/Face 배치, 동적/대수 변수 목록
+- MHTGR-350 통합변수표에 대응하는 실제 사고/검증 데이터, Cell/Face 배치, 모델별 독립 미지수 목록
 - Heat transfer model, 핵분열/붕괴열 모델, EOS/물성, 유량역전 모델
 - Junction 압력손실 및 다분기 Stream Mixing 규약
 - 전역 Residual의 물리 단위별 Scaling, 희소 Jacobian 정책
