@@ -11,7 +11,7 @@ MHTGR-350의 정상상태와 가압 냉각재 유량 상실(P-LOFC/PCC)을
 
 ## 설치와 첫 실행
 
-Python 3.9 이상이 필요하다. 저장소를 내려받은 뒤 프로젝트 최상위 폴더에서 실행한다.
+Python 3.10 이상이 필요하다. 저장소를 내려받은 뒤 프로젝트 최상위 폴더에서 실행한다.
 
 ```bash
 git clone https://github.com/SeongjunHong2001/SMR_Safety_Analysis_HTGR.git
@@ -38,19 +38,21 @@ python main.py --demo
 ```bash
 python -m pytest -q
 python -m pytest -q tests/contracts
+python scripts/compare_variable_registry.py
 ```
 
-2026-11-25 기준 전체 43개 테스트가 통과했다. 계약 시험은 합성
-flat/composite DAE의 잔차·Jacobian·적분 결과, 포트 검증과 폐루프
-압력 기준의 자유도 ledger를 확인한다. 합성 수치는 실제 HTGR 검증값이 아니다.
+2026-11-26 기준 전체 55개 테스트가 통과했다(기존 48개 포함). 계약 시험은
+Core·HeatExchanger 합성 flat/composite DAE의 잔차·Jacobian·DASSL 적분,
+포트 검증, 저마하수 폐루프 정상/과도 closure와 변수표 동기화를 확인한다.
+합성 수치는 실제 HTGR 검증값이 아니다.
 
 ## 현재 제공 범위
 
 | 부분 | 상태 | 사용 범위 |
 | --- | --- | --- |
-| 상태·포트·전역 DAE 계약 | 구현 | `StateRegistry`, `Component`, `SystemAssembly`, `StreamJunction`, `ThermalLink` |
+| 상태·포트·전역 DAE 계약 | 구현 | `StateRegistry`, `Component`, `SystemAssembly`, `StreamJunction`, `ThermalSurfacePort`, `ThermalLink` |
 | 시간적분 | 구현 | DASSL, 일치 초기화, 정상상태 풀이, 데모 계산 |
-| Core 상위 및 장치 패키지 | 계약 골격 | 실제 fluid/solid/power/SG/압축기 등 구현 필요 |
+| Core·HeatExchanger 상위 및 장치 패키지 | Composite 조립 구현 | 실제 fluid/solid/power/SG 하위/압축기 등 물리 구현 필요 |
 | 헬륨 물성·열전달 상관식 | API만 제공 | 실제 provider와 적용범위 검증 필요 |
 | HTGR 정상상태·LOFC | 실행 불가 | 형상·운전점·사고 이력·검증자료 필요 |
 
@@ -91,8 +93,8 @@ y_equilibrium, ydot_equilibrium = solve_steady_state(
 
 담당 모델은 [공통 계약 v3](docs/interface_spec.md)에 따라 독립
 미지수만 Registry에 등록하고, 같은 trial의 상태에서 계산한 1차원
-잔차와 고정된 잔차 ID·scale을 제공한다. Core의 실제 fluid/solid/
-power/coupling 구현은 생성자에 명시적으로 주입한다. 접속 포트는
+잔차와 고정된 잔차 ID·scale을 제공한다. Core와 HeatExchanger의 실제
+하위 모델·coupling 구현은 생성자에 명시적으로 주입한다. 접속 포트는
 모든 구성요소를 등록한 뒤 검증한다. 각 장치의 실제 입력·방정식이
 없으면 명시적 예외가 발생한다.
 
@@ -106,14 +108,18 @@ power/coupling 구현은 생성자에 명시적으로 주입한다. 접속 포�
 | [변수표](docs/variable_registry.csv)·[방정식표](docs/equation_registry.csv) | 모델 변수·식의 master 목록 |
 | [변경안 제출법](docs/registry_patches/README.md)·[Role 5 인수인계](docs/handoffs/role5.md) | 담당자별 patch와 시험·미정 항목 |
 | [물리 가정](docs/assumptions.md) | 문헌 기준값의 차이와 아직 정하지 않은 모델 선택 |
+| [담당자별 지시서](docs/instructions/) | Role 1~5의 독립 개발 범위와 현재 코드 API |
 
 master 변수표는 기존 361개 항목에 공통 계약 후보 11개를 더한
 **372개**이며 [Excel 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)와
-이름·분류·단위를 맞췄다. 실제 입력값을 새로 추정해 채우지 않았다.
+12개 대응 필드의 의미상 불일치를 0개로 맞췄다. CSV가 코드 개발용
+단일 기준이고 Role 5가 patch를 검토해 Excel을 동기화한다. 기존 62셀
+차이와 근거는 [변경 이력](docs/registry_patches/step01c_variable_sync_history.json)에
+보존했다. 실제 입력값을 새로 추정해 채우지 않았다.
 
 ## MHTGR-350 SG·RCCS 조사 입력
 
-팀의 「MHTGR-350 SG/RCCS 보완본[4]」(2026-11, pp. 4–24)을 대조해 원래 통합안 288개에 SG/RCCS 관련 변수 73개를 추가했다. 아래 수치는 설계·검산 자료이며 실행 가능한 모델 입력 세트를 뜻하지 않는다. 현재 [열교환기](models/heat_exchanger/)와 [압력용기](models/vessel/)에는 실제 변수 등록과 잔차식이 필요하다.
+팀의 「MHTGR-350 SG/RCCS 보완본[4]」(2026-11, pp. 4–24)을 대조해 원래 통합안 288개에 SG/RCCS 관련 변수 73개를 추가했다. 아래 수치는 설계·검산 자료이며 실행 가능한 모델 입력 세트를 뜻하지 않는다. 현재 [열교환기](models/heat_exchanger/)의 상위 Composite만 구현됐고 하위 물리 모델과 [압력용기](models/vessel/)에는 실제 변수 등록과 잔차식이 필요하다.
 
 원 설계서 DOE-HTGR-86-129 Rev.1/HFD-42102 Rev.2에 따른 SG 기준은 연속 전열관 439개, 외경 22.225 mm, 벽두께 3.302 mm, 외면 기준 총 전열면적 약 4026.539 m²다. 관벽 모델은 He 쪽과 물·증기 쪽 반벽의 전도와 축열을 다룬다. He 관군 마찰차압 9.651 kPa와 SG 전체 양단 차압 25.5 kPa는 측정 경계가 다르다. SG-2의 관내 비등·2상 차압 상관식은 보완본의 예비 기준이며 실제 고압 나선관 검증이 필요하다.
 

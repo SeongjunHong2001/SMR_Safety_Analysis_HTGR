@@ -1,16 +1,20 @@
 """유체·열 포트 접속식. 연결식은 전역 Residual에 포함된다."""
 from dataclasses import dataclass
 import numpy as np
-from interfaces.ports import FluidPort, FluidStreamPort, ThermalPort
+from interfaces.ports import FluidPort, FluidStreamPort, ThermalPort, ThermalSurfacePort
 
 
 def validate_port(port, registry):
     """Resolve symbolic keys only after all components have registered."""
     if isinstance(port, FluidStreamPort):
+        if not isinstance(port.medium, str) or not port.medium:
+            raise ValueError("Fluid medium must be a nonempty name")
         fields = (("p", "Pa"), ("m_dot", "kg/s"),
                   ("h_outflow", "J/kg"), ("h_instream", "J/kg"))
     elif isinstance(port, ThermalPort):
         fields = (("T", "K"), ("Q_dot", "W"))
+    elif isinstance(port, ThermalSurfacePort):
+        fields = (("T", "K"),)
     elif isinstance(port, FluidPort):  # old two-port demonstration API
         fields = (("p", None), ("h", None), ("m_dot", None))
     else:
@@ -21,20 +25,30 @@ def validate_port(port, registry):
             spec = registry.spec(key)
         except KeyError as exc:
             raise ValueError(f"Port {field} references missing Registry key {key}") from exc
-        if spec.shape:
+        if isinstance(port, ThermalSurfacePort):
+            index = port.index
+            if index is None and spec.shape:
+                raise ValueError(f"Port {field} key {key} needs an array index")
+            if index is not None and (len(index) != len(spec.shape)
+                                      or any(i >= n for i, n in zip(index, spec.shape))):
+                raise ValueError(f"Port {field} key {key} has an invalid array index")
+        elif spec.shape:
             raise ValueError(f"Port {field} key {key} must be scalar")
         if unit is not None and spec.unit != unit:
             raise ValueError(f"Port {field} key {key}: expected {unit}, got {spec.unit}")
+        if ((isinstance(port, FluidStreamPort) and field == "h_instream") or
+                (isinstance(port, ThermalPort) and field == "Q_dot")) and spec.kind != "algebraic":
+            raise ValueError(f"Port {field} key {key} must be algebraic")
 
 
 def validate_stream_junction(ports, registry):
     ports = tuple(ports)
     if len(ports) < 2 or any(not isinstance(port, FluidStreamPort) for port in ports):
         raise ValueError("stream junction needs at least two FluidStreamPort instances")
-    media = {port.medium for port in ports}
+    media = [port.medium for port in ports]
     if any(not isinstance(medium, str) or not medium for medium in media):
         raise ValueError("Fluid medium must be a nonempty name")
-    if len(media) != 1:
+    if len(set(media)) != 1:
         raise ValueError(f"Cannot connect different fluid media: {sorted(media)}")
     for port in ports:
         validate_port(port, registry)
@@ -42,6 +56,10 @@ def validate_stream_junction(ports, registry):
         keys = [registry.resolve(getattr(port, field)) for port in ports]
         if len(set(keys)) != len(keys):
             raise ValueError(f"Junction has duplicate {field} state keys")
+    instream_keys = {registry.resolve(port.h_instream) for port in ports}
+    outflow_keys = {registry.resolve(port.h_outflow) for port in ports}
+    if instream_keys & outflow_keys:
+        raise ValueError("Junction h_instream must be independent of h_outflow")
     return ports
 
 

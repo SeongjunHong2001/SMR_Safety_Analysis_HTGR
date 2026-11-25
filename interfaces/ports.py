@@ -34,3 +34,25 @@ class FluidStreamPort:
 class ThermalPort:
     T: str
     Q_dot: str   # Component에 들어오는 열량을 양(+)으로
+
+
+@dataclass(frozen=True)
+class ThermalSurfacePort:
+    """Temperature-only boundary for a derived link; index selects one array cell."""
+
+    T: str
+    index: tuple[int, ...] | int | None = None
+
+    def __post_init__(self):
+        if self.index is None:
+            return
+        indices = (self.index,) if isinstance(self.index, int) else self.index
+        if (not isinstance(indices, tuple) or not indices
+                or any(not isinstance(i, int) or isinstance(i, bool) or i < 0
+                       for i in indices)):
+            raise ValueError("ThermalSurfacePort index must contain nonnegative integers")
+        object.__setattr__(self, "index", indices)
+
+    def temperature(self, y, registry) -> float:
+        value = registry.get(y, self.T)
+        return float(value if self.index is None else value[self.index])

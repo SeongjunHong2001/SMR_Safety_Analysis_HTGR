@@ -4,6 +4,7 @@ from functools import partial
 import numpy as np
 from interfaces.contracts import SimulationContext
 from interfaces.state_registry import StateRegistry
+from models.thermal_link import ThermalLink
 from solvers.jacobian import finite_difference_jacobian
 from system.connections import validate_port, validate_stream_junction
 
@@ -17,16 +18,23 @@ class JacobianDiagnostic:
     residual_ids: tuple[str, ...]
 
 class SystemAssembly:
-    def __init__(self, components, *, context=None, connections=()):
-        """Assemble component residuals and connection callbacks (y, registry)."""
+    def __init__(self, components, *, context=None, connections=(), thermal_links=()):
+        """Assemble components, fluid connections and derived thermal links."""
         self.components = tuple(components)
         self.connections = tuple(connections)
+        self.thermal_links = tuple(thermal_links)
+        if any(not isinstance(link, ThermalLink) for link in self.thermal_links):
+            raise TypeError("thermal_links must contain ThermalLink instances")
+        rate_keys = [key for link in self.thermal_links for key in link.rate_keys]
+        if len(set(rate_keys)) != len(rate_keys):
+            raise ValueError("Duplicate ThermalLink heat-rate keys")
         self.registry = StateRegistry()
         for component in self.components:
             component.register(self.registry)
         self.registry.freeze()
         if context is None:
-            self.context = self.registry
+            self.context = (SimulationContext(self.registry) if self.thermal_links
+                            else self.registry)
         elif isinstance(context, SimulationContext):
             self.context = SimulationContext(
                 self.registry, config=context.config, scenario=context.scenario,
@@ -34,6 +42,10 @@ class SystemAssembly:
             )
         else:
             self.context = context
+        if self.thermal_links and not isinstance(self.context, SimulationContext):
+            raise TypeError("ThermalLink assembly requires SimulationContext")
+        if self.thermal_links and set(rate_keys) & set(self.context.heat_rates):
+            raise ValueError("ThermalLink heat-rate key conflicts with context")
         for component in self.components:
             for port in component.ports().values():
                 validate_port(port, self.registry)
@@ -58,17 +70,23 @@ class SystemAssembly:
         n = self.registry.size
         if y.shape != (n,) or ydot.shape != (n,):
             raise ValueError(f"Expected y and ydot shape ({n},)")
+        # Components must observe one immutable Newton trial. Views avoid copying
+        # the global vectors on every residual/Jacobian evaluation.
+        trial_y, trial_ydot = y.view(), ydot.view()
+        trial_y.setflags(write=False)
+        trial_ydot.setflags(write=False)
+        trial_context = self._trial_context(t, trial_y)
         r_parts, ids, scales = [], [], []
         for index, component in enumerate(self.components):
             source = f"{component.name}[{index}]"
-            part = self._residual_part(component.residual(t, y, ydot, self.context), source)
+            part = self._residual_part(component.residual(t, trial_y, trial_ydot, trial_context), source)
             r_parts.append(part)
             part_ids, part_scales = self._metadata(component, source, part.size)
             ids.extend(part_ids)
             scales.extend(part_scales)
         for index, connection in enumerate(self.connections):
             source = f"connection[{index}]"
-            part = self._residual_part(connection(y, self.registry), source)
+            part = self._residual_part(connection(trial_y, self.registry), source)
             r_parts.append(part)
             part_ids, part_scales = self._metadata(connection, source, part.size)
             ids.extend(part_ids)
@@ -79,6 +97,16 @@ class SystemAssembly:
         if len(set(ids)) != len(ids):
             raise ValueError("Duplicate residual IDs in global assembly")
         return r, tuple(ids), np.asarray(scales)
+
+    def _trial_context(self, t, y):
+        if not self.thermal_links:
+            return self.context
+        rates = dict(self.context.heat_rates)
+        for link in self.thermal_links:
+            exchange = link.evaluate(t, y, self.context)
+            a_key, b_key = link.rate_keys
+            rates[a_key], rates[b_key] = exchange.to_a, exchange.to_b
+        return self.context.with_heat_rates(rates)
 
     @staticmethod
     def _metadata(source_object, source, length):
@@ -137,7 +165,16 @@ class SystemAssembly:
         return values
 
     def outputs(self, t, y):
+        y = np.asarray(y, dtype=float)
+        if y.shape != (self.registry.size,):
+            raise ValueError(f"Expected y shape ({self.registry.size},)")
+        trial_y = y.view()
+        trial_y.setflags(write=False)
+        trial_context = self._trial_context(t, trial_y)
         out = {}
         for comp in self.components:
-            out.update(comp.outputs(t, y, self.context))
+            values = comp.outputs(t, trial_y, trial_context)
+            if out.keys() & values.keys():
+                raise ValueError("Duplicate output names in global assembly")
+            out.update(values)
         return out

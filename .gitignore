@@ -5,6 +5,7 @@ __pycache__/
 output/results/*.csv
 output/logs/*
 output/figures/*
+outputs/
 !output/results/.gitkeep
 !output/logs/.gitkeep
 !output/figures/.gitkeep
