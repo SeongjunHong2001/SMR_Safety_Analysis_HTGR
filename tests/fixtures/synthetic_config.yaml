@@ -1,0 +1,13 @@
+name: synthetic_contract_case
+temperature_unit: K
+heat_rate_unit: W
+initial:
+  cold_T: 300.0
+  hot_T: 320.0
+  q_dot: 0.0
+parameters:
+  fluid_heat_capacity: 40.0
+  solid_heat_capacity: 20.0
+  prescribed_power: 50.0
+  heat_transfer_ua: 5.0
+  sink_ua: 3.0

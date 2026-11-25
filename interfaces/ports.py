@@ -27,6 +27,7 @@ class FluidStreamPort:
     m_dot: str
     h_outflow: str
     h_instream: str
+    medium: str = "helium"  # connection metadata, never a Registry state
 
 
 @dataclass(frozen=True)

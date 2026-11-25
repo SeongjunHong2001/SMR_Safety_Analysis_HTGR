@@ -1,362 +1,373 @@
-component,variable,proposed_name,unit,role,kind_tentative,dimension,location,shape,initial,source,status,stage,reference_value,original_notation,notes,code_reference,sheet_row
-전역,폐루프 헬륨 열역학 기준압력,p_sys,Pa,,Differential,,,스칼라,,"B 1,6,11; D 9,16",합의 필요,1차,6390000,p_sys,하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록.,config/operation.yaml :: primary.initial_pressure_Pa,2
-전역,노심 정격 총열출력,P_core_thermal,W,,External Input / Derived (출력모드별),,,시간 함수,,3 16; 4 17,문서 기준값,1차,350000000,P_tot,고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지.,config/operation.yaml :: reactor.initial_thermal_power_W,3
-전역,1차계통 헬륨 총재고량,M_he_loop,kg,,Derived,,,스칼라,,B 6; D 9,통합 변수 제안,1차,,ΣρV,폐루프 재고량 ΣρV. 압력 초기화 및 전역 질량보존 검산에 사용; 모든 유체셀·플레넘·SG 체적을 한 번씩만 합산.,,4
-전역,외기 온도,T_ambient,K,,External Input,,,시간 함수,,"4 17,18",시나리오별 필요,1차/확장,,T_ambient,RCCS-0의 고정 열침원 온도와 구분,,5
-전역,중력가속도,g,m/s²,,Parameter,,,스칼라,,3 15; B 6; 4 8,정의 필요,1차,,g,높이 좌표는 위쪽 양으로 통일,,6
-전역,유체 포트 정압,p_fluid_port,Pa,,Algebraic,,,포트별,,"B 3,11; D 10; 4 13",통합 변수 제안,1차,,p,연결된 셀/플레넘 압력의 인터페이스 별칭. 접속 양단 압력 연속 또는 경계 운동량식 적용 범위를 지정하고 독립 대수 미지수 중복 등록 금지.,interfaces/ports.py :: FluidPort.p,7
-전역,유체 포트 비엔탈피,h_fluid_port,J/kg,,Algebraic,,,포트별,,"B 3,11; 4 13",통합 변수 제안,1차,,h,포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일.,interfaces/ports.py :: FluidPort.h,8
-전역,유체 포트 질량유량,m_dot_fluid_port,kg/s,,Algebraic,,,포트별,,B 6; D 10; 4 13,통합 변수 제안,1차,,ṁ,포트 유입/유출 부호와 유량 연속 제약 정의,interfaces/ports.py :: FluidPort.m_dot,9
-전역,고체/유체 열포트 열전달률,Q_dot_thermal_port,W,,Derived,,,열경계별,,3 17; B 3; 4 15,통합 변수 제안,1차,,Q̇,"벽→헬륨, RPV→외기 양수. 연결 양쪽에 같은 열률을 부호 반대로 넣고 소스 중복 합산 금지.",interfaces/ports.py :: ThermalPort.Q_dot,10
-전역,1차 헬륨 정격 질량유량,m_dot_he_rated,kg/s,,Parameter,,,스칼라,,"B 1; D 15; 4 4,17",조건 확인,1차,157.1,ṁ_R,"노심 기준 157.1, SG 단독 검산 157.2 kg/s 분리",,11
-전역,헬륨 비엔탈피 영점 온도,T_he_enthalpy_ref,K,,Parameter,,,스칼라,,"A 10-11; B 1,3",제안·합의 필요,1차,0,T_ref,"h=cp(T−T_ref), SG 헬륨 측과 통일; 급수/증기 h와 서로 다른 물성계",,12
-헬륨 물성,정압비열,c_p_he,J/(kg·K),,Parameter,,,스칼라,,A 10; 3 12,문서 일치,1차,5195,"c_p,He",5195 J/(kg·K) 문서값. cv=3117과의 차 2078은 R=2077.27과 0.73만큼 다름; 물성 조합 확정 후 EOS·에너지식 함께 검산.,,13
-헬륨 물성,정적비열,c_v_he,J/(kg·K),,Parameter,,,스칼라,,A 10,문서 제안,1차,3117,"c_v,He","cp−cv=2078 J/(kg·K), 표의 R=2077.27과 0.73 차이. 단일 상수 세트 선택 전까지 독립 정합성 검증 필요.",,14
-헬륨 물성,헬륨 비기체상수,R_he,J/(kg·K),,Parameter,,,스칼라,,A 10; 3 12,식/상수 선택 필요,1차,2077.27,R_He,"cp−cv=2078과 0.73 J/(kg·K) 편차; 근거별 상수 정의·반올림 차이를 확인하고 cp, cv, R, gamma, EOS를 한 세트로 지정.",,15
-헬륨 물성,헬륨 비열비,gamma_he,1,,Derived,,,스칼라,,A 10,제안값,1차,1.6667,γ,cp/cv=1.66667 근사. R=cp−cv 및 임계압력비 식을 선택한 동일 상수 세트로 검증.,,16
-헬륨 물성,셀별 비엔탈피 상태,h_he,J/kg,,Differential,,,유체 셀 i,,"A 10; B 1,3,6",기본 제안,1차,,h_i,유한체적 헬륨 셀의 h 상태. SG-0 출구나 무체적 경계는 대수/유도값; 전역 state_registry에서 체적 셀만 등록.,,17
-헬륨 물성,헬륨 벌크 절대온도,T_he,K,,Derived,,,유체 셀 i,,A 4; B 3,제안값,1차,,T_i,T=T_ref+h/cp; 벽온도와 구별,config/operation.yaml :: primary.initial_temperature_K,18
-헬륨 물성,헬륨 밀도,rho_he,kg/m³,,Derived,,,유체 셀 i,,A 10; B 1,KTA 채택 제안,1차,,ρ_i,"ρ(p_sys,h) 저마하수 근사와 국부 p_i 평가 위치의 정합성 검토",,19
-헬륨 물성,헬륨 동점도가 아닌 동적 점도,mu_he,Pa·s,,Derived,,,유체 셀 i,,A 10,KTA 채택 제안,1차,,μ,"Re, friction에 사용",,20
-헬륨 물성,헬륨 열전도도,k_he,W/(m·K),,Derived,,,유체 셀 i,,A 11; 3 12,KTA 채택 제안,1차,,k_He,벌크 대류 및 연료 간극 평가 온도 구분,,21
-헬륨 물성,헬륨 Prandtl 수,Pr_he,1,,Derived,,,유체 셀 i,,A 11,제안값,1차,,Pr,μcp/k,,22
-헬륨 물성,열팽창계수,beta_he,1/K,,Derived,,,유체 셀 i,,A 5; C 15,제안값,1차,,β,부력 자연대류 상관식의 입력,,23
-헬륨 물성,상태 밀도의 압력 편미분,drho_dp_he,kg/(m³·Pa),,Derived,,,유체 셀 i,,A 4-5; B 6,코드 일관 정의 필요,1차,,ρ_p,질량 잔차의 p_sys 미분 계수,,24
-헬륨 물성,상태 밀도의 비엔탈피 편미분,drho_dh_he,kg²/(m³·J),,Derived,,,유체 셀 i,,A 4-5; B 6,코드 일관 정의 필요,1차,,ρ_h,질량 잔차의 h 미분 계수,,25
-헬륨 물성,헬륨 음속,c_he,m/s,,Derived,,,유체 셀 i,,A 11; B 8,검산값,1차 검산,,c,헬륨 음속 a=sqrt(gamma·R·T). 이전 이름의 끝 m은 m/s 단위의 일부였음; 독립 물성값으로 계산.,,26
-노심 고체,연료/흑연 격자 온도,T_core_solid,K,,Differential,,,고체 격자 s,,"3 6-8,17; 4 18",모델 정의 필요,1차,,T_s,"연료 컴팩트·흑연 블록·벽면 격자 구별, 축/반경 격자와 원자료의 연료 최대온도 평가 지점 지정.",,27
-노심 고체,위치별 연료 중 최고온도,T_core_fuel_max,K,,Derived,,,스칼라,,3 17-18,제안값,1차,,T_max,연료 컴팩트 최대 vs TRISO 연료핵 최대의 평가 대상을 정의,,28
-노심 고체,출력 피드백용 연료 대표온도,T_core_fuel_representative,K,,Derived,,,스칼라,,3 20-21,미확정,확장,,T_f,반응도계수의 평균 온도 정의와 동일해야 함,,29
-노심 고체,출력 피드백용 흑연 대표온도,T_core_graphite_representative,K,,Derived,,,스칼라,,3 20-21,미확정,확장,,T_g,대표온도 가중/기준 영역 확정,,30
-노심 고체,총출력의 위치별 출력분율,f_core_power,1,,Parameter,,,고체 격자 s,,3 16-17,원본 배열 미확보,1차,,f_s,MHTGR 출력분포 파일 원본 확보; 동일 기준 격자에서 합 1 검산,,31
-노심 고체,격자별 핵분열+붕괴 발열,P_core_solid,W,,Derived,,,고체 격자 s,,"3 16-17,19",계산 규약 필요,1차,,P_s,중복합산 방지: 총출력의 붕괴열 포함 여부 결정,,32
-노심 고체,고체 체적발열률,qvol_core,W/m³,,Derived,,,고체 격자 s,,"3 6,16",제안값,1차,,q‴_s,격자 출력/발열 체적,,33
-노심 고체,고체 격자 체적,V_core_solid,m³,,Parameter,,,고체 격자 s,,3 16-17,형상 확정 필요,1차,,V_s,발열 체적·열용량 일관,,34
-노심 고체,연료/흑연 밀도,rho_core_solid,kg/m³,,Parameter,,,재료별/격자 s,,"3 7,17",재료별 확인,1차,,ρ_s,PCEA AG 1850 등은 다른 재료에 무분별하게 사용 금지,,35
-노심 고체,고체 정압비열,c_p_core_solid,J/(kg·K),,Parameter,,,재료별/격자 s,,"3 7,16-17",재료별 확인,1차,,"c_p,s",온도/조사량 의존 시 함수로 평가,,36
-노심 고체,고체 유효 전도도,k_core_solid,W/(m·K),,Parameter,,,재료·방향·격자별,,"3 7-8,16-17",선택 필요,1차,,k_s,"컴팩트 20, 균질 블록 37, H-451 66 W/(m·K) 등은 서로 대체값 아님",,37
-노심 고체,흑연 누적 중성자 조사량,Phi_core_solid,n/m²,,Parameter,,,재료/격자별,,3 7-8,배포자료 필요,확장,,Φ,"흑연 누적 중성자 조사량. 단위 n/m²는 E열에만 유지; H-451 k(T,fluence)의 표 보간에 사용.",,38
-노심 고체,연료 컴팩트와 연료공 사이 간극폭,delta_core_gap,m,,Parameter,,,고체 경계별,,"3 6,9",형상 확정 필요,1차,,δ_gap,간극 헬륨 전도와 복사 저항,,39
-노심 고체,간극 표면 유효 방사율,epsilon_core_gap,1,,Parameter,,,고체 경계별,,"3 6,9",형상·재료 확인,1차,,ε_gap,RPV의 RCCS 유효 방사율과 다른 변수,,40
-노심 고체,연료 컴팩트→흑연 간극 열전달,Q_dot_core_gap,W,,Derived,,,경계별,,"3 6,9",제안값,1차,,Q_gap,"전도 및 복사 항, 양측 고체 수지에 반대부호",,41
-노심 고체,냉각공에 접하는 고체 벽온도,T_core_wall,K,,Differential / Derived (벽 격자 선택),,,유로 k×축방향 z,,"3 6,10; B 7",격자 선택 필요,1차,,T_w,독립 열용량을 둔 벽 격자면 미분 상태; 기존 고체 표면 노드의 별칭이면 유도값. 동일 벽 노드를 중복 상태 등록하지 않음.,,42
-노심 고체,고체·헬륨 접촉 면적,A_core_wall,m²,,Parameter,,,유로 k×축방향 z,,3 6; B 7,형상 확정 필요,1차,,A_wall,가열 둘레×셀 길이; htc에 사용,,43
-노심 고체,냉각공 벽면 대류계수,h_conv_core_wall,W/(m²·K),,Derived,,,유로 k×축방향 z,,"3 10,17; C 15",상관식 합의 필요,1차,,h_conv,3번 정격식과 2번 C의 저유량·자연대류 확장 공통화,,44
-노심 고체,노심 고체→헬륨 열전달률,Q_dot_core_wall,W,,Derived,,,유로 k×축방향 z,,"3 6,17; B 7",부호 제안,1차,,Q_wall,"고체에서 헬륨으로 전달되면 양수, 반대면 음수",,45
-노심 고체,노심 유입 헬륨 비엔탈피,h_core_he_inlet,J/kg,,Algebraic,,,유로 k,,3 17; B 11,포트 연동,1차,, he_inlet_enthalpy_j_kg,상부 플레넘/상승관의 포트 상태를 사용,,46
-노심 고체,노심 유출 헬륨 혼합 비엔탈피,h_core_he_outlet,J/kg,,Derived,,,스칼라,,3 17; D 9,연결 규약 필요,1차,,core_outlet_enthalpy_j_kg,하부 플레넘에서 질량가중 혼합; 평균의 정의 확인,,47
-노심 고체,노심 유로별 헬륨 유량,m_dot_core_he_path,kg/s,,Algebraic,,,유로 k×face j,,3 17; C 9,연동 필요,1차,,he_mass_flow_kg_s,전체 157.1 kg/s와 유효노심/우회 유로 분배 구분,,48
-노심 고체,노심 총 붕괴열,Q_dot_core_decay,W,,External Input,,,시간 함수,,"3 19; 4 8,17",원본 입력 미확보,사고,,Q_decay,시간 이력 전체 출력(W) 또는 체적별 붕괴열밀도(W/m³) 중 한 가지 입력을 권위값으로 선택. P_core_fission와 합산 시 정격 총출력 이중 계상 금지.,,49
-노심 고체,격자별 붕괴열 밀도,qvol_core_decay,W/m³,,External Input,,,고체 격자 s×시간,,3 19,원본 배열 미확보,사고,,q‴_decay,Q_dot_core_decay 전체 W 이력과 이 변수 W/m³ 배열은 대안 입력; 체적 적분값 일치·원본 공간배치 확인.,,50
-노심 고체,노심/반사체→용기 열전달,Q_dot_core_solid_to_vessel,W,,Derived,,,경계별,,"3 6; 4 7,11",연결 상세 필요,사고,,Q_core→RPV,반사체·배럴·RPV 벽 노드와의 전도/복사 경로 설정,,51
-중성자·출력,정규화 중성자수,n_core,1,,Differential,,,스칼라,,3 20-21,계수 확보 필요,확장,1,n,점동특성 사용 시 핵분열출력과 연동,,52
-중성자·출력,지발중성자 선행핵군 정규화량,c_core,1,,Differential,,,지발군 g,,3 20-22,군 구조 미확정,확장,,c_g,평형 초기조건 β_g/(Λ λ_g),,53
-중성자·출력,총 반응도,rho_reactivity_core,1,,Derived,,,스칼라,,3 20-21,계수 확보 필요,확장,,ρ_reactivity,기준+외부+연료/흑연 온도 피드백,,54
-중성자·출력,기준 반응도,rho_reactivity_core_base,1,,Parameter,,,스칼라,,3 20-21,임계 초기 가정,확장,0,ρ_0,정상 임계점에서 ρ0=0,,55
-중성자·출력,제어봉/사건 외부 반응도 이력,rho_reactivity_core_external,1,,External Input,,,시간 함수,,3 20-22,시나리오 필요,확장,,Δρ_ext,정지 성공/실패에 따라 제어봉 삽입 항 설정,,56
-중성자·출력,연료 온도 반응도계수,alpha_core_fuel,1/K,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,α_f,pcm/K를 1/K로 바꿀 때 1e−5 곱함,,57
-중성자·출력,흑연 온도 반응도계수,alpha_core_graphite,1/K,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,α_g,연료 계수와 대표온도 정의 정합,,58
-중성자·출력,연료 피드백 기준온도,T_core_fuel_ref,K,,Parameter,,,스칼라,,3 20-21,기준 운전점 필요,확장,,"T_f,0",연료 대표온도 정의와 일치,,59
-중성자·출력,흑연 피드백 기준온도,T_core_graphite_ref,K,,Parameter,,,스칼라,,3 20-21,기준 운전점 필요,확장,,"T_g,0",흑연 대표온도와 계수 정의의 기준 운전점,,60
-중성자·출력,군별 유효 지발중성자 분율,beta_eff_core_group,1,,Parameter,,,지발군 g,,3 20-22,실데이터 미확보,확장,,"β_eff,g",재료별 β를 노심 유효값으로 바로 사용하지 않음,,61
-중성자·출력,군별 선행핵 붕괴상수,lambda_core_group,s⁻¹,,Parameter,,,지발군 g,,3 20-22,실데이터 미확보,확장,,λ_g,β와 같은 군 구조,,62
-중성자·출력,즉발중성자 생성시간,Lambda_core,s,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,Λ,노심 상태/연소상태 정의,,63
-중성자·출력,현재 핵분열출력,P_core_fission,W,,Derived,,,시간 함수,,3 20-21,계산 모델 선택 필요,확장,,P_f,"P_f,0 n(t); 고정 출력 입력과 동시 활성화 금지",,64
-중성자·출력,기준 핵분열출력,P_core_fission_ref,W,,Parameter,,,스칼라,,3 21,기준 운전점 필요,확장,,"P_f,0",정격 열출력과 붕괴열 포함 정의 구분,,65
-유체 FVM,유체 셀 국부 정압,p_fluid_cell,Pa,,Algebraic,,,셀 i,,"B 1,6; D 9",기본 제안,1차,,p_i,"밀도는 저마하수 기준압 p_sys, 셀 p는 운동량 압력차에 사용",,66
-유체 FVM,면별 헬륨 질량유량,m_dot_fluid_face,kg/s,,Algebraic,,,face j×유로 k,,"B 1,5-7",기본 제안,1차,,ṁ_j,정방향/역방향 허용; 폐쇄 시 0 근처 처리가 중요,config/operation.yaml :: primary.initial_mass_flow_kg_s,67
-유체 FVM,유체 셀 체적,V_fluid_cell,m³,,Parameter,,,셀 i,,B 6-7,형상 필요,1차,,V_i,ρV 저장량에 사용,,68
-유체 FVM,유체 유동 단면적,A_fluid_cell,m²,,Parameter,,,셀 i,,"B 3,6; D 8",형상 필요,1차,,A_i,셀/face 면적 정의 및 관경 변화 연결,config/geometry.yaml :: core.flow_area_m2,69
-유체 FVM,유체 셀 축방향 길이,dz_fluid_cell,m,,Parameter,,,셀 i,,B 6; D 8,격자 확정 필요,1차,,Δz_i,경계 면에는 반셀 길이 적용,,70
-유체 FVM,수력직경,D_h_fluid_cell,m,,Parameter,,,셀 i×유로 k,,"C 3,15; D 8",형상 필요,1차,,D_h,"원형, 환형, 평행판 별도 계산",,71
-유체 FVM,유로의 연직 기준 각도,theta_fluid_cell,rad,,Parameter,,,셀 i×유로 k,,"B 3,6; D 8",기하 필요,1차,,θ,유동 정방향과 연직 상향(+z) 사이의 각도; 부력항 cos(theta) 부호는 경로별 좌표로 검증.,,72
-유체 FVM,벽면 젖은 둘레,P_fluid_wetted,m,,Parameter,,,셀 i×유로 k,,"B 3,7",형상 필요,1차,,P_h,Q_wall=hP_h Δz(T_w−T_He),,73
-유체 FVM,면별 연속화된 상류 엔탈피,h_fluid_upwind,J/kg,,Derived,,,face j,,B 5-7,기본 제안,1차,,h*_j,유동 방향 tanh 가중; 양방향 에너지 수송,,74
-유체 FVM,열가속/단면 가속 압력항,dp_fluid_acc,Pa,,Derived,,,face j,,"B 3,6; D 10",기본 제안,1차,,Δp_acc,일정 면적 가열 채널과 접합부 Bernoulli 계수 구분,,75
-유체 FVM,분포 벽 마찰 압력항,dp_fluid_fric,Pa,,Derived,,,face j,,B 6; C 2-4,기본 제안,1차,,Δp_fric,반셀 가중; 유동 부호; Darcy f 사용,,76
-유체 FVM,국부 형상손실 압력항,dp_fluid_form,Pa,,Derived,,,face j,,B 6; C 5,기본 제안,1차,,Δp_form,K_fwd/K_rev와 정·역류 스무딩,,77
-유체 FVM,중력·부력 정압항,dp_fluid_grav,Pa,,Derived,,,face j,,B 6; D 10,기본 제안,1차,,Δp_grav,지오메트리 고정 부호; 역류 시 항 부호 임의 변경 금지,,78
-유체 FVM,셀 질량보존 잔차,R_fluid_mass,kg/s,,Derived,,,셀 i,,B 6; D 9,방정식 정의,1차,0,"R_mass,i",셀별 질량 보존 잔차. 전역 압력 미분항을 포함하며 잔차 수/미지수 수와 전체 질량보존을 확인.,,79
-유체 FVM,셀 엔탈피 에너지 잔차,R_fluid_energy,W,,Derived,,,셀 i,,B 7; D 9,방정식 정의,1차,0,"R_energy,i",비보존형 에너지 잔차; 질량 잔차와 결합 시 보존형과 동치. 파단 유출을 질량과 엔탈피에서 중복 차감하지 않음.,,80
-유체 FVM,면 압력·운동량 잔차,R_fluid_momentum,Pa,,Derived,,,face j,,B 6-7,방정식 정의,1차,0,"R_mom,j",초기안 관성항 0; 순환기 양정은 해당 face에서만 적용,,81
-유체 FVM,Reynolds 수,Re_fluid,1,,Derived,,,셀/면별,,"C 3,15",계산값,1차,,Re,영유량에서 정규화에 주의,,82
-유체 FVM,Nusselt 수,Nu_fluid,1,,Derived,,,셀/경계별,,3 10; C 6-8,상관식 협의,1차,,Nu,정격 McEligot vs 저유량 층류·자연대류 보간,,83
-유체 FVM,Darcy 마찰계수,f_D_fluid,1,,Derived,,,셀/면별,,"3 15; C 2,15",상관식 충돌,1차,,f_D,"3번 Swamee–Jain 예비안, 2번 Churchill 통합안; 최종 하나 선택",,84
-유체 FVM,Richardson 수,Ri_fluid,1,,Derived,,,셀/경계별,,"C 8,15",계산값,사고,,Ri,강제/자연대류 전환에 사용,,85
-유체 FVM,유로 벽 절대 거칠기,epsilon_fluid,m,,Parameter,,,유로 k,,"C 4,15; D 12",벤치마크 값/민감도 별도,1차,0,ε,0은 벤치마크 기본; 재료 조도 실제값과 구분,,86
-유체 FVM,비원형 층류 형상계수,Phi_fluid_laminar,1,,Parameter,,,유로 k,,"C 3,15",기하에 따라,1차,,Φ_s,원형 1; 평행판 2/3,,87
-유체 FVM,정유동 국부손실계수,K_form_fluid_fwd,1,,Parameter,,,접합 face j,,"C 5,15; D 10",일부 미확보,1차,,K_+,오리피스·덕트 굴곡 등 위치별 입력,,88
-유체 FVM,역유동 국부손실계수,K_form_fluid_rev,1,,Parameter,,,접합 face j,,"C 5,15; D 10",일부 미확보,사고,,K_−,정방향 계수를 기계적으로 재사용하지 않음,,89
-유체 FVM,유로별 정격 질량유량,m_dot_fluid_nominal_path,kg/s,,Parameter,,,유로 k,,B 5; D 14,유량배분 필요,1차,,"ṁ_nom,path","스무딩 폭의 기준, 전체 루프 유량과 단일 채널 분리",,90
-유체 FVM,마하수,Ma_fluid,1,,Derived,,,유로 k,,A 11; B 8-10,검산값,검산,,M,주유로 저마하수 근사 적용성 평가,,91
-병렬·배관,노심 우회유로 등가 단면적,A_core_bypass,m²,,Parameter,,,우회 경로 k,,"C 9,15-16",초기화 보정 제안,1차,약 0.33,A_byp,11% 목표를 정상 초기화 때 전체 상·하부 플레넘 경로에서 보정; 0.33 m²는 특정 기하·저항의 예시값. 과도에 11% 고정 금지.,,92
-병렬·배관,총 유량 중 우회분율,f_core_bypass,1,,Derived,,,스칼라,,"C 9-10,15-16",벤치마크 목표,1차,0.11,bypass fraction,Type I 11%; Type II 간극별 조건과 구분,,93
-병렬·배관,우회유로와 고체의 열교환,Q_dot_core_bypass_wall,W,,Derived,,,유로 k×셀 i,,C 16,합의 필요,사고,,Q_byp,단열 우회 vs 고체 열결합 차이가 크므로 3번과 결정,,94
-병렬·배관,비노심 배관 헬륨 셀 엔탈피,h_pipe,J/kg,,Differential,,,배관 b×셀 i,,"D 8,14",기본 제안,1차,,pipe h_i,공통 fluid_h 상태의 배관 소유 범위,,95
-병렬·배관,비노심 배관 헬륨 셀 정압,p_pipe,Pa,,Algebraic,,,배관 b×셀 i,,"D 8,14",기본 제안,1차,,pipe p_i,공통 fluid_cell_p_pa의 배관 범위,,96
-병렬·배관,비노심 배관 face 질량유량,m_dot_pipe,kg/s,,Algebraic,,,배관 b×face j,,"D 8,14",기본 제안,1차,,pipe ṁ_j,공통 fluid_face_mdot_kg_s의 배관 범위,,97
-병렬·배관,고온·저온 덕트 및 상승관 길이,L_pipe,m,,Parameter,,,구간 b,,"D 8,15",부분 자료/추정,1차,,L_b,L_riser=13.02 m; 동축덕트 L_cross=8 m는 예시로 최종 자료 필요,,98
-병렬·배관,배관 유로 단면적,A_pipe,m²,,Parameter,,,구간 b,,D 8,문서 치수 대조 필요,1차,,A_b,고온덕트 1.1197; 저온덕트 1.1218; 12상승관 총 1.2077 m²,,99
-병렬·배관,배관 수력직경,D_h_pipe,m,,Parameter,,,구간 b,,D 8,문서 제안,1차,,"D_h,b",고온 1.194; 저온 환형 0.454; 상승관 0.2477 m,,100
-병렬·배관,배관 벽과 헬륨 간 열전달,Q_dot_pipe_wall,W,,Derived,,,배관 b×셀 i,,"D 8,15",초기 단열 가정,1차/사고,0,Q_pipe,동축덕트 기생 전열 후속 민감도 옵션; 지오메트리·경계 구분,,101
-병렬·배관,동축덕트 단열재 열전도도,k_duct_insulation,W/(m·K),,Parameter,,,온도의 함수,,D 8,문서 지정식,확장,,k_ins,고온→저온 덕트 기생전열 평가할 때,,102
-플레넘,상·하부 플레넘 비엔탈피,h_plenum,J/kg,,Differential,,,플레넘 up/low,,"D 9,14",기본 제안,1차,, h_pl,0D 유한체적 완전 혼합,,103
-플레넘,상·하부 플레넘 정압,p_plenum,Pa,,Algebraic,,,플레넘 up/low,,"D 9,14",기본 제안,1차,,"p_up,p_low",하부 플레넘 p_low=p_sys 기준노드 제안,,104
-플레넘,상·하부 자유체적,V_plenum,m³,,Parameter,,,플레넘 up/low,,"D 9,15",추정값·최종 필요,1차,,"V_up,V_low","상부 약 76.2, 하부 약 9.78 m³ 추정; 형상팀 확정",,105
-플레넘,플레넘 고체벽→헬륨 전달열,Q_dot_plenum_wall,W,,Derived,,,플레넘 up/low,,"D 9,14",결합 필요,1차/사고,,"Q_wall,pl",노심 상부 구조/하부 구조 고체열 모델과 연결,,106
-플레넘,플레넘 접속구 유량,m_dot_plenum_port,kg/s,,Algebraic,,,포트 k,,D 9-10,포트 공유,1차,,ṁ_k,유입 양수 s_k=+1; 유출 음수로 결합,,107
-순환기,정격 회전수 대비 순간 회전수,alpha_circ,1,,Differential,,,순환기별,,"D 3-5,14",기본 제안,1차,1,α,ODE 감속 적용 시만 상태변수; prescribed profile 선택 시 외부 입력,,108
-순환기,전동기 구동 신호,u_circ_motor,1,,External Input,,,시간 함수,,"D 4,14",시나리오별,1차,, u_motor(t),트립 시 램프 약 0.1 s 제안,,109
-순환기,순환기 1차측 양정,dp_circ,Pa,,Derived,,,순환기 face,,"D 3,13-14",모델/데이터 미확정,1차,,Δp_comp,양정은 기기 face에만; 정지 후 유동 저항이 될 수 있음,,110
-순환기,순환기가 헬륨에 전달하는 일률,Q_dot_circ,W,,Derived,,,순환기 에너지 연결,,"D 4-5,14",제안식,1차,,Q_circ,정지 회전자 Δp<0을 음의 발열로 해석하지 않음,,111
-순환기,정격 순환기 양정,dp_circ_rated,Pa,,Parameter,,,순환기별,,"D 5,12,14-15",실데이터 미확보,1차,,Δp_R,"65 kPa는 예시; 95–101 kPa도 역산 범위, 확정 입력 금지",,112
-순환기,트립 후 회전 감속 반감기,tau_circ_half,s,,Parameter,,,순환기별,,"D 4,14-15",실데이터 미확보,1차,,τ_1/2,수초/분 단위 과도 영향이 큼,,113
-순환기,순환기 단열효율,eta_isentropic_circ,1,,Parameter,,,순환기별,,"D 5,14-15",실데이터 미확보,1차,,η_s,_s는 단위 초가 아닌 등엔트로피 효율의 아래첨자. 변수 이름 유지; 실제 정격 효율/성능곡선 확보 전까지 공란.,,114
-순환기,정격 체적유량,Vdot_circ_rated,m³/s,,Parameter,,,순환기별,,D 3-5,정격 밀도 의존,1차,,Q_R,ṁ_R/ρ_R로 산출 가능; 압력/흡입 온도 기준 필요,,115
-순환기,정격 흡입 헬륨 밀도,rho_circ_rated,kg/m³,,Parameter,,,순환기별,,D 3-5,운전점 필요,1차,,ρ_R,현재 밀도와 나눈 양정·감속계수에 사용,,116
-순환기,성능곡선 상수계수,c0_circ_curve,1,,Parameter,,,순환기별,,"D 3,14",예비 계수,1차,1.3,c0,제조사 4사분면 자료 확보 전 대리식,,117
-순환기,성능곡선 선형계수,c1_circ_curve,1,,Parameter,,,순환기별,,"D 3,14",예비 계수·검증 필요,1차,0,c1,"문서의 정격 제약 c0+c1−c2=1에 c0=1.3, c2=0.3을 대입한 예비값 0. 실측 곡선 확보 시 세 계수 함께 갱신.",,118
-순환기,성능곡선 제곱계수,c2_circ_curve,1,,Parameter,,,순환기별,,"D 3,14",예비 계수,1차,0.3,c2,정지 회전자 유동 저항과 연계,,119
-순환기,베어링 마찰비,c_fr_circ_bearing,1,,Parameter,,,순환기별,,"D 4,14",예비 계수,1차,0.02,c_fr,감속 ODE의 c_fr,,120
-순환기,전동기/축 정격 일률,P_circ_shaft,W,,Derived,,,순환기별,,D 4-5,검산 필요,1차,,W_shaft,순환기 헬륨 엔탈피 상승·계통 에너지 합산,,121
-순환기,양정/감속 상관식 선택,mode_circ_curve,범주,,Parameter,,,순환기별,,D 3-4,제안 선택,1차,affinity_quad,pump_mode,"4사분면/지정 양정 대안, 사용 시 근거 기록",,122
-밸브,밸브 유효 개도,alpha_valve,1,,Derived,,,밸브 v,,"D 6-7,14",모델 제안,1차,,α_v,"체크밸브는 유효 차압 tanh, 제어밸브는 명령 따름",,123
-밸브,밸브 개도 명령,u_valve,1,,External Input,,,밸브 v×시간,,"D 6,14",시나리오별,1차,,α_cmd,SCS 격리 밸브 및 조절 밸브,,124
-밸브,밸브 통과 헬륨 질량유량,m_dot_valve,kg/s,,Algebraic,,,밸브 v,,"D 6-7,14",유동 공유,1차,,ṁ_v,고정 닫힘으로 놓을지 누설유로로 남길지 결정,,125
-밸브,밸브 개도에 따른 국부손실계수,K_valve,1,,Derived,,,밸브 v,,"D 6-7,14",상관식 제안,1차,,K_v,밸브 국부손실계수 K_v(무차원). 이전 표의 단위 제거 과정에서 _k가 잘못 지워져 이름이 valve만 남았던 항목을 복구.,,126
-밸브,완전 개방 밸브 손실계수,K_valve_open,1,,Parameter,,,밸브 v,,"D 6-7,14",기본 예시,1차,0.5,K_open,장치별 문헌값 확보 시 교체,,127
-밸브,체크밸브 개방차압,dp_valve_crack,Pa,,Parameter,,,체크밸브,,"D 7,14-15",예비값,1차,250,Δp_crack,Δp_ε=50 Pa의 5배 이상 권고,,128
-밸브,중력 보정 전후 유효 차압,dp_valve_eff,Pa,,Derived,,,밸브 v,,D 7,부호 점검,1차,,Δp_eff,p_in−p_out−Δp_grav,,129
-밸브,밸브 형상 압력손실,dp_valve_loss,Pa,,Derived,,,밸브 v,,"D 6-7,13",계산값,1차,,Δp_valve,정·역류 방향별 유량 제곱 부호 처리,,130
-밸브,체크·격리밸브 개폐시간,tau_valve_closure,s,,Parameter,,,밸브 v,,"D 6,15",실데이터 미확보,사고,,τ_valve,트립 시나리오에서 시간 이력 필요,,131
-밸브,안전방출밸브 개방 설정압력,p_psrv_set,Pa,,Parameter,,,밸브 v,,"D 6,15",실데이터 미확보,확장,,p_set,압력 기준이 절대/게이지인지 정의,,132
-파단·방출,파단구 유효 면적,A_break,m²,,External Input,,,파단별/시나리오,,"D 10-11,14",1차 비활성,확장,0,A_break,DCC에서 시나리오 입력; 유효 면적 정의,,133
-파단·방출,파단구 유량계수,C_d_break,1,,Parameter,,,파단별,,"D 11,13-14",예비값,확장,0.85,C_d,파단 위치/형상별 시험근거 확인,,134
-파단·방출,파단구 외부/공동 배압,p_break_back,Pa,,External Input,,,시간 함수,,"D 11,14",시나리오별,확장,,p_back,RPV 공동 압력과 열침원 온도 혼동 금지,,135
-파단·방출,헬륨 파단 방출 질량유량,m_dot_break,kg/s,,Derived,,,파단별,,"D 11,13-14",제안식,확장,,ṁ_break,"임계/아음속 연속 전환, 전역 질량 보존에서 차감",,136
-파단·방출,임계 방출 압력비,r_critical_break,1,,Derived,,,파단별,,"D 11,15",헬륨 γ 근사,확장,0.4871,r_c,상류/배압비 정의 일치,,137
-SG,증기발생기 모델 단계,mode_sg_level,범주,,Parameter,,,SG별,,4 11-13; D 10,팀 합의 필요,1차/확장,SG-0,SG-0/1/2,SG-0 초기 검산; SG-1 UA; SG-2 3구간/1D,,138
-SG,SG 입구 헬륨 비엔탈피,h_sg_he_inlet,J/kg,,Algebraic,,,SG별 포트,,"4 4,13",포트 입력,1차,,he_in_h_j_kg,고온덕트 출구에서 유입,,139
-SG,SG 입구 헬륨 절대압,p_sg_he_inlet,Pa,,Algebraic,,,SG별 포트,,"4 4,13,17; D 16",운전점 상충,1차,6310000,he_in_p_pa,SG 단독 정격 6.31 MPa; 계통 하부 플레넘 6.39 MPa와 80 kPa 차이. 위치·압력 기준·동일 운전점·사이 손실 확인 전 계통 초기조건으로 강제하지 않음.,,140
-SG,SG 헬륨 질량유량,m_dot_sg_he,kg/s,,Algebraic,,,SG별 포트,,"4 4,13,17",운전점 상충,1차,157.2,he_mdot_kg_s,SG 독립 검산 157.2 kg/s. 계통 루프 157.1 kg/s와 정격 반올림·운전점 차이 확인; 통합 때 공유 face 유량 사용.,,141
-SG,SG 출구 헬륨 비엔탈피,h_sg_he_outlet,J/kg,,Algebraic,,,SG별 포트,,"4 4,13",SG-0 대수 미지수,1차,,he_out_h_j_kg,유량 영에서 Q/ṁ 나눗셈 피하고 에너지 잔차 사용,,142
-SG,SG 출구 헬륨 정압,p_sg_he_outlet,Pa,,Algebraic,,,SG별 포트,,"4 4,13",검산값,1차,6284500,he_out_p_pa,6.31 MPa 입구−25.5 kPa 단독 검산; 통합 시 해로 계산,,143
-SG,SG 출구 헬륨 온도,T_sg_he_outlet,K,,Derived,,,SG별 포트,,"4 4,13",검산값,1차,526.89,"T_He,out",기존 정격 계산 526.89 K. 보완본 원 설계의 약 254.8°C=527.95 K와 구분. 같은 유량·물성·운전점인지 대조.,,144
-SG,SG 헬륨측 압력강하,dp_sg_he,Pa,,Derived,,,SG별,,"4 4,12-13; D 10",정격 기준,1차,25500,Δp_SG,과도에서는 정격 상수 고정 금지; SG-0은 역류 부호 보전,,145
-SG,SG 헬륨 정격 압력강하,dp_sg_he_ref,Pa,,Parameter,,,SG별,,"4 4,12-13",문서 기준값,1차,25500,Δp_ref,sg_he_dp_pa를 운전 상태에서 계산하는 기준값,,146
-SG,SG 정격 헬륨 유량 기준,m_dot_sg_he_ref,kg/s,,Parameter,,,SG별,,4 13,SG 단독 기준,1차,157.2,ṁ_ref,전체 루프 정격 유량과 합의 후 일치화,,147
-SG,급수 입구 온도,T_sg_fw_inlet,K,,External Input,,,시간 함수,,4 4,문서 기준값,1차,466.15,T_fw,기존 통합표 466.15 K(193.0°C)와 보완본 원 설계 정격 약 466.45 K(193.3°C)를 구분. 사용 개정·운전점을 확인해 경계값 선택.,,148
-SG,급수 입구 압력,p_sg_fw_inlet,Pa,,External Input,,,시간 함수,,"4 4,9,13",압력 기준 재확인,1차,20700000,p_fw,"절대압 가정, 원 설계도와 대조 필요",,149
-SG,급수 입구 비엔탈피,h_sg_fw_inlet,J/kg,,Derived / External Input (경계 선택),,,시간 함수,,"4 4,12-13",경계 입력 방식 합의 필요,1차,830044,h_fw,"T_fw=466.15 K, p_fw=20.70 MPa가 입력이면 IAPWS-IF97로 계산한 검산값 830044 J/kg. h 직접 입력 모드일 때 T와 동시에 독립 경계로 고정 금지.",,150
-SG,증기발생기 급수 질량유량,m_dot_sg_fw,kg/s,,External Input,,,시간 함수,,"4 4,12-13",SG 단독 정격,1차,137.2,ṁ_w,급수손실 과도시 외부 시나리오 입력,,151
-SG,주증기 출구 온도,T_sg_steam_outlet,K,,External Input/Derived,,,시간 함수,,"4 4,12-13",모델별 분류 상이,1차/확장,813.15,T_steam,"기존 통합표 813.15 K(540.0°C)와 보완본 원 설계 약 813.75 K(540.6°C)를 구분. SG-2에서는 출구 h,p에서 계산.",,152
-SG,주증기 출구 압력,p_sg_steam_outlet,Pa,,External Input/Algebraic,,,시간 함수,,"4 4,12-13",모델별 분류 상이,1차/확장,17340000,p_steam,"SG-0 물성 경계, SG-2는 2차측 압력손실 계산 가능",,153
-SG,증기 출구 비엔탈피,h_sg_steam_outlet,J/kg,,Derived / Algebraic (SG 단계별),,,SG별,,"4 4,12-13",모델별 분류 상이,1차/확장,3397046,steam_out_h_j_kg,"SG-0에서 출구 T,p 지정 시 IAPWS-IF97 계산값 3397046 J/kg; h 직접 지정은 대안 경계. SG-1/2에서는 열전달/에너지 방정식으로 출구 h를 결정하며 T,p,Q를 동시에 강제하지 않음.",,154
-SG,헬륨→2차측 증기발생기 열제거율,Q_dot_sg_removed,W,,Derived,,,SG별,,"4 4,12-13",정격 검산값,1차,352193000,Q_SG,기존 급수/증기 IAPWS 검산 352.193 MW. 보완본 원 설계 SG 정격 열부하 352.1 MW와 별도 출처·정밀도로 보관. 과도에는 He 열손실·벽 축열·2차측 흡열을 각각 계산.,,155
-SG,SG 유효 열관류율×면적,UA_sg,W/K,,Parameter,,,SG별/구간별,,"4 12-13,17",설계값 미확보,확장,,UA_eff,SG-1/2에서 Q를 독립 계산하는 데 필요,,156
-SG,SG 전열관 구간별 벽온도,T_sg_wall,K,,Differential,,,구간 a×셀 i,,"4 12-13,18",SG-2 확장,확장,,T_wall,SG-2의 기존 대표 벽온도. 보완본은 바깥/안쪽 반벽 온도와 열용량을 각각 둔다. 대표값을 별칭으로 쓰는 경우 독립 상태 중복 등록 금지.,,157
-SG,SG 전열관 열용량,C_sg_wall,J/K,,Parameter,,,구간 a×셀 i,,"4 12-13,17",설계값 미확보,확장,,C_wall,관 재질/질량×비열,,158
-SG,SG 헬륨측 대류열전달계수,h_sg_he,W/(m²·K),,Derived,,,구간 a×셀 i,,"4 12,17",상관식 필요,확장,, h_He,C 공통 heat_transfer 함수 사용,,159
-SG,SG 급수·증기측 대류/비등 계수,h_sg_w,W/(m²·K),,Derived,,,구간 a×셀 i,,"4 12,17",상관식 필요,확장,,h_w,예열·증발·과열 구간과 상변화 분리,,160
-SG,SG 관측 총 전열면적,A_sg_tube,m²,,Parameter,,,구간 a,,"4 12,17",설계값 미확보,확장,,"A_o,A_i",구간별 외면적 A_o와 내면적 A_i를 구분. 보완본 원 설계 외면적 FSH 407.882 m² + EES 3618.658 m² = 약 4026.539 m². 셀 배분은 실제 기하에 따름.,config/geometry.yaml :: heat_exchanger.heat_transfer_area_m2,161
-SG,SG 증발부 증기 건도,x_sg_water,1,,Algebraic,,,증발부 셀 i,,4 12,모델 확장 필요,확장,,x,정격 SG-0에는 건도 해 없음,,162
-SCS,정지냉각계통 사용 가능/기동 여부,enabled_scs,bool,,External Input,,,시간 함수,,"4 14,17",시나리오별,확장,,scs_enabled,"비활성일 때 Q_SCS=0, SCS 유량=0",,163
-SCS,SCS 헬륨 순환 질량유량,m_dot_scs_he,kg/s,,Algebraic,,,SCS 유로,,"4 14,17",운전 조건 미확보,확장,,"ṁ_He,SCS",주루프 유량과 다른 가지 유로,,164
-SCS,SCS 헬륨 입구 비엔탈피,h_scs_he_inlet,J/kg,,Algebraic,,,SCS 포트,,4 14,포트 연동,확장,,"h_He,in",노심/상부 하부 플레넘과 연결 위치 정의,,165
-SCS,SCS 헬륨 입구 정압,p_scs_he_inlet,Pa,,Algebraic,,,SCS 포트,,4 14,포트 연동,확장,,"p_He,in",분기/바이패스 연결 추가 필요,,166
-SCS,SCS 헬륨 출구 비엔탈피,h_scs_he_outlet,J/kg,,Algebraic,,,SCS 포트,,4 14,열수지 결과,확장,,"h_He,out",m=0에서 Q/m 나눗셈 금지,,167
-SCS,SCS 냉각수 질량유량,m_dot_scs_w,kg/s,,External Input,,,시간 함수,,"4 14,17",운전 조건 미확보,확장,,"ṁ_w,SCS",기동 조건의 냉각수 경계,,168
-SCS,SCS 냉각수 입구 온도,T_scs_w_inlet,K,,External Input,,,시간 함수,,4 14,운전 조건 미확보,확장,,"T_w,in",냉각수 압력과 물성 평가,,169
-SCS,SCS 냉각수 입구 압력,p_scs_w_inlet,Pa,,External Input,,,시간 함수,,4 14,운전 조건 미확보,확장,,"p_w,in",냉각수 상변화 여부 검토,,170
-SCS,SCS 냉각수 출구 비엔탈피,h_scs_w_outlet,J/kg,,Algebraic,,,SCS 출구,,4 14,열수지 결과,확장,,"h_w,out","독립적으로 m,h_in,h_out,Q 모두 지정하지 않음",,171
-SCS,SCS 총 유효 열관류율×면적,UA_scs,W/K,,Parameter,,,SCS HX,,"4 14,17",설계값 미확보,확장,,UA_SCS,열교환기 유로형식 확정 후 유효도 식 선정,,172
-SCS,SCS 헬륨 유로 압력손실,dp_scs,Pa,,Parameter/Derived,,,SCS 유로,,"4 14,17",설계값 미확보,확장,,Δp_SCS,0D 참조값 또는 동적 손실식으로 설계 선택,,173
-SCS,SCS HX 금속 열용량,C_scs_hx,J/K,,Parameter,,,SCS HX,,4 14,설계값 미확보,확장,,C_HX,축열 상태변수 추가 모델에서만 사용,,174
-SCS,SCS 헬륨→냉각수 열제거율,Q_dot_scs_removed,W,,Derived,,,SCS HX,,4 14,계산값,확장,,Q_SCS,양측 엔탈피 열수지 일치,,175
-RCCS-0,원자로 압력용기 외면 절대온도,T_rpv_surface,K,,Derived / Differential (용기 모델별),,,용기 표면 구간 s,,"4 8,15,18",고체모델 연결 필요,1차,,rccs_vessel_surface_temp_k,RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지.,,176
-RCCS-0,RPV 면별 외부 복사 노출면적,A_rccs_vessel_rad,m²,,Parameter,,,용기 표면 구간 s,,"4 8,15",형상 자료 필요,1차,,A_s,측면·상부 방열; 하부는 벤치마크 단열,,177
-RCCS-0,RCCS-0 복사 열침원 온도,T_rccs_benchmark_sink,K,,Parameter,,,스칼라,,"4 8,15,17",문서 기준값,1차,303.15,T_sink,실제 외기/패널 온도가 아님,,178
-RCCS-0,RCCS-0 등가 방사율,epsilon_rccs_effective,1,,Parameter,,,스칼라,,"4 8,15,17",문서 기준값,1차,0.74,ε_eff,RCCS-1의 RPV–패널 유효 교환계수로 재사용 금지,,179
-RCCS-0,Stefan–Boltzmann 상수,sigma_SB,W/(m²·K⁴),,Parameter,,,스칼라,,4 8,문서 상수,1차,5.6704e-8,σ,절대온도 4제곱 사용,,180
-RCCS-0,RPV 구간별 RCCS-0 복사열,Q_dot_rccs_surface_rad,W,,Derived,,,용기 표면 구간 s,,"4 8,15",계산값,1차,,"Q_rad,s",RCCS-0 열침원 303.15 K와 단순 등가 방사율에 한해 사용. RCCS-1 패널 복사와 동일 용기 면에 이중 적용 금지.,,181
-RCCS-0,RPV 외면 총 방열률,Q_dot_rccs_vessel_loss,W,,Derived,,,스칼라,,"4 8-9,15",계산값,1차,,Q_RPV,면별 복사열 합; 고체 에너지식에서 차감,,182
-RCCS-0,RPV 벽 구간 열용량,C_rpv_wall,J/K,,Parameter,,,용기 고체 구간 s,,"4 7,18",기하·재료 필요,1차,,C_RPV,외부 복사만 적용해도 고체 축열을 풀려면 필요,,183
-RCCS-1,RCCS 패널 벽온도,T_rccs_panel,K,,Differential,,,패널/높이 구간 s,,"4 8,15-16,18",확장 상태,확장,,T_pan,C_pan Ṫ_pan=Q_in−Q_out,,184
-RCCS-1,RCCS 패널 구간 열용량,C_rccs_panel,J/K,,Parameter,,,패널/높이 구간 s,,"4 8,16",설계값 필요,확장,,C_pan,패널 질량·비열,,185
-RCCS-1,RPV–패널 유효 복사 교환계수,F_rccs_exchange_effective,1,,Parameter,,,패널/면별,,4 15-17,설계값 미확보,확장,,F_eff,RPV–패널 형상계수·면별 방사율·면적비를 반영. RCCS-0 등가방사율 0.74 그대로 사용 금지. 다면이면 면별 F_ij의 면적 상반성 확인.,,186
-RCCS-1,RPV/공동에서 패널로 유입되는 열률,Q_dot_rccs_rpv_to_panel,W,,Derived,,,패널/면별,,4 16,모델 확장 필요,확장,,Q_RPV→panel,복사와 공동 대류 귀속 구분,,187
-RCCS-1,용기·패널 사이 공동 공기 온도,T_rccs_cavity_air,K,,Algebraic/Differential,,,공동 셀 i,,"4 8,15-16",공동 모델 미정,확장,,T_cav,"RCCS-1에서 공기를 무체적 혼합노드로 두면 대수, 제어체적 축열을 두면 Differential. 선택한 모델의 공기 질량·에너지 잔차에 맞춤.",,188
-RCCS-1,용기·공동 벽 자연대류계수,h_rccs_cavity,W/(m²·K),,Derived,,,공동 셀 i,,"4 8,16",상관식 미확정,확장,,h_cav,형상·간격·Ra 범위 검증,,189
-RCCS-1,공동 공기→패널 전달열,Q_dot_rccs_cavity_to_panel,W,,Derived,,,구간 s,,4 16,분배 규약 필요,확장,,Q_cav→panel,공동에서 콘크리트로 손실된 열과 구분,,190
-RCCS-1,패널→덕트 공기 전달열,Q_dot_rccs_panel_to_air,W,,Derived,,,공기 셀 i,,4 16,상관식 필요,확장,,"Q_pan→air,i","h_air A(T_pan−T_air), 패널 에너지 수지 연결",,191
-RCCS-1,패널의 기타 열손실,Q_dot_rccs_panel_other,W,,Derived,,,패널 구간 s,,4 16,귀속 협의,확장,,"Q_pan,other","외부/구조체 손실, 필요 시에만 모델링",,192
-RCCS-1,RCCS 흡기→배기 자연순환 공기 유량,m_dot_rccs_duct_air,kg/s,,Algebraic,,,유로/상승관 k,,"4 8,16",설계 데이터 필요,확장,,ṁ_air,부력수두−손실=0에서 구함,,193
-RCCS-1,RCCS 덕트 공기 셀 엔탈피,h_rccs_duct_air,J/kg,,Differential/Algebraic,,,덕트 셀 i,,4 16,모델 선택 필요,확장,," h_air,i","공기 축열 포함 시 미분, 준정상 시 대수",,194
-RCCS-1,외기 흡기 비엔탈피,h_rccs_air_intake,J/kg,,External Input,,,흡기 포트,,"4 8,16",외기 조건 필요,확장,,h_int,T_ambient와 공기 물성식 연결,,195
-RCCS-1,외기 배기 비엔탈피,h_rccs_air_exhaust,J/kg,,Algebraic,,,배기 포트,,"4 8,16",계산값,확장,,h_exh,덕트 공기 에너지잔차 연동,,196
-RCCS-1,덕트 공기가 외기로 방출하는 열률,Q_dot_rccs_air_rejected,W,,Derived,,,스칼라,,"4 8,16",계산값,확장,,Q_air,ṁ_air(h_exh−h_int); 패널 축열 시 Q_RPV와 즉시 일치하지 않음,,197
-RCCS-1,덕트 공기 부력수두,dp_rccs_buoyancy,Pa,,Derived,,,루프별,,"4 8,16",계산값,확장,,Δp_b,g∫(ρ_down−ρ_up)dz,,198
-RCCS-1,덕트 마찰·국부 압력손실,dp_rccs_loss,Pa,,Derived,,,루프별,,"4 8,16",계산값,확장,,Δp_loss,"f,L,D,K,A,ρ,ṁ에 따라 산출",,199
-RCCS-1,공기 덕트 유동 단면적,A_rccs_duct,m²,,Parameter,,,상승관 k,,4 16-17,설계 내형 계산,확장,0.0097346304,A_flow,상승관 1개 내형 40.48×240.48 mm에서 산출한 유로면적. 227개 합계 2.2097611 m²; 헤더·루버 유효단면과 구분. 보완본 p.16.,,200
-RCCS-1,공기 덕트 수력직경,D_h_rccs_duct,m,,Parameter,,,상승관 k,,4 16,설계 내형 계산,확장,0.06930,"D_h,air",상승관 내형 40.48×240.48 mm에서 산출한 수력직경. 보완본 p.16.,,201
-RCCS-1,RCCS 공기덕트 국부손실계수,K_form_rccs_duct,1,,Parameter,,,덕트 구간 k,,4 16-17,설계값 미확보,확장,,K_air,루버·벤드·하강통로·분배 플레넘·배기부마다 K와 기준속도를 구분. NSTF 시험장치 계수를 실기 전체 계통에 동일하게 적용하지 않음.,,202
-RCCS-1,패널→공기 덕트측 대류계수,h_rccs_air,W/(m²·K),,Derived,,,공기 셀 i,,4 16,상관식 미선정,확장,,h_air,"Re,Pr,Nu,입구 효과 검증",,203
-솔버,BDF 시간 적분 차수,q_bdf,정수,,Parameter,,,스칼라,,개요; B 6,범위 제안,1차,1–5,q,DASSL 가변 차수 구현,,204
-솔버,시간 적분 시도 간격,dt_solver,s,,Parameter,,,스칼라,,개요,설정 필요,1차,,Δt,오차 제어 후 자동 조절,config/solver.yaml :: dt,205
-솔버,상대 오차 허용값,rtol,1,,Parameter,,,변수 그룹별,,개요,설정 필요,1차,,rtol,압력·엔탈피·고체온도 스케일별 별도 검증,config/solver.yaml :: rtol,206
-솔버,절대 오차 허용값,atol,상태변수별 단위,,Parameter,,,변수 그룹별,,개요,설정 필요,1차,,atol,"y 상태별 절대허용오차 벡터. p(Pa), h(J/kg), T(K), 무차원 α를 동일 숫자로 일괄 적용하지 않음; 5번 상세 설정 미수신.",config/solver.yaml :: atol,207
-솔버,비선형 뉴턴 수렴 기준,newton_tol,정규화 잔차 기준,,Parameter,,,스칼라/잔차군,,개요; 4 18,설정 필요,1차,,Newton tolerance,"질량(kg/s), 운동량(Pa), 에너지(W), 고체열(W) 잔차를 적절한 스케일로 정규화한 후 수렴 판단; 5번 상세 설정 미수신.",,208
-솔버,운동량 관성항 반영 스위치,delta_inert,bool,,Parameter,,,스칼라,,B 6-7; D 10,기본 제안,1차,false,δ_inert,전 face 관성을 켜면 DAE 지수 변경 문제; 별도 수식 검토,,209
-솔버,유량 역전 스무딩 상대 폭,eps_mdot_rel,1,,Parameter,,,유로별,,"B 5,11; D 14",공동 튜닝 필요,1차,0.0001,ṁ_ε/ṁ_nom,유로별 정격 ṁ에 곱함,,210
-솔버,정체 시 대류 Re 안전 하한,Re_min_safe,1,,Parameter,,,스칼라,,C 8; D 14,제안값,1차/사고,100,Re_min,영유량 대류 계산 보호,,211
-솔버,층류·난류 전환 중심,Re_tr_mid,1,,Parameter,,,스칼라,,C 8; D 14,제안값,1차/사고,3150,"Re_tr,mid",전환 폭과 함께 적용,,212
-솔버,층류·난류 전환 폭,Re_tr_width,1,,Parameter,,,스칼라,,C 8; D 14,튜닝 필요,1차/사고,350,ΔRe_tr,수렴성과 열전달 편향 함께 검사,,213
-솔버,자연대류 영온도차 보호 폭,dT_eps_nc,K,,Parameter,,,스칼라,,C 8; D 14,튜닝 필요,사고,0.1,ΔT_ε,Churchill–Chu 평가에서 ΔT→0 보호,,214
-솔버,벽/벌크 온도비 매끈한 클램프 폭,eps_T_ratio_clamp,1,,Parameter,,,스칼라,,C 8; D 14,튜닝 필요,사고,0.01,ε_T,냉각부 온도비 보정 적용,,215
-솔버,강제·자연대류 smooth-max 지수,m_smooth_max,1,,Parameter,,,스칼라,,"C 8,16; D 14",민감도 필요,사고,6,m,대안 10; 교차점 양의 편향 검토,,216
-솔버,순환기 정체 정규화 폭,v_eps_circ,1,,Parameter,,,스칼라,,"D 3,14",제안값,1차,0.0001,v_ε,체적유량 무차원화에서 사용,,217
-솔버,순환기 영회전 정규화 폭,alpha_eps_circ,1,,Parameter,,,스칼라,,"D 4,14",제안값,1차,0.001,α_ε,회전수 정체 시 연속성,,218
-솔버,순환기 트립 신호 전환시간,dt_circ_trip,s,,Parameter,,,스칼라,,"D 4,14",예비값,사고,0.1,Δt_trip,계단 불연속 완화,,219
-솔버,체크밸브 개폐 스무딩 차압,dp_eps_valve,Pa,,Parameter,,,스칼라,,"D 7,14",제안값,사고,50,Δp_ε,valve_dp_crack_pa와 비율 유지,,220
-솔버,체크밸브 닫힘 개도 하한,alpha_min_valve,1,,Parameter,,,스칼라,,"D 7,14",제안값,사고,0.0001,α_min,누설/계통 폐루프 정의 시 반영,,221
-솔버,임계·아음속 방출 전환 폭,eps_r_break,1,,Parameter,,,스칼라,,D 14-15,제안값,확장,0.001,ε_r,DCC 파단 모델 전용,,222
-솔버,파단 배압 역전 전환 폭,eps_Pi_break,1,,Parameter,,,스칼라,,D 14-15,제안값,확장,0.0001,ε_Π,DCC 파단 모델 전용,,223
-SG,증기발생기 헬륨 입구 벌크온도,T_sg_he_inlet,K,,Derived,,,SG 입구 포트,,"4 2,4",정격 검산값,1차,958.15,"T_He,in",기존 SG 단독 검산 958.15 K(685°C). 보완본 원 설계의 약 685.6°C=958.75 K와 구분하고 경계 운전점을 대조.,,224
-유체 FVM,공통 Darcy 마찰상관식 선택,mode_friction,범주,,Parameter,,,유로별 또는 공통,,C 2; D 1,기본안 제안,1차,churchill,friction_mode,노심 자료의 Swamee–Jain 예비안과 통일 검증. 정격·저유량·역류 적용성 확인.,,225
-유체 FVM,공통 헬륨 대류 Nusselt 상관식 선택,mode_nu,범주,,Parameter,,,유로별 또는 공통,,C 3,기본안 제안,1차,mceligot,nu_mode,"난류 McEligot, 층류/자연대류 혼합 방식 및 기하별 적용범위 명시.",,226
-유체 FVM,자연대류 기여의 사용 여부,include_nc,bool,,Parameter,,,유로별,,"C 3,6",민감도 옵션,1차/확장,1,include_nc,P-LOFC에서 include_nc=False 민감도 비교. 적용할 유로/관내 Churchill–Chu 가정 점검.,,227
-병렬·배관,우회유로 모델 선택,mode_bypass,범주,,Parameter,,,스칼라,,"C 4,6",기본안 제안,1차,calibrated_parallel,bypass_mode,"초기화 시 11% 보정, 과도에서는 두 병렬경로의 운동량/질량 잔차로 우회량 계산.",,228
-플레넘,상·하부 플레넘의 열수력 모델 선택,mode_plenum,범주,,Parameter,,,스칼라,,D 4.2,기본안 제안,1차,finite_volume,plenum_mode,유한체적 플레넘에서 각각 질량·에너지 보존 잔차; 무체적 분기와 state 수가 다름.,,229
-순환기,순환기 정지 후 감속 모델 선택,mode_coastdown,범주,,Parameter,,,스칼라,,D 2.2,기본안 제안,1차,inertia_ode,coastdown_mode,속도비 α의 Differential 잔차와 정지 시 지정 프로파일을 동시에 적용하지 않음.,,230
-밸브,밸브 형식 및 동작 논리,type_valve,범주,,Parameter,,,밸브별,,D 3.1,형식별 결정 필요,1차/확장,,valve_type,체크·격리/제어·안전방출 밸브를 구별. 안전방출 설정압력과 일반 체크밸브 crack 차압 혼용 금지.,,231
-밸브,밸브 개도별 압력손실 모델 선택,mode_valve_loss,범주,,Parameter,,,밸브별,,D 3.2,기본안 제안,1차,relap_orifice,valve_loss_mode,"제조사 Cv 곡선 대안과 구분; 개도/누설 하한, 정·역류 방향성 및 반복 손실 적용 확인.",,232
-전역,열 포트 온도,T_thermal_port,K,,Algebraic,,,포트별,,GitHub interfaces/ports.py,기존 코드 인터페이스,1차,,ThermalPort.T,포트별 고체/유체 온도의 별칭. 독립 온도 상태의 중복 등록 금지.,interfaces/ports.py :: ThermalPort.T,233
-전역,상태변수별 오차 정규화 척도,s_y,상태변수별 단위,,Parameter,,,상태별,,GitHub interfaces/state_registry.py,기존 코드 인터페이스,1차,,scale,StateRegistry.register(scale=...). 물리량 값이 아니라 솔버 스케일.,interfaces/state_registry.py :: StateRegistry.register(scale),234
-전역,잔차별 정규화 척도,s_R,잔차별 단위,,Parameter,,,잔차별,,GitHub main.py; docs/interface_spec.md,기존 코드 인터페이스,1차,,residual_scale,residual_scale 전달. 물리 방정식의 잔차 계산과 분리한다.,main.py :: DASSL(residual_scale),235
-헬륨 물성,헬륨 밀도 상태방정식 선택,mode_he_eos,범주,,Parameter,,,스칼라,,A p.4-5,팀 조사자료 보완,1차,,eos_mode,벤치마크 KTA와 이상기체 비교 옵션. 코드에서 명시적 선택 필요.,,236
-노심·열전달,고체 인접 노드 간 전도 열률,Q_dot_solid_cond,W,,Derived,,,격자 접속면별,,3 p.6-11; 4 p.7,팀 조사자료 보완,1차,,"Q_cond,ij",고체 에너지식의 인접 격자 전도항. 총 벽면 대류열과 별도.,,237
-노심·열전달,고체 격자 사이 열저항,R_solid_cond,K/W,,Derived,,,격자 접속면별,,3 p.6-11; 4 p.7,팀 조사자료 보완,1차,,"R_cond,ij",형상과 방향별 열전도율에서 계산.,,238
-노심·열전달,노심 총열수지 검산 잔차,R_core_heat_balance,W,,Derived,,,스칼라,,3 p.16,팀 조사자료 보완,1차,,core heat-balance residual,고체 발열과 헬륨 열취득·용기 방열 비교용. 유체 셀 잔차와 별개.,,239
-유체 공통,유체 셀 벌크 유속,u_fluid_cell,m/s,,Derived,,,셀별,,B p.5; C p.3,팀 조사자료 보완,1차,,u,m_dot/(rho*A). 부력·Re·관성 계산에 사용.,,240
-유체 공통,유체 셀 벽면 열유속 경계값,q2_fluid_wall,W/m²,,External Input,,,벽면·셀별,,B p.8,선택 경계조건,1차/확장,,q_w″,벽온도 지정 대신 열유속을 지정하는 모델에서만 사용. Q_dot_wall=A*q2로 환산.,,241
-노심 우회,등가 우회유로 헬륨 유량,m_dot_core_bypass,kg/s,,Algebraic,,,우회유로별,,C p.9-11,팀 조사자료 보완,1차,,m_dot_byp,정상 11% 분율 보정 후 과도에서는 플레넘 압력차로 해석.,,242
-노심 기하,노심 축방향 유체 셀 수,N_core_axial,정수,,Parameter,,,스칼라,,GitHub config/geometry.yaml,기존 코드 설정,1차,,core.axial_cells,core.axial_cells. 팀 1번 기하 확정 전 null.,config/geometry.yaml :: core.axial_cells,243
-노심 기하,노심 냉각 유로 총 길이,L_core_channel,m,,Parameter,,,유로별,,GitHub config/geometry.yaml; C p.13,기존 코드 설정,1차,,core.channel_length_m,core.channel_length_m. 각 셀 길이의 합과 일치해야 함.,config/geometry.yaml :: core.channel_length_m,244
-유체 공통,셀/면 기준 높이 프로필,z_fluid_cell,m,,Parameter,,,셀/면별,,GitHub config/geometry.yaml; B p.5,기존 코드 설정,1차,,core.elevation_profile_m,"core.elevation_profile_m. 높이 위쪽 양, dz 및 theta와 정합.",config/geometry.yaml :: core.elevation_profile_m,245
-순환기,정격 대비 순환기 체적유량비,v_circ_flow_ratio,1,,Derived,,,스칼라,,D p.3-4,팀 조사자료 보완,1차,,v,v=V_dot/V_dot_R. 2차 성능곡선의 독립 축.,,246
-순환기,순환기 유로 기준 단면적,A_circ_flow,m²,,Parameter,,,스칼라,,D p.4,팀 조사자료 보완,1차,,A_circ,Locked-rotor 손실계수 K_lr와 m_dot^2 저항의 환산에 사용.,,247
-순환기,순환기 정지 회전자 등가 손실계수,K_circ_locked_rotor,1,,Derived,,,스칼라,,D p.4,팀 조사자료 보완,1차,,K_lr,"c2, 정격양정·밀도·유량·A_circ로 계산; 별도 자유 보정값으로 중복 사용하지 않음.",,248
-순환기,순환기 초기 각속도,omega_circ_initial,rad/s,,External Input,,,스칼라,,GitHub config/operation.yaml,기존 코드 설정,1차,,compressor.initial_rotation_rate_rad_s,compressor.initial_rotation_rate_rad_s. 기존 alpha_circ(0) 계산에 사용.,config/operation.yaml :: compressor.initial_rotation_rate_rad_s,249
-순환기,순환기 정격 각속도,omega_circ_rated,rad/s,,Parameter,,,스칼라,,D p.3-4; GitHub config/operation.yaml,정의 필요,1차,,omega_R,"alpha_circ=omega/omega_R. 값 미확정, 초기 각속도를 alpha로 바꾸는 기준.",,250
-배관,동축덕트 단열 모델 사용 여부,enabled_duct_adiabatic,bool,,Parameter,,,덕트별,,D p.9,팀 조사자료 보완,1차/확장,,adiabatic_duct,기본안은 단열; 장기 열손실 민감도에서는 벽 열저항 모델 활성화.,,251
-SG,SG-0 헬륨측 에너지 잔차,R_sg_energy,W,,Algebraic,,,SG별,,"4 p.3,12",팀 조사자료 보완,1차,,R_E,m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지.,,252
-SG,SG-0 헬륨측 압력 잔차,R_sg_pressure,Pa,,Algebraic,,,SG별,,"4 p.3,12",팀 조사자료 보완,1차,,R_P,p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지.,,253
-SG,SG 축방향 분할 셀 수,N_sg_axial,정수,,Parameter,,,스칼라,,GitHub config/geometry.yaml,기존 코드 설정,확장,,heat_exchanger.axial_cells,heat_exchanger.axial_cells. SG-0에서는 사용하지 않음.,config/geometry.yaml :: heat_exchanger.axial_cells,254
-SG,SG 헬륨에서 관벽으로 전달하는 열률,Q_dot_sg_he_to_wall,W,,Derived,,,구간별,,4 p.12,SG-1/2 조건부,확장,,Q_He_to_wall,벽 축열 모델의 헬륨측 열유입.,,255
-SG,SG 관벽에서 물·증기로 전달하는 열률,Q_dot_sg_wall_to_water,W,,Derived,,,구간별,,4 p.12,SG-1/2 조건부,확장,,Q_wall_to_water,관벽 축열은 C_wall*Tdot=Q_He_to_wall-Q_wall_to_water.,,256
-SG,SG 관벽 전도 열저항,R_sg_wall,K/W,,Parameter,,,구간별,,4 p.8,SG-1/2 조건부,확장,,R_wall,"SG-2 원통형 관벽 전도저항을 각 재질·온도에서 평가. 외측 A_o, 내측 A_i와 동일 면적으로 처리하지 않음.",,257
-SG,SG 오염층 열저항,R_sg_fouling,K/W,,Parameter,,,구간별,,4 p.8,SG-1/2 조건부,확장,,R_foul,오염층 자료 없으면 임의 수치 금지.,,258
-SCS,SCS 냉각수 입구 비엔탈피,h_scs_w_inlet,J/kg,,Derived,,,접속 포트별,,4 p.14,SCS 조건부,확장,,"h_w,in","T_scs_w_inlet, p_scs_w_inlet에서 물성식으로 산출. 수측 열수지에 필요.",,259
-SCS,SCS 헬륨측 열용량유량,C_scs_he,W/K,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,C_He,m_dot_scs_he*c_p_he. 0D 유효도-NTU 모델 선택 시 계산.,,260
-SCS,SCS 냉각수측 열용량유량,C_scs_w,W/K,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,C_w,m_dot_scs_w*c_p_water. 냉각수 비열 공급원이 필요.,,261
-SCS,SCS 양측 최소 열용량유량,C_min_scs,W/K,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,C_min,"min(C_scs_he,C_scs_w).",,262
-SCS,SCS 전달단위수,NTU_scs,1,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,NTU,UA_scs/C_min_scs; C_min=0이면 분할 계산하지 않음.,,263
-SCS,SCS 열교환기 유효도,epsilon_scs_effectiveness,1,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,epsilon,유로형식과 NTU를 정한 뒤 상관식 선정.,,264
-SCS,SCS 헬륨측 열수지 잔차,R_scs_energy_he,W,,Algebraic,,,SCS별,,4 p.14,SCS 조건부,확장,,"R_He,SCS","m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed.",,265
-SCS,SCS 냉각수측 열수지 잔차,R_scs_energy_w,W,,Algebraic,,,SCS별,,4 p.14,SCS 조건부,확장,,"R_w,SCS","m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed.",,266
-RCCS,RPV 고체 벽 내부 온도,T_rpv_wall,K,,Differential,,,벽 구간별,,"4 p.7,16",RCCS-1 조건부,확장,,"T_v,i",외면 온도 T_rpv_surface와 별도 노드로 둘 경우에만 등록; 단일 벽 노드면 별칭.,,267
-RCCS,공동 공기에서 콘크리트로 전달되는 열률,Q_dot_rccs_cavity_to_concrete,W,,Derived,,,구간별,,4 p.15-16,RCCS-1 조건부,확장,,Q_cav_to_concrete,공동 열유출의 패널 회수분과 분리해 보존식 구성.,,268
-RCCS,RCCS 덕트 공기 밀도,rho_rccs_duct_air,kg/m³,,Derived,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,rho_air,"공기 EOS와 p,T에서 산출. 헬륨 rho_he와 별도.",,269
-RCCS,RCCS 하강 공기 밀도,rho_rccs_air_down,kg/m³,,Derived,,,높이 구간별,,4 p.16,RCCS-1 조건부,확장,,rho_down,부력 적분 g∫(rho_down-rho_up)dz의 하강 경로.,,270
-RCCS,RCCS 상승 공기 밀도,rho_rccs_air_up,kg/m³,,Derived,,,높이 구간별,,4 p.16,RCCS-1 조건부,확장,,rho_up,부력 적분의 상승 경로; 해당 덕트 셀 밀도와 동치면 별칭.,,271
-RCCS,RCCS 덕트 공기 벌크 온도,T_rccs_duct_air,K,,Derived,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,"T_air,j",h_rccs_duct_air와 공기 물성식에서 환산.,,272
-RCCS,RCCS 덕트 공기 정압,p_rccs_duct_air,Pa,,Algebraic,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,"p_air,j",1D 운동량식 압력상태를 푸는 모델을 택할 때만 독립 등록.,,273
-RCCS,RCCS 덕트 공기 셀 체적,V_rccs_duct_cell,m³,,Parameter,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,"V_air,j",공기 셀 축열 rho*V*dh/dt 선택 시 필요.,,274
-RCCS,RCCS 덕트 마찰 길이,L_rccs_duct,m,,Parameter,,,유로별,,4 p.16,RCCS-1 조건부,확장,,L_air,보완본 p.20의 13.86 m는 기존 보고서 참조 가열길이로 조건부 계산에 사용. 실기 전체 유로 길이로 확정하지 않음.,,275
-RCCS,RCCS 병렬 상승관 수,N_rccs_riser,정수,,Parameter,,,스칼라,,4 p.16-17,설계 문서값,확장,227,N_riser,GA-MHTGR 공랭식 RCCS 상승관 227개. 기존 표의 미확정 표시를 보완본 p.16의 설계값으로 갱신. 각 관 유량 분배는 별도 모델.,,276
-RCCS,RCCS 공기 자연순환 압력 잔차,R_rccs_flow,Pa,,Algebraic,,,루프별,,4 p.16,RCCS-1 조건부,확장,,R_flow,dp_rccs_buoyancy-dp_rccs_loss=0.,,277
-사고,파단 방출의 임계유동 판정값,is_break_choked,bool,,Derived,,,파단별,,D p.15,DCC 조건부,확장,,is_choked,"임계/아음속 방출 모델의 결과, 질량 방출량과 구분.",,278
-솔버,시간적분기 선택,mode_solver,범주,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,method,현재 DASSL(코드 구현의 가변 BDF); 원자로 물리 모형과 별도.,config/solver.yaml :: method,279
-솔버,BDF 허용 최대 차수,q_bdf_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_order,max_order=5. 기존 q_bdf는 매 스텝 실제 차수이므로 구분.,config/solver.yaml :: max_order,280
-솔버,솔버 최소 시간간격,dt_solver_min,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,min_step,min_step. 현재 데모 설정은 0.0이며 원자로 운전 입력값으로 오인 금지.,config/solver.yaml :: min_step,281
-솔버,솔버 최대 시간간격,dt_solver_max,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_step,max_step. 현재 데모 설정은 0.5 s.,config/solver.yaml :: max_step,282
-솔버,최대 허용 시간스텝 수,N_solver_steps_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_steps,max_steps.,config/solver.yaml :: max_steps,283
-솔버,스텝 거부 후 최대 재시도 횟수,N_solver_retries_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_retries,max_retries.,config/solver.yaml :: max_retries,284
-솔버,뉴턴 반복 최대 횟수,N_newton_iter_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,newton_max_iter,newton_max_iter.,config/solver.yaml :: newton_max_iter,285
-솔버,뉴턴 절대 수렴 허용값,atol_newton,정규화 잔차 기준,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,newton_atol,newton_atol. 기존 newton_tol은 대표적 개념이며 실제 구현에는 두 허용값이 따로 있음.,config/solver.yaml :: newton_atol,286
-솔버,뉴턴 상대 수렴 허용값,rtol_newton,1,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,newton_rtol,newton_rtol. solver rtol과 별도.,config/solver.yaml :: newton_rtol,287
-솔버,시뮬레이션 시작 시간,t_solver_start,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,t_start,t_start. 시나리오에 맞춰 결정.,config/solver.yaml :: t_start,288
-솔버,시뮬레이션 종료 시간,t_solver_end,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,t_end,t_end. 현재 데모의 5.0 s를 HTGR 시나리오로 재사용하지 않음.,config/solver.yaml :: t_end,289
-SG,원 설계 SG 정격 열부하,Q_dot_sg_design_ref,W,,Parameter,,,SG별,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계 정격,SG-2 조건부,352100000,,원 설계 352.1 MW(t). 기존 Q_dot_sg_removed의 352.193 MW 검산값과 다른 근거·정밀도.,,
-SG,연속 전열관 개수,N_sg_tubes,정수,,Parameter,,,SG,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계값,SG-2 조건부,439,,DOE-HTGR-86-129 Rev.1/HFD-42102 Rev.2 관수. 이전 개념설계 350회로와 혼합 금지.,,
-SG,SG 전열관 외경,D_sg_tube_outer,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계값,SG-2 조건부,0.022225,,He 관군 Re·Nu와 외면적 기준.,,
-SG,SG 전열관 벽 두께,t_sg_tube_wall,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계값,SG-2 조건부,0.003302,,0.130 in의 SI 환산; 내경·벽 체적 계산.,,
-SG,SG 전열관 내경,D_sg_tube_inner,m,,Derived,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.4,기하 계산값,SG-2 조건부,0.015621,,D_o−2t. 물·증기 질량유속과 손실 계산.,,
-SG,SG 전열관 유효 길이 합계,L_sg_tube_effective,m,,Parameter,,,관별,,"MHTGR-350 SG/RCCS 보완본[4] p.4,6",원 설계 환산값,SG-2 조건부,131.363,,FSH 13.308 m와 EES 118.055 m의 합.,,
-SG,FSH 전열관 유효 길이,L_sg_tube_fsh,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계 환산값,SG-2 조건부,13.308,,FSH 면적·벽 축열 배분.,,
-SG,EES 전열관 유효 길이,L_sg_tube_ees,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계 환산값,SG-2 조건부,118.055,,EES 면적·벽 축열 배분.,,
-SG,SG 관군 횡방향 피치,S_sg_tube_transverse,m,,Parameter,,,관군별,,"MHTGR-350 SG/RCCS 보완본[4] p.4,9",원 설계 환산값,SG-2 조건부,0.038100,,관군 배열과 최소 자유유로 계산에 사용.,,
-SG,SG 관군 종방향 피치,S_sg_tube_longitudinal,m,,Parameter,,,관군별,,"MHTGR-350 SG/RCCS 보완본[4] p.4,9",원 설계 환산값,SG-2 조건부,0.035331,,관군 배열과 열별 위치에 사용.,,
-SG,SG 설계 전열관 총 외면적,A_sg_tube_outer_total,m²,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.4,6",원 설계값,SG-2 조건부,4026.539,,FSH와 EES 외면적 합. 원 표 자체가 외면이라는 용어는 명시하지 않으며 πD_oNL로 대조.,,
-SG,FSH 설계 전열관 외면적,A_sg_tube_outer_fsh,m²,,Parameter,,,FSH,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계값,SG-2 조건부,407.882,,FSH 구간 합산 기준.,,
-SG,EES 설계 전열관 외면적,A_sg_tube_outer_ees,m²,,Parameter,,,EES,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계값,SG-2 조건부,3618.658,,EES 구간 합산 기준.,,
-SG,SG 계산 전열관 총 내면적,A_sg_tube_inner_total,m²,,Derived,,,SG,,MHTGR-350 SG/RCCS 보완본[4] p.6,기하 계산값,SG-2 조건부,2830.06,,D_i/D_o 비로 계산한 근사값. 실제 셀 내면적은 해당 구간 길이에서 계산.,,
-SG,SG 전열관 벽 총체적,V_sg_tube_wall_total,m³,,Derived,,,SG,,MHTGR-350 SG/RCCS 보완본[4] p.6,기하 계산값,SG-2 조건부,11.32,,439개 유효관 기하에서 산출한 근사값. 재질별 열용량 배분에 사용.,,
-SG,SG 구간별 관 재질,material_sg_tube,범주,,Parameter,,,EES/FSH,,"MHTGR-350 SG/RCCS 보완본[4] p.3,4,6",원 설계값,SG-2 조건부,EES: 2¼Cr–1Mo; FSH: Alloy 800H,,이종금속 용접 경계는 고정. 예열·비등·과열 상경계는 이동.,,
-SG,SG 헬륨 관군 최소 자유유로면적,A_min_sg_he,m²,,Parameter,,,높이별,,"MHTGR-350 SG/RCCS 보완본[4] p.9,24",상세 도면 필요,SG-2 조건부,,,"피치·슈라우드 치수만으로 단정 불가. He G_max, Re와 열전달계수에 필요.",,
-SG,SG He 관군 최소 단면 질량유속,G_max_sg_he,kg/(m²·s),,Derived,,,높이별,,"MHTGR-350 SG/RCCS 보완본[4] p.9,14",유로 확정 필요,SG-2 조건부,,,He 유량/A_min. 우회유량 및 관군 배열 확인 후 산출.,,
-SG,SG He 관군 외측 열전달 상관식,mode_sg_he_crossflow,범주,,Parameter,,,SG별,,MHTGR-350 SG/RCCS 보완본[4] p.9,보완본 기준안,SG-2 조건부,Zukauskas,,직선 관군 횡류의 1차 근사. 저유량·정체·역류와 실제 나선관 효과는 별도 검토.,,
-SG,SG He 횡류 유효 열 수,N_sg_crossflow_rows,정수,,Parameter,,,관군별,,MHTGR-350 SG/RCCS 보완본[4] p.9,유효열 확인 필요,SG-2 조건부,,,설계 참고 28 반경방향 열과 상관식 F_N의 유동 방향 유효 열을 동일시하지 않음.,,
-SG,SG 관벽 바깥 반벽 온도,T_sg_wall_outer,K,,Differential,,,구간 a×셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,6",SG-2 상태 제안,SG-2 조건부,,,He 대류와 관벽 반경방향 전도에 연결. 기존 T_sg_wall과 중복 상태 등록 금지.,,
-SG,SG 관벽 안쪽 반벽 온도,T_sg_wall_inner,K,,Differential,,,구간 a×셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,6",SG-2 상태 제안,SG-2 조건부,,,물·증기 대류/비등과 관벽 전도에 연결.,,
-SG,SG 관벽 재질별 밀도,rho_sg_tube_wall,kg/m³,,Parameter,,,EES/FSH×셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.7,온도표 입력 필요,SG-2 조건부,,,"EES는 JAERI 온도표, FSH는 VDM 20°C 값과 열팽창 검토. 표점 범위 밖 외삽 금지.",,
-SG,SG 관벽 재질별 비열,c_p_sg_tube_wall,J/(kg·K),,Parameter,,,EES/FSH×셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.7,온도표 입력 필요,SG-2 조건부,,,재질별 원자료 온도표를 보간. 반벽 열용량에 사용.,,
-SG,SG 관벽 재질별 열전도율,k_sg_tube_wall,W/(m·K),,Parameter,,,EES/FSH×셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.7,온도표 입력 필요,SG-2 조건부,,,재질별 원자료 온도표를 보간. 원통형 전도저항에 사용.,,
-SG,SG 관벽 안팎 반벽 전도열률,Q_dot_sg_wall_cond,W,,Derived,,,구간 a×셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,6",SG-2 조건부,SG-2 조건부,,,외면 대류·내면 대류와 함께 각 반벽 축열을 일관되게 계산.,,
-SG,SG 관내 물·증기 셀 비엔탈피,h_sg_water_cell,J/kg,,Differential,,,셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,8,10",SG-2 상태 제안,SG-2 조건부,,,"p,h로 단상/포화 2상/과열증기 상을 판정. BOP 급수·증기 경계와 구분.",,
-SG,SG 관내 물·증기 셀 압력,p_sg_water_cell,Pa,,Algebraic,,,셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,8,10",SG-2 상태 제안,SG-2 조건부,,,포화 물성과 국소 마찰·중력·가속 손실에 사용.,,
-SG,SG 관내 물·증기 면 유량,m_dot_sg_water_face,kg/s,,Algebraic,,,face j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,10",SG-2 상태 제안,SG-2 조건부,,,439개 병렬 관의 유량 분배와 경계 포트 정의 필요.,,
-SG,SG 관내 물·증기 국소 밀도,rho_sg_water_cell,kg/m³,,Derived,,,셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.8,IF97 물성,SG-2 조건부,,,"상에 따라 p,h 또는 p,x로 평가. 축적항·손실에 사용.",,
-SG,SG 관내 물·증기 국소 내부에너지,u_sg_water_cell,J/kg,,Derived,,,셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,8",IF97 물성,SG-2 조건부,,,포화 2상 에너지 저장항에 사용.,,
-SG,SG 관내 물·증기 질량유속,G_sg_water,kg/(m²·s),,Derived,,,구간/face j,,"MHTGR-350 SG/RCCS 보완본[4] p.10,11",기하·유량 계산,SG-2 조건부,,,439관의 실제 내면 단면으로 계산. 단상·비등·압력손실 상관식 입력.,,
-SG,SG 물·증기 단상 열전달 상관식,mode_sg_water_single_phase,범주,,Parameter,,,구간별,,"MHTGR-350 SG/RCCS 보완본[4] p.10,14",보완본 기준안,SG-2 조건부,Dittus–Boelter,,매끈한 완전발달 난류 기준. Re·Pr와 나선관 곡률 적용 범위 검사.,,
-SG,SG 습윤벽 포화비등 상관식,mode_sg_water_boiling,범주,,Parameter,,,비등 구간,,"MHTGR-350 SG/RCCS 보완본[4] p.11,14",보완본 예비 기준,SG-2 조건부,Kandlikar,,"두 분기 중 큰 값. 0<x≤0.8, 고압 나선관 검증 전. CHF·건조 이후 별도 모델.",,
-SG,SG 관내 비등 열유속,q2_sg_water_boiling,W/m²,,Algebraic,,,비등 셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.11,12",SG-2 조건부,SG-2 조건부,,,Kandlikar Bo와 관벽 열수지에 동시에 들어가므로 대수적으로 수렴.,,
-SG,SG 2상 차압 모델,mode_sg_water_two_phase_dp,범주,,Parameter,,,비등 구간,,"MHTGR-350 SG/RCCS 보완본[4] p.13,14",예비 근사,SG-2 조건부,HEM,,곡관 곡률·상간속도차를 무시하는 준정상 근사. 검증 전.,,
-SG,SG He 관군 마찰차압 정격 기준,dp_sg_he_tube_bank_fric_ref,Pa,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.13,23",원 설계값,SG-2 조건부,9651,,FSH 1329 Pa + EES 8321 Pa. 전체 SG 양단 25500 Pa와 압력탭 경계 다름.,,
-SG,SG 2차 관군 마찰차압 정격 기준,dp_sg_water_tube_fric_ref,Pa,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.13,23",원 설계 환산값,SG-2 조건부,946000,,FSH 약 0.360 MPa + EES 약 0.586 MPa. 입출구 전체 약 3.36 MPa와 구분.,,
-SG,SG 2차측 전체 양단 차압 정격 기준,dp_sg_water_total_ref,Pa,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.13,23",원 설계 근사,SG-2 조건부,3360000,,약 3.36 MPa. 20.70→17.34 MPa(a) 경계의 오리피스·헤더·가속·고도 손실 포함.,,
-SG,SG 급수관 입구 직렬 오리피스 개수,N_sg_feedwater_orifices_series,정수,,Parameter,,,급수관별,,MHTGR-350 SG/RCCS 보완본[4] p.13,원 설계 제안,SG-2 조건부,20,,각 급수관 입구의 직렬 배열 방안. 개별 K는 원문 미제시.,,
-SG,SG 급수관 입구 오리피스 직경,D_sg_feedwater_orifice,m,,Parameter,,,오리피스별,,MHTGR-350 SG/RCCS 보완본[4] p.13,원 설계 제안,SG-2 조건부,0.0065,,20개 직렬 입구 오리피스 방안. K를 역산해 임의 확정하지 않음.,,
-RCCS-1,RCCS 상승관 외형 짧은 변,w_rccs_riser_outer,m,,Parameter,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,0.050,,사각형 외형. 유로 내형은 벽 두께 차감.,,
-RCCS-1,RCCS 상승관 외형 긴 변,b_rccs_riser_outer,m,,Parameter,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,0.250,,사각형 외형. 유로 내형과 구분.,,
-RCCS-1,RCCS 상승관 벽 두께,t_rccs_riser_wall,m,,Parameter,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,0.00476,,양쪽 벽을 차감한 내형 40.48×240.48 mm.,,
-RCCS-1,RCCS 상승관 내형 짧은 변,w_rccs_riser_inner,m,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 기하 계산,RCCS-1 조건부,0.04048,,외형 50 mm에서 양쪽 벽 두께를 차감.,,
-RCCS-1,RCCS 상승관 내형 긴 변,b_rccs_riser_inner,m,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 기하 계산,RCCS-1 조건부,0.24048,,외형 250 mm에서 양쪽 벽 두께를 차감.,,
-RCCS-1,RCCS 상승관 227개 병렬 총 유로면적,A_rccs_risers_total,m²,,Derived,,,상승관 전체,,"MHTGR-350 SG/RCCS 보완본[4] p.16,21",실기 기하 계산,RCCS-1 조건부,2.20976,,각 관 내면적 0.0097346304 m² × 227. 헤더·루버 유효면적과 구분.,,
-RCCS-1,RCCS 하강통로 판간 간격,gap_rccs_downcomer,m,,Parameter,,,하강통로,,"MHTGR-350 SG/RCCS 보완본[4] p.16,21",실기 설계값,RCCS-1 조건부,0.250,,통로 전체 폭·분기 길이·조도는 별도 입력 필요.,,
-RCCS-1,RCCS 외기 흡입·배기 포트 개수,N_rccs_air_ports,정수,,Parameter,,,흡기/배기 각각,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,4,,2개 입출구 구조물에 배치. 실제 유로와 손실계수 연결.,,
-RCCS-1,RCCS 정상운전 설계 평가 열제거량,Q_dot_rccs_design_normal_ref,W,,Parameter,,,정상운전,,MHTGR-350 SG/RCCS 보완본[4] p.16,설계 평가 참고값,RCCS-1 조건부,718000,,시간불변 열제거 경계가 아닌 정상운전 검산 기준.,,
-RCCS-1,RCCS 가압 전도냉각·제어봉 인출 설계 평가 열제거량,Q_dot_rccs_design_pcc_ref,W,,Parameter,,,가압 전도냉각·제어봉 인출,,MHTGR-350 SG/RCCS 보완본[4] p.16,설계 평가 참고값,RCCS-1 조건부,1750000,,시간불변 열제거 경계가 아닌 해당 사고 검산 기준.,,
-RCCS-1,RCCS 감압 전도냉각·소규모 누설 설계 평가 열제거량,Q_dot_rccs_design_dcc_ref,W,,Parameter,,,감압 전도냉각·소규모 누설,,MHTGR-350 SG/RCCS 보완본[4] p.16,설계 평가 참고값,RCCS-1 조건부,1500000,,시간불변 열제거 경계가 아닌 해당 사고 검산 기준.,,
-RCCS,RPV 벽 열전도율,k_rpv_wall,W/(m·K),,Parameter,,,RPV 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,40,,SA-533 Gr.B 물성. 실기 재질 온도 의존성은 추가 확인.,,
-RCCS,RPV 벽 밀도,rho_rpv_wall,kg/m³,,Parameter,,,RPV 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,7500,,RPV 열용량 계산용.,,
-RCCS,RPV 벽 비열,c_p_rpv_wall,J/(kg·K),,Parameter,,,RPV 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,580,,RPV 열용량 계산용.,,
-RCCS,노심 배럴 열전도율,k_core_barrel,W/(m·K),,Parameter,,,배럴 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,17.8,,원자로 배럴 전도·축열.,,
-RCCS,노심 배럴 밀도,rho_core_barrel,kg/m³,,Parameter,,,배럴 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,7800,,원자로 배럴 열용량 계산용.,,
-RCCS,노심 배럴 비열,c_p_core_barrel,J/(kg·K),,Parameter,,,배럴 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,515,,원자로 배럴 열용량 계산용.,,
-RCCS-1,RCCS 패널 열전도율,k_rccs_panel,W/(m·K),,Parameter,,,패널 셀별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",대체 물성표 필요,RCCS-1 조건부,,,IAEA 탄소강 표점은 실기 강종 확정 전 대체값. 보간 범위 밖 외삽 금지.,,
-RCCS-1,RCCS 패널 밀도,rho_rccs_panel,kg/m³,,Parameter,,,패널 셀별,,MHTGR-350 SG/RCCS 보완본[4] p.17,실기 강종 미확정,RCCS-1 조건부,,,IAEA 대체 비열 계산의 임시 밀도 7850 kg/m³를 실기값으로 확정하지 않음.,,
-RCCS-1,RCCS 패널 비열,c_p_rccs_panel,J/(kg·K),,Parameter,,,패널 셀별,,MHTGR-350 SG/RCCS 보완본[4] p.17,대체 물성표 필요,RCCS-1 조건부,,,IAEA 열확산율과 k에서 rho cp=k/alpha로 도출한 비열은 대체값.,,
-RCCS-1,RPV 외면 방사율,epsilon_rpv_surface,1,,Parameter,,,면별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",표면 상태 필요,RCCS-1 조건부,,,RCCS-0 등가방사율 0.74와 분리.,,
-RCCS-1,RCCS 패널 표면 방사율,epsilon_rccs_panel_surface,1,,Parameter,,,면별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",표면 상태 필요,RCCS-1 조건부,,,RPV 면별 방사율·형상계수와 회색면 복사 계산.,,
-RCCS-1,RPV·패널·라이너 간 형상계수,F_rccs_view,1,,Parameter,,,면 i×j,,MHTGR-350 SG/RCCS 보완본[4] p.18,형상 필요,RCCS-1 조건부,,,다면 복사 시 A_iF_ij=A_jF_ji 확인.,,
-RCCS-1,RCCS 공동 공기 자연대류 Rayleigh 수,Ra_rccs_cavity,1,,Derived,,,공동/면별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",상관식 입력,RCCS-1 조건부,,,RPV·패널 벽면과 벌크 공기 사이 막온도에서 물성 평가.,,
-RCCS-1,RCCS 공동 공기 자연대류 Nusselt 수,Nu_rccs_cavity,1,,Derived,,,공동/면별,,MHTGR-350 SG/RCCS 보완본[4] p.18,Churchill–Chu 기준,RCCS-1 조건부,,,수직 자유판 근사. 좁은 공동·구속 영향 검토.,,
-RCCS-1,RPV에서 공동 공기로의 대류열률,Q_dot_rccs_rpv_to_cavity,W,,Derived,,,RPV 면별,,"MHTGR-350 SG/RCCS 보완본[4] p.15,18",RCCS-1 조건부,RCCS-1 조건부,,,RPV→패널 직접 복사와 분리해 용기·공동 에너지수지에 연결.,,
-RCCS-1,RCCS 상승관 공기 Reynolds 수,Re_rccs_duct_air,1,,Derived,,,상승관별,,"MHTGR-350 SG/RCCS 보완본[4] p.19,20",유량·물성 계산,RCCS-1 조건부,,,"국소 (p,T), 수력직경, 관별 유량으로 계산.",,
-RCCS-1,RCCS 상승관 공기 Nusselt 수,Nu_rccs_duct_air,1,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.19,단면별 상관식,RCCS-1 조건부,,,난류 Dittus–Boelter는 1차 근사. 층류는 Shah–London 형상·가열면 조건 사용.,,
-RCCS-1,RCCS 상승관 공기 Darcy 마찰계수,f_D_rccs_duct_air,1,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.20,유동영역별 상관식,RCCS-1 조건부,,,"층류 직사각형 단면보정, 매끈관 난류 Blasius 1차 근사. 전이구간 별도 검토.",,
-RCCS-1,RCCS 루버·벤드·플레넘·하강관·배기 국부손실계수,K_form_rccs_segment,1,,Parameter,,,부품 b별,,"MHTGR-350 SG/RCCS 보완본[4] p.20,21",실기 손실 미확보,RCCS-1 조건부,,,부품별 속도 기준면적과 압력탭을 함께 지정.,,
-RCCS-1,RCCS 공기 유속변화 압력손실,dp_rccs_acc,Pa,,Derived,,,루프/부품별,,"MHTGR-350 SG/RCCS 보완본[4] p.15,21",RCCS-1 조건부,RCCS-1 조건부,,,부력압과 마찰·국부손실 평형에 포함.,,
-RCCS-1,RCCS 외기 압력 경계,p_rccs_ambient,Pa,,External Input,,,흡기 경계,,"MHTGR-350 SG/RCCS 보완본[4] p.2,21",시나리오 입력 필요,RCCS-1 조건부,,,T_ambient와 함께 흡기 공기 엔탈피·밀도를 산출. 포트 고도/풍압 조건 검토.,,
+component,variable,proposed_name,unit,role,kind_tentative,dimension,location,shape,initial,source,status,stage,reference_value,original_notation,notes,code_reference,sheet_row,owner,registry_required,runtime_name_pattern,implementation_status
+전역,폐루프 헬륨 열역학 기준압력,p_sys,Pa,,Differential,,,스칼라,,"B 1,6,11; D 9,16",합의 필요,1차,6390000,p_sys,하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록. SystemRegistry에 단일 상태; 기준점/재고량 식은 Role 2·5 합의 필요.,config/operation.yaml :: primary.initial_pressure_Pa,2,Role 2/5,conditional,p_sys,closure equation pending
+전역,노심 정격 총열출력,P_core_thermal,W,,External Input / Derived (출력모드별),,,시간 함수,,3 16; 4 17,문서 기준값,1차,350000000,P_tot,고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지. mode_core_power에 따라 지정 입력 또는 핵분열+잔열의 derived 값 한 경로만 사용.,config/operation.yaml :: reactor.initial_thermal_power_W,3,Role 3,no,,pending Role 3
+전역,1차계통 헬륨 총재고량,M_he_loop,kg,,Derived,,,스칼라,,B 6; D 9,통합 변수 제안,1차,,ΣρV,폐루프 재고량 ΣρV. 압력 초기화 및 전역 질량보존 검산에 사용; 모든 유체셀·플레넘·SG 체적을 한 번씩만 합산.,,4,,,,
+전역,외기 온도,T_ambient,K,,External Input,,,시간 함수,,"4 17,18",시나리오별 필요,1차/확장,,T_ambient,RCCS-0의 고정 열침원 온도와 구분,,5,,,,
+전역,중력가속도,g,m/s²,,Parameter,,,스칼라,,3 15; B 6; 4 8,정의 필요,1차,,g,높이 좌표는 위쪽 양으로 통일,,6,,,,
+전역,유체 포트 정압,p_fluid_port,Pa,,Alias,,,포트별,,"B 3,11; D 10; 4 13",통합 변수 제안,1차,,p,연결된 셀/플레넘 압력의 인터페이스 별칭. 접속 양단 압력 연속 또는 경계 운동량식 적용 범위를 지정하고 독립 대수 미지수 중복 등록 금지.,interfaces/ports.py :: FluidPort.p,7,Component owner,no,{instance}.{port}.p_fluid_port,contract
+전역,유체 포트 비엔탈피,h_fluid_port,J/kg,,Alias (legacy FluidPort),,,포트별,,"B 3,11; 4 13",통합 변수 제안,1차,,h,포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일. 신규 stream 접속은 outflow/instream 두 항목 사용.,interfaces/ports.py :: FluidPort.h,8,Role 5,no,{instance}.{port}.h_fluid_port,legacy compatibility
+전역,유체 포트 질량유량,m_dot_fluid_port,kg/s,,Algebraic,,,포트별,,B 6; D 10; 4 13,통합 변수 제안,1차,,ṁ,포트 유입/유출 부호와 유량 연속 제약 정의,interfaces/ports.py :: FluidPort.m_dot,9,,,,
+전역,고체/유체 열포트 열전달률,Q_dot_thermal_port,W,,Derived,,,열경계별,,3 17; B 3; 4 15,통합 변수 제안,1차,,Q̇,"벽→헬륨, RPV→외기 양수. 연결 양쪽에 같은 열률을 부호 반대로 넣고 소스 중복 합산 금지.",interfaces/ports.py :: ThermalPort.Q_dot,10,Component owner,no,{instance}.{port}.Q_dot_thermal_port,contract
+전역,1차 헬륨 정격 질량유량,m_dot_he_rated,kg/s,,Parameter,,,스칼라,,"B 1; D 15; 4 4,17",조건 확인,1차,157.1,ṁ_R,"노심 기준 157.1, SG 단독 검산 157.2 kg/s 분리",,11,,,,
+전역,헬륨 비엔탈피 영점 온도,T_he_enthalpy_ref,K,,Parameter,,,스칼라,,"A 10-11; B 1,3",제안·합의 필요,1차,0,T_ref,"h=cp(T−T_ref), SG 헬륨 측과 통일; 급수/증기 h와 서로 다른 물성계",,12,,,,
+헬륨 물성,정압비열,c_p_he,J/(kg·K),,Parameter,,,스칼라,,A 10; 3 12,문서 일치,1차,5195,"c_p,He",5195 J/(kg·K) 문서값. cv=3117과의 차 2078은 R=2077.27과 0.73만큼 다름; 물성 조합 확정 후 EOS·에너지식 함께 검산.,,13,,,,
+헬륨 물성,정적비열,c_v_he,J/(kg·K),,Parameter,,,스칼라,,A 10,문서 제안,1차,3117,"c_v,He","cp−cv=2078 J/(kg·K), 표의 R=2077.27과 0.73 차이. 단일 상수 세트 선택 전까지 독립 정합성 검증 필요.",,14,,,,
+헬륨 물성,헬륨 비기체상수,R_he,J/(kg·K),,Parameter,,,스칼라,,A 10; 3 12,식/상수 선택 필요,1차,2077.27,R_He,"cp−cv=2078과 0.73 J/(kg·K) 편차; 근거별 상수 정의·반올림 차이를 확인하고 cp, cv, R, gamma, EOS를 한 세트로 지정.",,15,,,,
+헬륨 물성,헬륨 비열비,gamma_he,1,,Derived,,,스칼라,,A 10,제안값,1차,1.6667,γ,cp/cv=1.66667 근사. R=cp−cv 및 임계압력비 식을 선택한 동일 상수 세트로 검증.,,16,,,,
+헬륨 물성,셀별 비엔탈피 상태,h_he,J/kg,,Differential,,,유체 셀 i,,"A 10; B 1,3,6",기본 제안,1차,,h_i,유한체적 헬륨 셀의 h 상태. SG-0 출구나 무체적 경계는 대수/유도값; 전역 state_registry에서 체적 셀만 등록.,,17,,,,
+헬륨 물성,헬륨 벌크 절대온도,T_he,K,,Derived,,,유체 셀 i,,A 4; B 3,제안값,1차,,T_i,T=T_ref+h/cp; 벽온도와 구별,config/operation.yaml :: primary.initial_temperature_K,18,,,,
+헬륨 물성,헬륨 밀도,rho_he,kg/m³,,Derived,,,유체 셀 i,,A 10; B 1,KTA 채택 제안,1차,,ρ_i,"ρ(p_sys,h) 저마하수 근사와 국부 p_i 평가 위치의 정합성 검토",,19,,,,
+헬륨 물성,헬륨 동점도가 아닌 동적 점도,mu_he,Pa·s,,Derived,,,유체 셀 i,,A 10,KTA 채택 제안,1차,,μ,"Re, friction에 사용",,20,,,,
+헬륨 물성,헬륨 열전도도,k_he,W/(m·K),,Derived,,,유체 셀 i,,A 11; 3 12,KTA 채택 제안,1차,,k_He,벌크 대류 및 연료 간극 평가 온도 구분,,21,,,,
+헬륨 물성,헬륨 Prandtl 수,Pr_he,1,,Derived,,,유체 셀 i,,A 11,제안값,1차,,Pr,μcp/k,,22,,,,
+헬륨 물성,열팽창계수,beta_he,1/K,,Derived,,,유체 셀 i,,A 5; C 15,제안값,1차,,β,부력 자연대류 상관식의 입력,,23,,,,
+헬륨 물성,상태 밀도의 압력 편미분,drho_dp_he,kg/(m³·Pa),,Derived,,,유체 셀 i,,A 4-5; B 6,코드 일관 정의 필요,1차,,ρ_p,질량 잔차의 p_sys 미분 계수,,24,,,,
+헬륨 물성,상태 밀도의 비엔탈피 편미분,drho_dh_he,kg²/(m³·J),,Derived,,,유체 셀 i,,A 4-5; B 6,코드 일관 정의 필요,1차,,ρ_h,질량 잔차의 h 미분 계수,,25,,,,
+헬륨 물성,헬륨 음속,c_he,m/s,,Derived,,,유체 셀 i,,A 11; B 8,검산값,1차 검산,,c,헬륨 음속 a=sqrt(gamma·R·T). 이전 이름의 끝 m은 m/s 단위의 일부였음; 독립 물성값으로 계산.,,26,,,,
+노심 고체,연료/흑연 격자 온도,T_core_solid,K,,Differential,,,고체 격자 s,,"3 6-8,17; 4 18",모델 정의 필요,1차,,T_s,"연료 컴팩트·흑연 블록·벽면 격자 구별, 축/반경 격자와 원자료의 연료 최대온도 평가 지점 지정.",,27,,,,
+노심 고체,위치별 연료 중 최고온도,T_core_fuel_max,K,,Derived,,,스칼라,,3 17-18,제안값,1차,,T_max,연료 컴팩트 최대 vs TRISO 연료핵 최대의 평가 대상을 정의,,28,,,,
+노심 고체,출력 피드백용 연료 대표온도,T_core_fuel_representative,K,,Derived,,,스칼라,,3 20-21,미확정,확장,,T_f,반응도계수의 평균 온도 정의와 동일해야 함,,29,,,,
+노심 고체,출력 피드백용 흑연 대표온도,T_core_graphite_representative,K,,Derived,,,스칼라,,3 20-21,미확정,확장,,T_g,대표온도 가중/기준 영역 확정,,30,,,,
+노심 고체,총출력의 위치별 출력분율,f_core_power,1,,Parameter,,,고체 격자 s,,3 16-17,원본 배열 미확보,1차,,f_s,MHTGR 출력분포 파일 원본 확보; 동일 기준 격자에서 합 1 검산,,31,,,,
+노심 고체,격자별 핵분열+붕괴 발열,P_core_solid,W,,Derived,,,고체 격자 s,,"3 16-17,19",계산 규약 필요,1차,,P_s,중복합산 방지: 총출력의 붕괴열 포함 여부 결정,,32,,,,
+노심 고체,고체 체적발열률,qvol_core,W/m³,,Derived,,,고체 격자 s,,"3 6,16",제안값,1차,,q‴_s,격자 출력/발열 체적,,33,,,,
+노심 고체,고체 격자 체적,V_core_solid,m³,,Parameter,,,고체 격자 s,,3 16-17,형상 확정 필요,1차,,V_s,발열 체적·열용량 일관,,34,,,,
+노심 고체,연료/흑연 밀도,rho_core_solid,kg/m³,,Parameter,,,재료별/격자 s,,"3 7,17",재료별 확인,1차,,ρ_s,PCEA AG 1850 등은 다른 재료에 무분별하게 사용 금지,,35,,,,
+노심 고체,고체 정압비열,c_p_core_solid,J/(kg·K),,Parameter,,,재료별/격자 s,,"3 7,16-17",재료별 확인,1차,,"c_p,s",온도/조사량 의존 시 함수로 평가,,36,,,,
+노심 고체,고체 유효 전도도,k_core_solid,W/(m·K),,Parameter,,,재료·방향·격자별,,"3 7-8,16-17",선택 필요,1차,,k_s,"컴팩트 20, 균질 블록 37, H-451 66 W/(m·K) 등은 서로 대체값 아님",,37,,,,
+노심 고체,흑연 누적 중성자 조사량,Phi_core_solid,n/m²,,Parameter,,,재료/격자별,,3 7-8,배포자료 필요,확장,,Φ,"흑연 누적 중성자 조사량. 단위 n/m²는 E열에만 유지; H-451 k(T,fluence)의 표 보간에 사용.",,38,,,,
+노심 고체,연료 컴팩트와 연료공 사이 간극폭,delta_core_gap,m,,Parameter,,,고체 경계별,,"3 6,9",형상 확정 필요,1차,,δ_gap,간극 헬륨 전도와 복사 저항,,39,,,,
+노심 고체,간극 표면 유효 방사율,epsilon_core_gap,1,,Parameter,,,고체 경계별,,"3 6,9",형상·재료 확인,1차,,ε_gap,RPV의 RCCS 유효 방사율과 다른 변수,,40,,,,
+노심 고체,연료 컴팩트→흑연 간극 열전달,Q_dot_core_gap,W,,Derived,,,경계별,,"3 6,9",제안값,1차,,Q_gap,"전도 및 복사 항, 양측 고체 수지에 반대부호",,41,,,,
+노심 고체,냉각공에 접하는 고체 벽온도,T_core_wall,K,,Differential / Derived (벽 격자 선택),,,유로 k×축방향 z,,"3 6,10; B 7",격자 선택 필요,1차,,T_w,독립 열용량을 둔 벽 격자면 미분 상태; 기존 고체 표면 노드의 별칭이면 유도값. 동일 벽 노드를 중복 상태 등록하지 않음.,,42,,,,
+노심 고체,고체·헬륨 접촉 면적,A_core_wall,m²,,Parameter,,,유로 k×축방향 z,,3 6; B 7,형상 확정 필요,1차,,A_wall,가열 둘레×셀 길이; htc에 사용,,43,,,,
+노심 고체,냉각공 벽면 대류계수,h_conv_core_wall,W/(m²·K),,Derived,,,유로 k×축방향 z,,"3 10,17; C 15",상관식 합의 필요,1차,,h_conv,3번 정격식과 2번 C의 저유량·자연대류 확장 공통화,,44,,,,
+노심 고체,노심 고체→헬륨 열전달률,Q_dot_core_wall,W,,Derived,,,유로 k×축방향 z,,"3 6,17; B 7",부호 제안,1차,,Q_wall,"고체에서 헬륨으로 전달되면 양수, 반대면 음수",,45,,,,
+노심 고체,노심 유입 헬륨 비엔탈피,h_core_he_inlet,J/kg,,Algebraic,,,유로 k,,3 17; B 11,포트 연동,1차,, he_inlet_enthalpy_j_kg,상부 플레넘/상승관의 포트 상태를 사용,,46,,,,
+노심 고체,노심 유출 헬륨 혼합 비엔탈피,h_core_he_outlet,J/kg,,Derived,,,스칼라,,3 17; D 9,연결 규약 필요,1차,,core_outlet_enthalpy_j_kg,하부 플레넘에서 질량가중 혼합; 평균의 정의 확인,,47,,,,
+노심 고체,노심 유로별 헬륨 유량,m_dot_core_he_path,kg/s,,Algebraic,,,유로 k×face j,,3 17; C 9,연동 필요,1차,,he_mass_flow_kg_s,전체 157.1 kg/s와 유효노심/우회 유로 분배 구분,,48,,,,
+노심 고체,노심 총 붕괴열,Q_dot_core_decay,W,,External Input,,,시간 함수,,"3 19; 4 8,17",원본 입력 미확보,사고,,Q_decay,시간 이력 전체 출력(W) 또는 체적별 붕괴열밀도(W/m³) 중 한 가지 입력을 권위값으로 선택. P_core_fission와 합산 시 정격 총출력 이중 계상 금지.,,49,Role 3,no,,pending Role 3
+노심 고체,격자별 붕괴열 밀도,qvol_core_decay,W/m³,,External Input,,,고체 격자 s×시간,,3 19,원본 배열 미확보,사고,,q‴_decay,Q_dot_core_decay 전체 W 이력과 이 변수 W/m³ 배열은 대안 입력; 체적 적분값 일치·원본 공간배치 확인.,,50,,,,
+노심 고체,노심/반사체→용기 열전달,Q_dot_core_solid_to_vessel,W,,Derived,,,경계별,,"3 6; 4 7,11",연결 상세 필요,사고,,Q_core→RPV,반사체·배럴·RPV 벽 노드와의 전도/복사 경로 설정,,51,,,,
+중성자·출력,정규화 중성자수,n_core,1,,Differential,,,스칼라,,3 20-21,계수 확보 필요,확장,1,n,점동특성 사용 시 핵분열출력과 연동,,52,,,,
+중성자·출력,지발중성자 선행핵군 정규화량,c_core,1,,Differential,,,지발군 g,,3 20-22,군 구조 미확정,확장,,c_g,평형 초기조건 β_g/(Λ λ_g),,53,,,,
+중성자·출력,총 반응도,rho_reactivity_core,1,,Derived,,,스칼라,,3 20-21,계수 확보 필요,확장,,ρ_reactivity,기준+외부+연료/흑연 온도 피드백,,54,,,,
+중성자·출력,기준 반응도,rho_reactivity_core_base,1,,Parameter,,,스칼라,,3 20-21,임계 초기 가정,확장,0,ρ_0,정상 임계점에서 ρ0=0,,55,,,,
+중성자·출력,제어봉/사건 외부 반응도 이력,rho_reactivity_core_external,1,,External Input,,,시간 함수,,3 20-22,시나리오 필요,확장,,Δρ_ext,정지 성공/실패에 따라 제어봉 삽입 항 설정,,56,,,,
+중성자·출력,연료 온도 반응도계수,alpha_core_fuel,1/K,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,α_f,pcm/K를 1/K로 바꿀 때 1e−5 곱함,,57,,,,
+중성자·출력,흑연 온도 반응도계수,alpha_core_graphite,1/K,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,α_g,연료 계수와 대표온도 정의 정합,,58,,,,
+중성자·출력,연료 피드백 기준온도,T_core_fuel_ref,K,,Parameter,,,스칼라,,3 20-21,기준 운전점 필요,확장,,"T_f,0",연료 대표온도 정의와 일치,,59,,,,
+중성자·출력,흑연 피드백 기준온도,T_core_graphite_ref,K,,Parameter,,,스칼라,,3 20-21,기준 운전점 필요,확장,,"T_g,0",흑연 대표온도와 계수 정의의 기준 운전점,,60,,,,
+중성자·출력,군별 유효 지발중성자 분율,beta_eff_core_group,1,,Parameter,,,지발군 g,,3 20-22,실데이터 미확보,확장,,"β_eff,g",재료별 β를 노심 유효값으로 바로 사용하지 않음,,61,,,,
+중성자·출력,군별 선행핵 붕괴상수,lambda_core_group,s⁻¹,,Parameter,,,지발군 g,,3 20-22,실데이터 미확보,확장,,λ_g,β와 같은 군 구조,,62,,,,
+중성자·출력,즉발중성자 생성시간,Lambda_core,s,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,Λ,노심 상태/연소상태 정의,,63,,,,
+중성자·출력,현재 핵분열출력,P_core_fission,W,,Derived,,,시간 함수,,3 20-21,계산 모델 선택 필요,확장,,P_f,"P_f,0 n(t); 고정 출력 입력과 동시 활성화 금지",,64,,,,
+중성자·출력,기준 핵분열출력,P_core_fission_ref,W,,Parameter,,,스칼라,,3 21,기준 운전점 필요,확장,,"P_f,0",정격 열출력과 붕괴열 포함 정의 구분,,65,,,,
+유체 FVM,유체 셀 국부 정압,p_fluid_cell,Pa,,Algebraic,,,셀 i,,"B 1,6; D 9",기본 제안,1차,,p_i,"밀도는 저마하수 기준압 p_sys, 셀 p는 운동량 압력차에 사용",,66,,,,
+유체 FVM,면별 헬륨 질량유량,m_dot_fluid_face,kg/s,,Algebraic,,,face j×유로 k,,"B 1,5-7",기본 제안,1차,,ṁ_j,정방향/역방향 허용; 폐쇄 시 0 근처 처리가 중요,config/operation.yaml :: primary.initial_mass_flow_kg_s,67,,,,
+유체 FVM,유체 셀 체적,V_fluid_cell,m³,,Parameter,,,셀 i,,B 6-7,형상 필요,1차,,V_i,ρV 저장량에 사용,,68,,,,
+유체 FVM,유체 유동 단면적,A_fluid_cell,m²,,Parameter,,,셀 i,,"B 3,6; D 8",형상 필요,1차,,A_i,셀/face 면적 정의 및 관경 변화 연결,config/geometry.yaml :: core.flow_area_m2,69,,,,
+유체 FVM,유체 셀 축방향 길이,dz_fluid_cell,m,,Parameter,,,셀 i,,B 6; D 8,격자 확정 필요,1차,,Δz_i,경계 면에는 반셀 길이 적용,,70,,,,
+유체 FVM,수력직경,D_h_fluid_cell,m,,Parameter,,,셀 i×유로 k,,"C 3,15; D 8",형상 필요,1차,,D_h,"원형, 환형, 평행판 별도 계산",,71,,,,
+유체 FVM,유로의 연직 기준 각도,theta_fluid_cell,rad,,Parameter,,,셀 i×유로 k,,"B 3,6; D 8",기하 필요,1차,,θ,유동 정방향과 연직 상향(+z) 사이의 각도; 부력항 cos(theta) 부호는 경로별 좌표로 검증.,,72,,,,
+유체 FVM,벽면 젖은 둘레,P_fluid_wetted,m,,Parameter,,,셀 i×유로 k,,"B 3,7",형상 필요,1차,,P_h,Q_wall=hP_h Δz(T_w−T_He),,73,,,,
+유체 FVM,면별 연속화된 상류 엔탈피,h_fluid_upwind,J/kg,,Derived,,,face j,,B 5-7,기본 제안,1차,,h*_j,유동 방향 tanh 가중; 양방향 에너지 수송,,74,,,,
+유체 FVM,열가속/단면 가속 압력항,dp_fluid_acc,Pa,,Derived,,,face j,,"B 3,6; D 10",기본 제안,1차,,Δp_acc,일정 면적 가열 채널과 접합부 Bernoulli 계수 구분,,75,,,,
+유체 FVM,분포 벽 마찰 압력항,dp_fluid_fric,Pa,,Derived,,,face j,,B 6; C 2-4,기본 제안,1차,,Δp_fric,반셀 가중; 유동 부호; Darcy f 사용,,76,,,,
+유체 FVM,국부 형상손실 압력항,dp_fluid_form,Pa,,Derived,,,face j,,B 6; C 5,기본 제안,1차,,Δp_form,K_fwd/K_rev와 정·역류 스무딩,,77,,,,
+유체 FVM,중력·부력 정압항,dp_fluid_grav,Pa,,Derived,,,face j,,B 6; D 10,기본 제안,1차,,Δp_grav,지오메트리 고정 부호; 역류 시 항 부호 임의 변경 금지,,78,,,,
+유체 FVM,셀 질량보존 잔차,R_fluid_mass,kg/s,,Derived,,,셀 i,,B 6; D 9,방정식 정의,1차,0,"R_mass,i",셀별 질량 보존 잔차. 전역 압력 미분항을 포함하며 잔차 수/미지수 수와 전체 질량보존을 확인.,,79,,,,
+유체 FVM,셀 엔탈피 에너지 잔차,R_fluid_energy,W,,Derived,,,셀 i,,B 7; D 9,방정식 정의,1차,0,"R_energy,i",비보존형 에너지 잔차; 질량 잔차와 결합 시 보존형과 동치. 파단 유출을 질량과 엔탈피에서 중복 차감하지 않음.,,80,,,,
+유체 FVM,면 압력·운동량 잔차,R_fluid_momentum,Pa,,Derived,,,face j,,B 6-7,방정식 정의,1차,0,"R_mom,j",초기안 관성항 0; 순환기 양정은 해당 face에서만 적용,,81,,,,
+유체 FVM,Reynolds 수,Re_fluid,1,,Derived,,,셀/면별,,"C 3,15",계산값,1차,,Re,영유량에서 정규화에 주의,,82,,,,
+유체 FVM,Nusselt 수,Nu_fluid,1,,Derived,,,셀/경계별,,3 10; C 6-8,상관식 협의,1차,,Nu,정격 McEligot vs 저유량 층류·자연대류 보간,,83,,,,
+유체 FVM,Darcy 마찰계수,f_D_fluid,1,,Derived,,,셀/면별,,"3 15; C 2,15",상관식 충돌,1차,,f_D,"3번 Swamee–Jain 예비안, 2번 Churchill 통합안; 최종 하나 선택",,84,,,,
+유체 FVM,Richardson 수,Ri_fluid,1,,Derived,,,셀/경계별,,"C 8,15",계산값,사고,,Ri,강제/자연대류 전환에 사용,,85,,,,
+유체 FVM,유로 벽 절대 거칠기,epsilon_fluid,m,,Parameter,,,유로 k,,"C 4,15; D 12",벤치마크 값/민감도 별도,1차,0,ε,0은 벤치마크 기본; 재료 조도 실제값과 구분,,86,,,,
+유체 FVM,비원형 층류 형상계수,Phi_fluid_laminar,1,,Parameter,,,유로 k,,"C 3,15",기하에 따라,1차,,Φ_s,원형 1; 평행판 2/3,,87,,,,
+유체 FVM,정유동 국부손실계수,K_form_fluid_fwd,1,,Parameter,,,접합 face j,,"C 5,15; D 10",일부 미확보,1차,,K_+,오리피스·덕트 굴곡 등 위치별 입력,,88,,,,
+유체 FVM,역유동 국부손실계수,K_form_fluid_rev,1,,Parameter,,,접합 face j,,"C 5,15; D 10",일부 미확보,사고,,K_−,정방향 계수를 기계적으로 재사용하지 않음,,89,,,,
+유체 FVM,유로별 정격 질량유량,m_dot_fluid_nominal_path,kg/s,,Parameter,,,유로 k,,B 5; D 14,유량배분 필요,1차,,"ṁ_nom,path","스무딩 폭의 기준, 전체 루프 유량과 단일 채널 분리",,90,,,,
+유체 FVM,마하수,Ma_fluid,1,,Derived,,,유로 k,,A 11; B 8-10,검산값,검산,,M,주유로 저마하수 근사 적용성 평가,,91,,,,
+병렬·배관,노심 우회유로 등가 단면적,A_core_bypass,m²,,Parameter,,,우회 경로 k,,"C 9,15-16",초기화 보정 제안,1차,약 0.33,A_byp,11% 목표를 정상 초기화 때 전체 상·하부 플레넘 경로에서 보정; 0.33 m²는 특정 기하·저항의 예시값. 과도에 11% 고정 금지.,,92,,,,
+병렬·배관,총 유량 중 우회분율,f_core_bypass,1,,Derived,,,스칼라,,"C 9-10,15-16",벤치마크 목표,1차,0.11,bypass fraction,Type I 11%; Type II 간극별 조건과 구분,,93,,,,
+병렬·배관,우회유로와 고체의 열교환,Q_dot_core_bypass_wall,W,,Derived,,,유로 k×셀 i,,C 16,합의 필요,사고,,Q_byp,단열 우회 vs 고체 열결합 차이가 크므로 3번과 결정,,94,,,,
+병렬·배관,비노심 배관 헬륨 셀 엔탈피,h_pipe,J/kg,,Differential,,,배관 b×셀 i,,"D 8,14",기본 제안,1차,,pipe h_i,공통 fluid_h 상태의 배관 소유 범위,,95,,,,
+병렬·배관,비노심 배관 헬륨 셀 정압,p_pipe,Pa,,Algebraic,,,배관 b×셀 i,,"D 8,14",기본 제안,1차,,pipe p_i,공통 fluid_cell_p_pa의 배관 범위,,96,,,,
+병렬·배관,비노심 배관 face 질량유량,m_dot_pipe,kg/s,,Algebraic,,,배관 b×face j,,"D 8,14",기본 제안,1차,,pipe ṁ_j,공통 fluid_face_mdot_kg_s의 배관 범위,,97,,,,
+병렬·배관,고온·저온 덕트 및 상승관 길이,L_pipe,m,,Parameter,,,구간 b,,"D 8,15",부분 자료/추정,1차,,L_b,L_riser=13.02 m; 동축덕트 L_cross=8 m는 예시로 최종 자료 필요,,98,,,,
+병렬·배관,배관 유로 단면적,A_pipe,m²,,Parameter,,,구간 b,,D 8,문서 치수 대조 필요,1차,,A_b,고온덕트 1.1197; 저온덕트 1.1218; 12상승관 총 1.2077 m²,,99,,,,
+병렬·배관,배관 수력직경,D_h_pipe,m,,Parameter,,,구간 b,,D 8,문서 제안,1차,,"D_h,b",고온 1.194; 저온 환형 0.454; 상승관 0.2477 m,,100,,,,
+병렬·배관,배관 벽과 헬륨 간 열전달,Q_dot_pipe_wall,W,,Derived,,,배관 b×셀 i,,"D 8,15",초기 단열 가정,1차/사고,0,Q_pipe,동축덕트 기생 전열 후속 민감도 옵션; 지오메트리·경계 구분,,101,,,,
+병렬·배관,동축덕트 단열재 열전도도,k_duct_insulation,W/(m·K),,Parameter,,,온도의 함수,,D 8,문서 지정식,확장,,k_ins,고온→저온 덕트 기생전열 평가할 때,,102,,,,
+플레넘,상·하부 플레넘 비엔탈피,h_plenum,J/kg,,Differential,,,플레넘 up/low,,"D 9,14",기본 제안,1차,, h_pl,0D 유한체적 완전 혼합,,103,,,,
+플레넘,상·하부 플레넘 정압,p_plenum,Pa,,Algebraic,,,플레넘 up/low,,"D 9,14",기본 제안,1차,,"p_up,p_low",하부 플레넘 p_low=p_sys 기준노드 제안,,104,,,,
+플레넘,상·하부 자유체적,V_plenum,m³,,Parameter,,,플레넘 up/low,,"D 9,15",추정값·최종 필요,1차,,"V_up,V_low","상부 약 76.2, 하부 약 9.78 m³ 추정; 형상팀 확정",,105,,,,
+플레넘,플레넘 고체벽→헬륨 전달열,Q_dot_plenum_wall,W,,Derived,,,플레넘 up/low,,"D 9,14",결합 필요,1차/사고,,"Q_wall,pl",노심 상부 구조/하부 구조 고체열 모델과 연결,,106,,,,
+플레넘,플레넘 접속구 유량,m_dot_plenum_port,kg/s,,Algebraic,,,포트 k,,D 9-10,포트 공유,1차,,ṁ_k,유입 양수 s_k=+1; 유출 음수로 결합,,107,,,,
+순환기,정격 회전수 대비 순간 회전수,alpha_circ,1,,Differential,,,순환기별,,"D 3-5,14",기본 제안,1차,1,α,ODE 감속 적용 시만 상태변수; prescribed profile 선택 시 외부 입력,,108,,,,
+순환기,전동기 구동 신호,u_circ_motor,1,,External Input,,,시간 함수,,"D 4,14",시나리오별,1차,, u_motor(t),트립 시 램프 약 0.1 s 제안,,109,,,,
+순환기,순환기 1차측 양정,dp_circ,Pa,,Derived,,,순환기 face,,"D 3,13-14",모델/데이터 미확정,1차,,Δp_comp,양정은 기기 face에만; 정지 후 유동 저항이 될 수 있음,,110,,,,
+순환기,순환기가 헬륨에 전달하는 일률,Q_dot_circ,W,,Derived,,,순환기 에너지 연결,,"D 4-5,14",제안식,1차,,Q_circ,정지 회전자 Δp<0을 음의 발열로 해석하지 않음,,111,,,,
+순환기,정격 순환기 양정,dp_circ_rated,Pa,,Parameter,,,순환기별,,"D 5,12,14-15",실데이터 미확보,1차,,Δp_R,"65 kPa는 예시; 95–101 kPa도 역산 범위, 확정 입력 금지",,112,,,,
+순환기,트립 후 회전 감속 반감기,tau_circ_half,s,,Parameter,,,순환기별,,"D 4,14-15",실데이터 미확보,1차,,τ_1/2,수초/분 단위 과도 영향이 큼,,113,,,,
+순환기,순환기 단열효율,eta_isentropic_circ,1,,Parameter,,,순환기별,,"D 5,14-15",실데이터 미확보,1차,,η_s,_s는 단위 초가 아닌 등엔트로피 효율의 아래첨자. 변수 이름 유지; 실제 정격 효율/성능곡선 확보 전까지 공란.,,114,,,,
+순환기,정격 체적유량,Vdot_circ_rated,m³/s,,Parameter,,,순환기별,,D 3-5,정격 밀도 의존,1차,,Q_R,ṁ_R/ρ_R로 산출 가능; 압력/흡입 온도 기준 필요,,115,,,,
+순환기,정격 흡입 헬륨 밀도,rho_circ_rated,kg/m³,,Parameter,,,순환기별,,D 3-5,운전점 필요,1차,,ρ_R,현재 밀도와 나눈 양정·감속계수에 사용,,116,,,,
+순환기,성능곡선 상수계수,c0_circ_curve,1,,Parameter,,,순환기별,,"D 3,14",예비 계수,1차,1.3,c0,제조사 4사분면 자료 확보 전 대리식,,117,,,,
+순환기,성능곡선 선형계수,c1_circ_curve,1,,Parameter,,,순환기별,,"D 3,14",예비 계수·검증 필요,1차,0,c1,"문서의 정격 제약 c0+c1−c2=1에 c0=1.3, c2=0.3을 대입한 예비값 0. 실측 곡선 확보 시 세 계수 함께 갱신.",,118,,,,
+순환기,성능곡선 제곱계수,c2_circ_curve,1,,Parameter,,,순환기별,,"D 3,14",예비 계수,1차,0.3,c2,정지 회전자 유동 저항과 연계,,119,,,,
+순환기,베어링 마찰비,c_fr_circ_bearing,1,,Parameter,,,순환기별,,"D 4,14",예비 계수,1차,0.02,c_fr,감속 ODE의 c_fr,,120,,,,
+순환기,전동기/축 정격 일률,P_circ_shaft,W,,Derived,,,순환기별,,D 4-5,검산 필요,1차,,W_shaft,순환기 헬륨 엔탈피 상승·계통 에너지 합산,,121,,,,
+순환기,양정/감속 상관식 선택,mode_circ_curve,범주,,Parameter,,,순환기별,,D 3-4,제안 선택,1차,affinity_quad,pump_mode,"4사분면/지정 양정 대안, 사용 시 근거 기록",,122,,,,
+밸브,밸브 유효 개도,alpha_valve,1,,Derived,,,밸브 v,,"D 6-7,14",모델 제안,1차,,α_v,"체크밸브는 유효 차압 tanh, 제어밸브는 명령 따름",,123,,,,
+밸브,밸브 개도 명령,u_valve,1,,External Input,,,밸브 v×시간,,"D 6,14",시나리오별,1차,,α_cmd,SCS 격리 밸브 및 조절 밸브,,124,,,,
+밸브,밸브 통과 헬륨 질량유량,m_dot_valve,kg/s,,Algebraic,,,밸브 v,,"D 6-7,14",유동 공유,1차,,ṁ_v,고정 닫힘으로 놓을지 누설유로로 남길지 결정,,125,,,,
+밸브,밸브 개도에 따른 국부손실계수,K_valve,1,,Derived,,,밸브 v,,"D 6-7,14",상관식 제안,1차,,K_v,밸브 국부손실계수 K_v(무차원). 이전 표의 단위 제거 과정에서 _k가 잘못 지워져 이름이 valve만 남았던 항목을 복구.,,126,,,,
+밸브,완전 개방 밸브 손실계수,K_valve_open,1,,Parameter,,,밸브 v,,"D 6-7,14",기본 예시,1차,0.5,K_open,장치별 문헌값 확보 시 교체,,127,,,,
+밸브,체크밸브 개방차압,dp_valve_crack,Pa,,Parameter,,,체크밸브,,"D 7,14-15",예비값,1차,250,Δp_crack,Δp_ε=50 Pa의 5배 이상 권고,,128,,,,
+밸브,중력 보정 전후 유효 차압,dp_valve_eff,Pa,,Derived,,,밸브 v,,D 7,부호 점검,1차,,Δp_eff,p_in−p_out−Δp_grav,,129,,,,
+밸브,밸브 형상 압력손실,dp_valve_loss,Pa,,Derived,,,밸브 v,,"D 6-7,13",계산값,1차,,Δp_valve,정·역류 방향별 유량 제곱 부호 처리,,130,,,,
+밸브,체크·격리밸브 개폐시간,tau_valve_closure,s,,Parameter,,,밸브 v,,"D 6,15",실데이터 미확보,사고,,τ_valve,트립 시나리오에서 시간 이력 필요,,131,,,,
+밸브,안전방출밸브 개방 설정압력,p_psrv_set,Pa,,Parameter,,,밸브 v,,"D 6,15",실데이터 미확보,확장,,p_set,압력 기준이 절대/게이지인지 정의,,132,,,,
+파단·방출,파단구 유효 면적,A_break,m²,,External Input,,,파단별/시나리오,,"D 10-11,14",1차 비활성,확장,0,A_break,DCC에서 시나리오 입력; 유효 면적 정의,,133,,,,
+파단·방출,파단구 유량계수,C_d_break,1,,Parameter,,,파단별,,"D 11,13-14",예비값,확장,0.85,C_d,파단 위치/형상별 시험근거 확인,,134,,,,
+파단·방출,파단구 외부/공동 배압,p_break_back,Pa,,External Input,,,시간 함수,,"D 11,14",시나리오별,확장,,p_back,RPV 공동 압력과 열침원 온도 혼동 금지,,135,,,,
+파단·방출,헬륨 파단 방출 질량유량,m_dot_break,kg/s,,Derived,,,파단별,,"D 11,13-14",제안식,확장,,ṁ_break,"임계/아음속 연속 전환, 전역 질량 보존에서 차감",,136,,,,
+파단·방출,임계 방출 압력비,r_critical_break,1,,Derived,,,파단별,,"D 11,15",헬륨 γ 근사,확장,0.4871,r_c,상류/배압비 정의 일치,,137,,,,
+SG,증기발생기 모델 단계,mode_sg_level,범주,,Parameter,,,SG별,,4 11-13; D 10,팀 합의 필요,1차/확장,SG-0,SG-0/1/2,SG-0 초기 검산; SG-1 UA; SG-2 3구간/1D,,138,,,,
+SG,SG 입구 헬륨 비엔탈피,h_sg_he_inlet,J/kg,,Algebraic,,,SG별 포트,,"4 4,13",포트 입력,1차,,he_in_h_j_kg,고온덕트 출구에서 유입,,139,,,,
+SG,SG 입구 헬륨 절대압,p_sg_he_inlet,Pa,,Algebraic,,,SG별 포트,,"4 4,13,17; D 16",운전점 상충,1차,6310000,he_in_p_pa,SG 단독 정격 6.31 MPa; 계통 하부 플레넘 6.39 MPa와 80 kPa 차이. 위치·압력 기준·동일 운전점·사이 손실 확인 전 계통 초기조건으로 강제하지 않음.,,140,,,,
+SG,SG 헬륨 질량유량,m_dot_sg_he,kg/s,,Algebraic,,,SG별 포트,,"4 4,13,17",운전점 상충,1차,157.2,he_mdot_kg_s,SG 독립 검산 157.2 kg/s. 계통 루프 157.1 kg/s와 정격 반올림·운전점 차이 확인; 통합 때 공유 face 유량 사용.,,141,,,,
+SG,SG 출구 헬륨 비엔탈피,h_sg_he_outlet,J/kg,,Algebraic,,,SG별 포트,,"4 4,13",SG-0 대수 미지수,1차,,he_out_h_j_kg,유량 영에서 Q/ṁ 나눗셈 피하고 에너지 잔차 사용,,142,,,,
+SG,SG 출구 헬륨 정압,p_sg_he_outlet,Pa,,Algebraic,,,SG별 포트,,"4 4,13",검산값,1차,6284500,he_out_p_pa,6.31 MPa 입구−25.5 kPa 단독 검산; 통합 시 해로 계산,,143,,,,
+SG,SG 출구 헬륨 온도,T_sg_he_outlet,K,,Derived,,,SG별 포트,,"4 4,13",검산값,1차,526.89,"T_He,out",기존 정격 계산 526.89 K. 보완본 원 설계의 약 254.8°C=527.95 K와 구분. 같은 유량·물성·운전점인지 대조.,,144,,,,
+SG,SG 헬륨측 압력강하,dp_sg_he,Pa,,Derived,,,SG별,,"4 4,12-13; D 10",정격 기준,1차,25500,Δp_SG,과도에서는 정격 상수 고정 금지; SG-0은 역류 부호 보전,,145,,,,
+SG,SG 헬륨 정격 압력강하,dp_sg_he_ref,Pa,,Parameter,,,SG별,,"4 4,12-13",문서 기준값,1차,25500,Δp_ref,sg_he_dp_pa를 운전 상태에서 계산하는 기준값,,146,,,,
+SG,SG 정격 헬륨 유량 기준,m_dot_sg_he_ref,kg/s,,Parameter,,,SG별,,4 13,SG 단독 기준,1차,157.2,ṁ_ref,전체 루프 정격 유량과 합의 후 일치화,,147,,,,
+SG,급수 입구 온도,T_sg_fw_inlet,K,,External Input,,,시간 함수,,4 4,문서 기준값,1차,466.15,T_fw,기존 통합표 466.15 K(193.0°C)와 보완본 원 설계 정격 약 466.45 K(193.3°C)를 구분. 사용 개정·운전점을 확인해 경계값 선택.,,148,,,,
+SG,급수 입구 압력,p_sg_fw_inlet,Pa,,External Input,,,시간 함수,,"4 4,9,13",압력 기준 재확인,1차,20700000,p_fw,"절대압 가정, 원 설계도와 대조 필요",,149,,,,
+SG,급수 입구 비엔탈피,h_sg_fw_inlet,J/kg,,Derived / External Input (경계 선택),,,시간 함수,,"4 4,12-13",경계 입력 방식 합의 필요,1차,830044,h_fw,"T_fw=466.15 K, p_fw=20.70 MPa가 입력이면 IAPWS-IF97로 계산한 검산값 830044 J/kg. h 직접 입력 모드일 때 T와 동시에 독립 경계로 고정 금지.",,150,,,,
+SG,증기발생기 급수 질량유량,m_dot_sg_fw,kg/s,,External Input,,,시간 함수,,"4 4,12-13",SG 단독 정격,1차,137.2,ṁ_w,급수손실 과도시 외부 시나리오 입력,,151,,,,
+SG,주증기 출구 온도,T_sg_steam_outlet,K,,External Input/Derived,,,시간 함수,,"4 4,12-13",모델별 분류 상이,1차/확장,813.15,T_steam,"기존 통합표 813.15 K(540.0°C)와 보완본 원 설계 약 813.75 K(540.6°C)를 구분. SG-2에서는 출구 h,p에서 계산.",,152,,,,
+SG,주증기 출구 압력,p_sg_steam_outlet,Pa,,External Input/Algebraic,,,시간 함수,,"4 4,12-13",모델별 분류 상이,1차/확장,17340000,p_steam,"SG-0 물성 경계, SG-2는 2차측 압력손실 계산 가능",,153,,,,
+SG,증기 출구 비엔탈피,h_sg_steam_outlet,J/kg,,Derived / Algebraic (SG 단계별),,,SG별,,"4 4,12-13",모델별 분류 상이,1차/확장,3397046,steam_out_h_j_kg,"SG-0에서 출구 T,p 지정 시 IAPWS-IF97 계산값 3397046 J/kg; h 직접 지정은 대안 경계. SG-1/2에서는 열전달/에너지 방정식으로 출구 h를 결정하며 T,p,Q를 동시에 강제하지 않음.",,154,,,,
+SG,헬륨→2차측 증기발생기 열제거율,Q_dot_sg_removed,W,,Derived,,,SG별,,"4 4,12-13",정격 검산값,1차,352193000,Q_SG,기존 급수/증기 IAPWS 검산 352.193 MW. 보완본 원 설계 SG 정격 열부하 352.1 MW와 별도 출처·정밀도로 보관. 과도에는 He 열손실·벽 축열·2차측 흡열을 각각 계산.,,155,,,,
+SG,SG 유효 열관류율×면적,UA_sg,W/K,,Parameter,,,SG별/구간별,,"4 12-13,17",설계값 미확보,확장,,UA_eff,SG-1/2에서 Q를 독립 계산하는 데 필요,,156,,,,
+SG,SG 전열관 구간별 벽온도,T_sg_wall,K,,Differential,,,구간 a×셀 i,,"4 12-13,18",SG-2 확장,확장,,T_wall,SG-2의 기존 대표 벽온도. 보완본은 바깥/안쪽 반벽 온도와 열용량을 각각 둔다. 대표값을 별칭으로 쓰는 경우 독립 상태 중복 등록 금지.,,157,,,,
+SG,SG 전열관 열용량,C_sg_wall,J/K,,Parameter,,,구간 a×셀 i,,"4 12-13,17",설계값 미확보,확장,,C_wall,관 재질/질량×비열,,158,,,,
+SG,SG 헬륨측 대류열전달계수,h_sg_he,W/(m²·K),,Derived,,,구간 a×셀 i,,"4 12,17",상관식 필요,확장,, h_He,C 공통 heat_transfer 함수 사용,,159,,,,
+SG,SG 급수·증기측 대류/비등 계수,h_sg_w,W/(m²·K),,Derived,,,구간 a×셀 i,,"4 12,17",상관식 필요,확장,,h_w,예열·증발·과열 구간과 상변화 분리,,160,,,,
+SG,SG 관측 총 전열면적,A_sg_tube,m²,,Parameter,,,구간 a,,"4 12,17",설계값 미확보,확장,,"A_o,A_i",구간별 외면적 A_o와 내면적 A_i를 구분. 보완본 원 설계 외면적 FSH 407.882 m² + EES 3618.658 m² = 약 4026.539 m². 셀 배분은 실제 기하에 따름.,config/geometry.yaml :: heat_exchanger.heat_transfer_area_m2,161,,,,
+SG,SG 증발부 증기 건도,x_sg_water,1,,Algebraic,,,증발부 셀 i,,4 12,모델 확장 필요,확장,,x,정격 SG-0에는 건도 해 없음,,162,,,,
+SCS,정지냉각계통 사용 가능/기동 여부,enabled_scs,bool,,External Input,,,시간 함수,,"4 14,17",시나리오별,확장,,scs_enabled,"비활성일 때 Q_SCS=0, SCS 유량=0",,163,,,,
+SCS,SCS 헬륨 순환 질량유량,m_dot_scs_he,kg/s,,Algebraic,,,SCS 유로,,"4 14,17",운전 조건 미확보,확장,,"ṁ_He,SCS",주루프 유량과 다른 가지 유로,,164,,,,
+SCS,SCS 헬륨 입구 비엔탈피,h_scs_he_inlet,J/kg,,Algebraic,,,SCS 포트,,4 14,포트 연동,확장,,"h_He,in",노심/상부 하부 플레넘과 연결 위치 정의,,165,,,,
+SCS,SCS 헬륨 입구 정압,p_scs_he_inlet,Pa,,Algebraic,,,SCS 포트,,4 14,포트 연동,확장,,"p_He,in",분기/바이패스 연결 추가 필요,,166,,,,
+SCS,SCS 헬륨 출구 비엔탈피,h_scs_he_outlet,J/kg,,Algebraic,,,SCS 포트,,4 14,열수지 결과,확장,,"h_He,out",m=0에서 Q/m 나눗셈 금지,,167,,,,
+SCS,SCS 냉각수 질량유량,m_dot_scs_w,kg/s,,External Input,,,시간 함수,,"4 14,17",운전 조건 미확보,확장,,"ṁ_w,SCS",기동 조건의 냉각수 경계,,168,,,,
+SCS,SCS 냉각수 입구 온도,T_scs_w_inlet,K,,External Input,,,시간 함수,,4 14,운전 조건 미확보,확장,,"T_w,in",냉각수 압력과 물성 평가,,169,,,,
+SCS,SCS 냉각수 입구 압력,p_scs_w_inlet,Pa,,External Input,,,시간 함수,,4 14,운전 조건 미확보,확장,,"p_w,in",냉각수 상변화 여부 검토,,170,,,,
+SCS,SCS 냉각수 출구 비엔탈피,h_scs_w_outlet,J/kg,,Algebraic,,,SCS 출구,,4 14,열수지 결과,확장,,"h_w,out","독립적으로 m,h_in,h_out,Q 모두 지정하지 않음",,171,,,,
+SCS,SCS 총 유효 열관류율×면적,UA_scs,W/K,,Parameter,,,SCS HX,,"4 14,17",설계값 미확보,확장,,UA_SCS,열교환기 유로형식 확정 후 유효도 식 선정,,172,,,,
+SCS,SCS 헬륨 유로 압력손실,dp_scs,Pa,,Parameter/Derived,,,SCS 유로,,"4 14,17",설계값 미확보,확장,,Δp_SCS,0D 참조값 또는 동적 손실식으로 설계 선택,,173,,,,
+SCS,SCS HX 금속 열용량,C_scs_hx,J/K,,Parameter,,,SCS HX,,4 14,설계값 미확보,확장,,C_HX,축열 상태변수 추가 모델에서만 사용,,174,,,,
+SCS,SCS 헬륨→냉각수 열제거율,Q_dot_scs_removed,W,,Derived,,,SCS HX,,4 14,계산값,확장,,Q_SCS,양측 엔탈피 열수지 일치,,175,,,,
+RCCS-0,원자로 압력용기 외면 절대온도,T_rpv_surface,K,,Alias / Derived,,,용기 표면 구간 s,,"4 8,15,18",고체모델 연결 필요,1차,,rccs_vessel_surface_temp_k,RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지. 단일 벽 노드에서는 T_rpv_wall 별칭; 별도 표면 노드는 식과 상태를 명시.,,176,Role 4,no,,pending Role 4
+RCCS-0,RPV 면별 외부 복사 노출면적,A_rccs_vessel_rad,m²,,Parameter,,,용기 표면 구간 s,,"4 8,15",형상 자료 필요,1차,,A_s,측면·상부 방열; 하부는 벤치마크 단열,,177,,,,
+RCCS-0,RCCS-0 복사 열침원 온도,T_rccs_benchmark_sink,K,,Parameter,,,스칼라,,"4 8,15,17",문서 기준값,1차,303.15,T_sink,실제 외기/패널 온도가 아님,,178,,,,
+RCCS-0,RCCS-0 등가 방사율,epsilon_rccs_effective,1,,Parameter,,,스칼라,,"4 8,15,17",문서 기준값,1차,0.74,ε_eff,RCCS-1의 RPV–패널 유효 교환계수로 재사용 금지,,179,,,,
+RCCS-0,Stefan–Boltzmann 상수,sigma_SB,W/(m²·K⁴),,Parameter,,,스칼라,,4 8,문서 상수,1차,5.6704e-8,σ,절대온도 4제곱 사용,,180,,,,
+RCCS-0,RPV 구간별 RCCS-0 복사열,Q_dot_rccs_surface_rad,W,,Derived,,,용기 표면 구간 s,,"4 8,15",계산값,1차,,"Q_rad,s",RCCS-0 열침원 303.15 K와 단순 등가 방사율에 한해 사용. RCCS-1 패널 복사와 동일 용기 면에 이중 적용 금지.,,181,,,,
+RCCS-0,RPV 외면 총 방열률,Q_dot_rccs_vessel_loss,W,,Derived,,,스칼라,,"4 8-9,15",계산값,1차,,Q_RPV,면별 복사열 합; 고체 에너지식에서 차감,,182,,,,
+RCCS-0,RPV 벽 구간 열용량,C_rpv_wall,J/K,,Parameter,,,용기 고체 구간 s,,"4 7,18",기하·재료 필요,1차,,C_RPV,외부 복사만 적용해도 고체 축열을 풀려면 필요,,183,,,,
+RCCS-1,RCCS 패널 벽온도,T_rccs_panel,K,,Differential,,,패널/높이 구간 s,,"4 8,15-16,18",확장 상태,확장,,T_pan,C_pan Ṫ_pan=Q_in−Q_out,,184,,,,
+RCCS-1,RCCS 패널 구간 열용량,C_rccs_panel,J/K,,Parameter,,,패널/높이 구간 s,,"4 8,16",설계값 필요,확장,,C_pan,패널 질량·비열,,185,,,,
+RCCS-1,RPV–패널 유효 복사 교환계수,F_rccs_exchange_effective,1,,Parameter,,,패널/면별,,4 15-17,설계값 미확보,확장,,F_eff,RPV–패널 형상계수·면별 방사율·면적비를 반영. RCCS-0 등가방사율 0.74 그대로 사용 금지. 다면이면 면별 F_ij의 면적 상반성 확인.,,186,,,,
+RCCS-1,RPV/공동에서 패널로 유입되는 열률,Q_dot_rccs_rpv_to_panel,W,,Derived,,,패널/면별,,4 16,모델 확장 필요,확장,,Q_RPV→panel,복사와 공동 대류 귀속 구분,,187,,,,
+RCCS-1,용기·패널 사이 공동 공기 온도,T_rccs_cavity_air,K,,Algebraic/Differential,,,공동 셀 i,,"4 8,15-16",공동 모델 미정,확장,,T_cav,"RCCS-1에서 공기를 무체적 혼합노드로 두면 대수, 제어체적 축열을 두면 Differential. 선택한 모델의 공기 질량·에너지 잔차에 맞춤.",,188,,,,
+RCCS-1,용기·공동 벽 자연대류계수,h_rccs_cavity,W/(m²·K),,Derived,,,공동 셀 i,,"4 8,16",상관식 미확정,확장,,h_cav,형상·간격·Ra 범위 검증,,189,,,,
+RCCS-1,공동 공기→패널 전달열,Q_dot_rccs_cavity_to_panel,W,,Derived,,,구간 s,,4 16,분배 규약 필요,확장,,Q_cav→panel,공동에서 콘크리트로 손실된 열과 구분,,190,,,,
+RCCS-1,패널→덕트 공기 전달열,Q_dot_rccs_panel_to_air,W,,Derived,,,공기 셀 i,,4 16,상관식 필요,확장,,"Q_pan→air,i","h_air A(T_pan−T_air), 패널 에너지 수지 연결",,191,,,,
+RCCS-1,패널의 기타 열손실,Q_dot_rccs_panel_other,W,,Derived,,,패널 구간 s,,4 16,귀속 협의,확장,,"Q_pan,other","외부/구조체 손실, 필요 시에만 모델링",,192,,,,
+RCCS-1,RCCS 흡기→배기 자연순환 공기 유량,m_dot_rccs_duct_air,kg/s,,Algebraic,,,유로/상승관 k,,"4 8,16",설계 데이터 필요,확장,,ṁ_air,부력수두−손실=0에서 구함,,193,,,,
+RCCS-1,RCCS 덕트 공기 셀 엔탈피,h_rccs_duct_air,J/kg,,Differential/Algebraic,,,덕트 셀 i,,4 16,모델 선택 필요,확장,," h_air,i","공기 축열 포함 시 미분, 준정상 시 대수",,194,,,,
+RCCS-1,외기 흡기 비엔탈피,h_rccs_air_intake,J/kg,,External Input,,,흡기 포트,,"4 8,16",외기 조건 필요,확장,,h_int,T_ambient와 공기 물성식 연결,,195,,,,
+RCCS-1,외기 배기 비엔탈피,h_rccs_air_exhaust,J/kg,,Algebraic,,,배기 포트,,"4 8,16",계산값,확장,,h_exh,덕트 공기 에너지잔차 연동,,196,,,,
+RCCS-1,덕트 공기가 외기로 방출하는 열률,Q_dot_rccs_air_rejected,W,,Derived,,,스칼라,,"4 8,16",계산값,확장,,Q_air,ṁ_air(h_exh−h_int); 패널 축열 시 Q_RPV와 즉시 일치하지 않음,,197,,,,
+RCCS-1,덕트 공기 부력수두,dp_rccs_buoyancy,Pa,,Derived,,,루프별,,"4 8,16",계산값,확장,,Δp_b,g∫(ρ_down−ρ_up)dz,,198,,,,
+RCCS-1,덕트 마찰·국부 압력손실,dp_rccs_loss,Pa,,Derived,,,루프별,,"4 8,16",계산값,확장,,Δp_loss,"f,L,D,K,A,ρ,ṁ에 따라 산출",,199,,,,
+RCCS-1,공기 덕트 유동 단면적,A_rccs_duct,m²,,Parameter,,,상승관 k,,4 16-17,설계 내형 계산,확장,0.0097346304,A_flow,상승관 1개 내형 40.48×240.48 mm에서 산출한 유로면적. 227개 합계 2.2097611 m²; 헤더·루버 유효단면과 구분. 보완본 p.16.,,200,,,,
+RCCS-1,공기 덕트 수력직경,D_h_rccs_duct,m,,Parameter,,,상승관 k,,4 16,설계 내형 계산,확장,0.06930,"D_h,air",상승관 내형 40.48×240.48 mm에서 산출한 수력직경. 보완본 p.16.,,201,,,,
+RCCS-1,RCCS 공기덕트 국부손실계수,K_form_rccs_duct,1,,Parameter,,,덕트 구간 k,,4 16-17,설계값 미확보,확장,,K_air,루버·벤드·하강통로·분배 플레넘·배기부마다 K와 기준속도를 구분. NSTF 시험장치 계수를 실기 전체 계통에 동일하게 적용하지 않음.,,202,,,,
+RCCS-1,패널→공기 덕트측 대류계수,h_rccs_air,W/(m²·K),,Derived,,,공기 셀 i,,4 16,상관식 미선정,확장,,h_air,"Re,Pr,Nu,입구 효과 검증",,203,,,,
+솔버,BDF 시간 적분 차수,q_bdf,정수,,Parameter,,,스칼라,,개요; B 6,범위 제안,1차,1–5,q,DASSL 가변 차수 구현,,204,,,,
+솔버,시간 적분 시도 간격,dt_solver,s,,Parameter,,,스칼라,,개요,설정 필요,1차,,Δt,오차 제어 후 자동 조절,config/solver.yaml :: dt,205,,,,
+솔버,상대 오차 허용값,rtol,1,,Parameter,,,변수 그룹별,,개요,설정 필요,1차,,rtol,압력·엔탈피·고체온도 스케일별 별도 검증,config/solver.yaml :: rtol,206,,,,
+솔버,절대 오차 허용값,atol,상태변수별 단위,,Parameter,,,변수 그룹별,,개요,설정 필요,1차,,atol,"y 상태별 절대허용오차 벡터. p(Pa), h(J/kg), T(K), 무차원 α를 동일 숫자로 일괄 적용하지 않음; 5번 상세 설정 미수신.",config/solver.yaml :: atol,207,,,,
+솔버,비선형 뉴턴 수렴 기준,newton_tol,정규화 잔차 기준,,Parameter,,,스칼라/잔차군,,개요; 4 18,설정 필요,1차,,Newton tolerance,"질량(kg/s), 운동량(Pa), 에너지(W), 고체열(W) 잔차를 적절한 스케일로 정규화한 후 수렴 판단; 5번 상세 설정 미수신.",,208,,,,
+솔버,운동량 관성항 반영 스위치,delta_inert,bool,,Parameter,,,스칼라,,B 6-7; D 10,기본 제안,1차,false,δ_inert,전 face 관성을 켜면 DAE 지수 변경 문제; 별도 수식 검토,,209,,,,
+솔버,유량 역전 스무딩 상대 폭,eps_mdot_rel,1,,Parameter,,,유로별,,"B 5,11; D 14",공동 튜닝 필요,1차,0.0001,ṁ_ε/ṁ_nom,유로별 정격 ṁ에 곱함,,210,,,,
+솔버,정체 시 대류 Re 안전 하한,Re_min_safe,1,,Parameter,,,스칼라,,C 8; D 14,제안값,1차/사고,100,Re_min,영유량 대류 계산 보호,,211,,,,
+솔버,층류·난류 전환 중심,Re_tr_mid,1,,Parameter,,,스칼라,,C 8; D 14,제안값,1차/사고,3150,"Re_tr,mid",전환 폭과 함께 적용,,212,,,,
+솔버,층류·난류 전환 폭,Re_tr_width,1,,Parameter,,,스칼라,,C 8; D 14,튜닝 필요,1차/사고,350,ΔRe_tr,수렴성과 열전달 편향 함께 검사,,213,,,,
+솔버,자연대류 영온도차 보호 폭,dT_eps_nc,K,,Parameter,,,스칼라,,C 8; D 14,튜닝 필요,사고,0.1,ΔT_ε,Churchill–Chu 평가에서 ΔT→0 보호,,214,,,,
+솔버,벽/벌크 온도비 매끈한 클램프 폭,eps_T_ratio_clamp,1,,Parameter,,,스칼라,,C 8; D 14,튜닝 필요,사고,0.01,ε_T,냉각부 온도비 보정 적용,,215,,,,
+솔버,강제·자연대류 smooth-max 지수,m_smooth_max,1,,Parameter,,,스칼라,,"C 8,16; D 14",민감도 필요,사고,6,m,대안 10; 교차점 양의 편향 검토,,216,,,,
+솔버,순환기 정체 정규화 폭,v_eps_circ,1,,Parameter,,,스칼라,,"D 3,14",제안값,1차,0.0001,v_ε,체적유량 무차원화에서 사용,,217,,,,
+솔버,순환기 영회전 정규화 폭,alpha_eps_circ,1,,Parameter,,,스칼라,,"D 4,14",제안값,1차,0.001,α_ε,회전수 정체 시 연속성,,218,,,,
+솔버,순환기 트립 신호 전환시간,dt_circ_trip,s,,Parameter,,,스칼라,,"D 4,14",예비값,사고,0.1,Δt_trip,계단 불연속 완화,,219,,,,
+솔버,체크밸브 개폐 스무딩 차압,dp_eps_valve,Pa,,Parameter,,,스칼라,,"D 7,14",제안값,사고,50,Δp_ε,valve_dp_crack_pa와 비율 유지,,220,,,,
+솔버,체크밸브 닫힘 개도 하한,alpha_min_valve,1,,Parameter,,,스칼라,,"D 7,14",제안값,사고,0.0001,α_min,누설/계통 폐루프 정의 시 반영,,221,,,,
+솔버,임계·아음속 방출 전환 폭,eps_r_break,1,,Parameter,,,스칼라,,D 14-15,제안값,확장,0.001,ε_r,DCC 파단 모델 전용,,222,,,,
+솔버,파단 배압 역전 전환 폭,eps_Pi_break,1,,Parameter,,,스칼라,,D 14-15,제안값,확장,0.0001,ε_Π,DCC 파단 모델 전용,,223,,,,
+SG,증기발생기 헬륨 입구 벌크온도,T_sg_he_inlet,K,,Derived,,,SG 입구 포트,,"4 2,4",정격 검산값,1차,958.15,"T_He,in",기존 SG 단독 검산 958.15 K(685°C). 보완본 원 설계의 약 685.6°C=958.75 K와 구분하고 경계 운전점을 대조.,,224,,,,
+유체 FVM,공통 Darcy 마찰상관식 선택,mode_friction,범주,,Parameter,,,유로별 또는 공통,,C 2; D 1,기본안 제안,1차,churchill,friction_mode,노심 자료의 Swamee–Jain 예비안과 통일 검증. 정격·저유량·역류 적용성 확인.,,225,,,,
+유체 FVM,공통 헬륨 대류 Nusselt 상관식 선택,mode_nu,범주,,Parameter,,,유로별 또는 공통,,C 3,기본안 제안,1차,mceligot,nu_mode,"난류 McEligot, 층류/자연대류 혼합 방식 및 기하별 적용범위 명시.",,226,,,,
+유체 FVM,자연대류 기여의 사용 여부,include_nc,bool,,Parameter,,,유로별,,"C 3,6",민감도 옵션,1차/확장,1,include_nc,P-LOFC에서 include_nc=False 민감도 비교. 적용할 유로/관내 Churchill–Chu 가정 점검.,,227,,,,
+병렬·배관,우회유로 모델 선택,mode_bypass,범주,,Parameter,,,스칼라,,"C 4,6",기본안 제안,1차,calibrated_parallel,bypass_mode,"초기화 시 11% 보정, 과도에서는 두 병렬경로의 운동량/질량 잔차로 우회량 계산.",,228,,,,
+플레넘,상·하부 플레넘의 열수력 모델 선택,mode_plenum,범주,,Parameter,,,스칼라,,D 4.2,기본안 제안,1차,finite_volume,plenum_mode,유한체적 플레넘에서 각각 질량·에너지 보존 잔차; 무체적 분기와 state 수가 다름.,,229,,,,
+순환기,순환기 정지 후 감속 모델 선택,mode_coastdown,범주,,Parameter,,,스칼라,,D 2.2,기본안 제안,1차,inertia_ode,coastdown_mode,속도비 α의 Differential 잔차와 정지 시 지정 프로파일을 동시에 적용하지 않음.,,230,,,,
+밸브,밸브 형식 및 동작 논리,type_valve,범주,,Parameter,,,밸브별,,D 3.1,형식별 결정 필요,1차/확장,,valve_type,체크·격리/제어·안전방출 밸브를 구별. 안전방출 설정압력과 일반 체크밸브 crack 차압 혼용 금지.,,231,,,,
+밸브,밸브 개도별 압력손실 모델 선택,mode_valve_loss,범주,,Parameter,,,밸브별,,D 3.2,기본안 제안,1차,relap_orifice,valve_loss_mode,"제조사 Cv 곡선 대안과 구분; 개도/누설 하한, 정·역류 방향성 및 반복 손실 적용 확인.",,232,,,,
+전역,열 포트 온도,T_thermal_port,K,,Alias,,,포트별,,GitHub interfaces/ports.py,기존 코드 인터페이스,1차,,ThermalPort.T,포트별 고체/유체 온도의 별칭. 독립 온도 상태의 중복 등록 금지.,interfaces/ports.py :: ThermalPort.T,233,Component owner,no,{instance}.{port}.T_thermal_port,contract
+전역,상태변수별 오차 정규화 척도,s_y,상태변수별 단위,,Parameter,,,상태별,,GitHub interfaces/state_registry.py,기존 코드 인터페이스,1차,,scale,StateRegistry.register(scale=...). 물리량 값이 아니라 솔버 스케일.,interfaces/state_registry.py :: StateRegistry.register(scale),234,Role 5,no,,implemented
+전역,잔차별 정규화 척도,s_R,잔차별 단위,,Parameter,,,잔차별,,GitHub main.py; docs/interface_spec.md,기존 코드 인터페이스,1차,,residual_scale,residual_scale 전달. 물리 방정식의 잔차 계산과 분리한다.,main.py :: DASSL(residual_scale),235,Role 5,no,,implemented
+헬륨 물성,헬륨 밀도 상태방정식 선택,mode_he_eos,범주,,Parameter,,,스칼라,,A p.4-5,팀 조사자료 보완,1차,,eos_mode,벤치마크 KTA와 이상기체 비교 옵션. 코드에서 명시적 선택 필요.,,236,,,,
+노심·열전달,고체 인접 노드 간 전도 열률,Q_dot_solid_cond,W,,Derived,,,격자 접속면별,,3 p.6-11; 4 p.7,팀 조사자료 보완,1차,,"Q_cond,ij",고체 에너지식의 인접 격자 전도항. 총 벽면 대류열과 별도.,,237,,,,
+노심·열전달,고체 격자 사이 열저항,R_solid_cond,K/W,,Derived,,,격자 접속면별,,3 p.6-11; 4 p.7,팀 조사자료 보완,1차,,"R_cond,ij",형상과 방향별 열전도율에서 계산.,,238,,,,
+노심·열전달,노심 총열수지 검산 잔차,R_core_heat_balance,W,,Derived,,,스칼라,,3 p.16,팀 조사자료 보완,1차,,core heat-balance residual,고체 발열과 헬륨 열취득·용기 방열 비교용. 유체 셀 잔차와 별개.,,239,,,,
+유체 공통,유체 셀 벌크 유속,u_fluid_cell,m/s,,Derived,,,셀별,,B p.5; C p.3,팀 조사자료 보완,1차,,u,m_dot/(rho*A). 부력·Re·관성 계산에 사용.,,240,,,,
+유체 공통,유체 셀 벽면 열유속 경계값,q2_fluid_wall,W/m²,,External Input,,,벽면·셀별,,B p.8,선택 경계조건,1차/확장,,q_w″,벽온도 지정 대신 열유속을 지정하는 모델에서만 사용. Q_dot_wall=A*q2로 환산.,,241,,,,
+노심 우회,등가 우회유로 헬륨 유량,m_dot_core_bypass,kg/s,,Algebraic,,,우회유로별,,C p.9-11,팀 조사자료 보완,1차,,m_dot_byp,정상 11% 분율 보정 후 과도에서는 플레넘 압력차로 해석.,,242,,,,
+노심 기하,노심 축방향 유체 셀 수,N_core_axial,정수,,Parameter,,,스칼라,,GitHub config/geometry.yaml,기존 코드 설정,1차,,core.axial_cells,core.axial_cells. 팀 1번 기하 확정 전 null.,config/geometry.yaml :: core.axial_cells,243,,,,
+노심 기하,노심 냉각 유로 총 길이,L_core_channel,m,,Parameter,,,유로별,,GitHub config/geometry.yaml; C p.13,기존 코드 설정,1차,,core.channel_length_m,core.channel_length_m. 각 셀 길이의 합과 일치해야 함.,config/geometry.yaml :: core.channel_length_m,244,,,,
+유체 공통,셀/면 기준 높이 프로필,z_fluid_cell,m,,Parameter,,,셀/면별,,GitHub config/geometry.yaml; B p.5,기존 코드 설정,1차,,core.elevation_profile_m,"core.elevation_profile_m. 높이 위쪽 양, dz 및 theta와 정합.",config/geometry.yaml :: core.elevation_profile_m,245,,,,
+순환기,정격 대비 순환기 체적유량비,v_circ_flow_ratio,1,,Derived,,,스칼라,,D p.3-4,팀 조사자료 보완,1차,,v,v=V_dot/V_dot_R. 2차 성능곡선의 독립 축.,,246,,,,
+순환기,순환기 유로 기준 단면적,A_circ_flow,m²,,Parameter,,,스칼라,,D p.4,팀 조사자료 보완,1차,,A_circ,Locked-rotor 손실계수 K_lr와 m_dot^2 저항의 환산에 사용.,,247,,,,
+순환기,순환기 정지 회전자 등가 손실계수,K_circ_locked_rotor,1,,Derived,,,스칼라,,D p.4,팀 조사자료 보완,1차,,K_lr,"c2, 정격양정·밀도·유량·A_circ로 계산; 별도 자유 보정값으로 중복 사용하지 않음.",,248,,,,
+순환기,순환기 초기 각속도,omega_circ_initial,rad/s,,External Input,,,스칼라,,GitHub config/operation.yaml,기존 코드 설정,1차,,compressor.initial_rotation_rate_rad_s,compressor.initial_rotation_rate_rad_s. 기존 alpha_circ(0) 계산에 사용.,config/operation.yaml :: compressor.initial_rotation_rate_rad_s,249,,,,
+순환기,순환기 정격 각속도,omega_circ_rated,rad/s,,Parameter,,,스칼라,,D p.3-4; GitHub config/operation.yaml,정의 필요,1차,,omega_R,"alpha_circ=omega/omega_R. 값 미확정, 초기 각속도를 alpha로 바꾸는 기준.",,250,,,,
+배관,동축덕트 단열 모델 사용 여부,enabled_duct_adiabatic,bool,,Parameter,,,덕트별,,D p.9,팀 조사자료 보완,1차/확장,,adiabatic_duct,기본안은 단열; 장기 열손실 민감도에서는 벽 열저항 모델 활성화.,,251,,,,
+SG,SG-0 헬륨측 에너지 잔차,R_sg_energy,W,,Residual,,,SG별,,"4 p.3,12",팀 조사자료 보완,1차,,R_E,m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.,,252,Role 4,no,,pending Role 4
+SG,SG-0 헬륨측 압력 잔차,R_sg_pressure,Pa,,Residual,,,SG별,,"4 p.3,12",팀 조사자료 보완,1차,,R_P,p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.,,253,Role 4,no,,pending Role 4
+SG,SG 축방향 분할 셀 수,N_sg_axial,정수,,Parameter,,,스칼라,,GitHub config/geometry.yaml,기존 코드 설정,확장,,heat_exchanger.axial_cells,heat_exchanger.axial_cells. SG-0에서는 사용하지 않음.,config/geometry.yaml :: heat_exchanger.axial_cells,254,,,,
+SG,SG 헬륨에서 관벽으로 전달하는 열률,Q_dot_sg_he_to_wall,W,,Derived,,,구간별,,4 p.12,SG-1/2 조건부,확장,,Q_He_to_wall,벽 축열 모델의 헬륨측 열유입.,,255,,,,
+SG,SG 관벽에서 물·증기로 전달하는 열률,Q_dot_sg_wall_to_water,W,,Derived,,,구간별,,4 p.12,SG-1/2 조건부,확장,,Q_wall_to_water,관벽 축열은 C_wall*Tdot=Q_He_to_wall-Q_wall_to_water.,,256,,,,
+SG,SG 관벽 전도 열저항,R_sg_wall,K/W,,Parameter,,,구간별,,4 p.8,SG-1/2 조건부,확장,,R_wall,"SG-2 원통형 관벽 전도저항을 각 재질·온도에서 평가. 외측 A_o, 내측 A_i와 동일 면적으로 처리하지 않음.",,257,,,,
+SG,SG 오염층 열저항,R_sg_fouling,K/W,,Parameter,,,구간별,,4 p.8,SG-1/2 조건부,확장,,R_foul,오염층 자료 없으면 임의 수치 금지.,,258,,,,
+SCS,SCS 냉각수 입구 비엔탈피,h_scs_w_inlet,J/kg,,Derived,,,접속 포트별,,4 p.14,SCS 조건부,확장,,"h_w,in","T_scs_w_inlet, p_scs_w_inlet에서 물성식으로 산출. 수측 열수지에 필요.",,259,,,,
+SCS,SCS 헬륨측 열용량유량,C_scs_he,W/K,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,C_He,m_dot_scs_he*c_p_he. 0D 유효도-NTU 모델 선택 시 계산.,,260,,,,
+SCS,SCS 냉각수측 열용량유량,C_scs_w,W/K,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,C_w,m_dot_scs_w*c_p_water. 냉각수 비열 공급원이 필요.,,261,,,,
+SCS,SCS 양측 최소 열용량유량,C_min_scs,W/K,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,C_min,"min(C_scs_he,C_scs_w).",,262,,,,
+SCS,SCS 전달단위수,NTU_scs,1,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,NTU,UA_scs/C_min_scs; C_min=0이면 분할 계산하지 않음.,,263,,,,
+SCS,SCS 열교환기 유효도,epsilon_scs_effectiveness,1,,Derived,,,스칼라,,4 p.14,SCS NTU 조건부,확장,,epsilon,유로형식과 NTU를 정한 뒤 상관식 선정.,,264,,,,
+SCS,SCS 헬륨측 열수지 잔차,R_scs_energy_he,W,,Residual,,,SCS별,,4 p.14,SCS 조건부,확장,,"R_He,SCS","m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",,265,Role 4,no,,pending Role 4
+SCS,SCS 냉각수측 열수지 잔차,R_scs_energy_w,W,,Residual,,,SCS별,,4 p.14,SCS 조건부,확장,,"R_w,SCS","m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",,266,Role 4,no,,pending Role 4
+RCCS,RPV 고체 벽 내부 온도,T_rpv_wall,K,,Differential,,,벽 구간별,,"4 p.7,16",RCCS-1 조건부,확장,,"T_v,i",외면 온도 T_rpv_surface와 별도 노드로 둘 경우에만 등록; 단일 벽 노드면 별칭.,,267,Role 4,conditional,,pending Role 4
+RCCS,공동 공기에서 콘크리트로 전달되는 열률,Q_dot_rccs_cavity_to_concrete,W,,Derived,,,구간별,,4 p.15-16,RCCS-1 조건부,확장,,Q_cav_to_concrete,공동 열유출의 패널 회수분과 분리해 보존식 구성.,,268,,,,
+RCCS,RCCS 덕트 공기 밀도,rho_rccs_duct_air,kg/m³,,Derived,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,rho_air,"공기 EOS와 p,T에서 산출. 헬륨 rho_he와 별도.",,269,,,,
+RCCS,RCCS 하강 공기 밀도,rho_rccs_air_down,kg/m³,,Derived,,,높이 구간별,,4 p.16,RCCS-1 조건부,확장,,rho_down,부력 적분 g∫(rho_down-rho_up)dz의 하강 경로.,,270,,,,
+RCCS,RCCS 상승 공기 밀도,rho_rccs_air_up,kg/m³,,Derived,,,높이 구간별,,4 p.16,RCCS-1 조건부,확장,,rho_up,부력 적분의 상승 경로; 해당 덕트 셀 밀도와 동치면 별칭.,,271,,,,
+RCCS,RCCS 덕트 공기 벌크 온도,T_rccs_duct_air,K,,Derived,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,"T_air,j",h_rccs_duct_air와 공기 물성식에서 환산.,,272,,,,
+RCCS,RCCS 덕트 공기 정압,p_rccs_duct_air,Pa,,Algebraic,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,"p_air,j",1D 운동량식 압력상태를 푸는 모델을 택할 때만 독립 등록.,,273,,,,
+RCCS,RCCS 덕트 공기 셀 체적,V_rccs_duct_cell,m³,,Parameter,,,덕트 셀별,,4 p.16,RCCS-1 조건부,확장,,"V_air,j",공기 셀 축열 rho*V*dh/dt 선택 시 필요.,,274,,,,
+RCCS,RCCS 덕트 마찰 길이,L_rccs_duct,m,,Parameter,,,유로별,,4 p.16,RCCS-1 조건부,확장,,L_air,보완본 p.20의 13.86 m는 기존 보고서 참조 가열길이로 조건부 계산에 사용. 실기 전체 유로 길이로 확정하지 않음.,,275,,,,
+RCCS,RCCS 병렬 상승관 수,N_rccs_riser,정수,,Parameter,,,스칼라,,4 p.16-17,설계 문서값,확장,227,N_riser,GA-MHTGR 공랭식 RCCS 상승관 227개. 기존 표의 미확정 표시를 보완본 p.16의 설계값으로 갱신. 각 관 유량 분배는 별도 모델.,,276,,,,
+RCCS,RCCS 공기 자연순환 압력 잔차,R_rccs_flow,Pa,,Residual,,,루프별,,4 p.16,RCCS-1 조건부,확장,,R_flow,dp_rccs_buoyancy-dp_rccs_loss=0. Residual ID로 관리; StateRegistry 미지수로 등록 금지.,,277,Role 4,no,,pending Role 4
+사고,파단 방출의 임계유동 판정값,is_break_choked,bool,,Derived,,,파단별,,D p.15,DCC 조건부,확장,,is_choked,"임계/아음속 방출 모델의 결과, 질량 방출량과 구분.",,278,,,,
+솔버,시간적분기 선택,mode_solver,범주,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,method,현재 DASSL(코드 구현의 가변 BDF); 원자로 물리 모형과 별도.,config/solver.yaml :: method,279,,,,
+솔버,BDF 허용 최대 차수,q_bdf_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_order,max_order=5. 기존 q_bdf는 매 스텝 실제 차수이므로 구분.,config/solver.yaml :: max_order,280,,,,
+솔버,솔버 최소 시간간격,dt_solver_min,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,min_step,min_step. 현재 데모 설정은 0.0이며 원자로 운전 입력값으로 오인 금지.,config/solver.yaml :: min_step,281,,,,
+솔버,솔버 최대 시간간격,dt_solver_max,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_step,max_step. 현재 데모 설정은 0.5 s.,config/solver.yaml :: max_step,282,,,,
+솔버,최대 허용 시간스텝 수,N_solver_steps_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_steps,max_steps.,config/solver.yaml :: max_steps,283,,,,
+솔버,스텝 거부 후 최대 재시도 횟수,N_solver_retries_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,max_retries,max_retries.,config/solver.yaml :: max_retries,284,,,,
+솔버,뉴턴 반복 최대 횟수,N_newton_iter_max,정수,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,newton_max_iter,newton_max_iter.,config/solver.yaml :: newton_max_iter,285,,,,
+솔버,뉴턴 절대 수렴 허용값,atol_newton,정규화 잔차 기준,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,newton_atol,newton_atol. 기존 newton_tol은 대표적 개념이며 실제 구현에는 두 허용값이 따로 있음.,config/solver.yaml :: newton_atol,286,,,,
+솔버,뉴턴 상대 수렴 허용값,rtol_newton,1,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,newton_rtol,newton_rtol. solver rtol과 별도.,config/solver.yaml :: newton_rtol,287,,,,
+솔버,시뮬레이션 시작 시간,t_solver_start,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,t_start,t_start. 시나리오에 맞춰 결정.,config/solver.yaml :: t_start,288,,,,
+솔버,시뮬레이션 종료 시간,t_solver_end,s,,Parameter,,,스칼라,,GitHub config/solver.yaml,기존 코드 설정,1차,,t_end,t_end. 현재 데모의 5.0 s를 HTGR 시나리오로 재사용하지 않음.,config/solver.yaml :: t_end,289,,,,
+SG,원 설계 SG 정격 열부하,Q_dot_sg_design_ref,W,,Parameter,,,SG별,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계 정격,SG-2 조건부,352100000,,원 설계 352.1 MW(t). 기존 Q_dot_sg_removed의 352.193 MW 검산값과 다른 근거·정밀도.,,,,,,
+SG,연속 전열관 개수,N_sg_tubes,정수,,Parameter,,,SG,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계값,SG-2 조건부,439,,DOE-HTGR-86-129 Rev.1/HFD-42102 Rev.2 관수. 이전 개념설계 350회로와 혼합 금지.,,,,,,
+SG,SG 전열관 외경,D_sg_tube_outer,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계값,SG-2 조건부,0.022225,,He 관군 Re·Nu와 외면적 기준.,,,,,,
+SG,SG 전열관 벽 두께,t_sg_tube_wall,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.4,원 설계값,SG-2 조건부,0.003302,,0.130 in의 SI 환산; 내경·벽 체적 계산.,,,,,,
+SG,SG 전열관 내경,D_sg_tube_inner,m,,Derived,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.4,기하 계산값,SG-2 조건부,0.015621,,D_o−2t. 물·증기 질량유속과 손실 계산.,,,,,,
+SG,SG 전열관 유효 길이 합계,L_sg_tube_effective,m,,Parameter,,,관별,,"MHTGR-350 SG/RCCS 보완본[4] p.4,6",원 설계 환산값,SG-2 조건부,131.363,,FSH 13.308 m와 EES 118.055 m의 합.,,,,,,
+SG,FSH 전열관 유효 길이,L_sg_tube_fsh,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계 환산값,SG-2 조건부,13.308,,FSH 면적·벽 축열 배분.,,,,,,
+SG,EES 전열관 유효 길이,L_sg_tube_ees,m,,Parameter,,,관별,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계 환산값,SG-2 조건부,118.055,,EES 면적·벽 축열 배분.,,,,,,
+SG,SG 관군 횡방향 피치,S_sg_tube_transverse,m,,Parameter,,,관군별,,"MHTGR-350 SG/RCCS 보완본[4] p.4,9",원 설계 환산값,SG-2 조건부,0.038100,,관군 배열과 최소 자유유로 계산에 사용.,,,,,,
+SG,SG 관군 종방향 피치,S_sg_tube_longitudinal,m,,Parameter,,,관군별,,"MHTGR-350 SG/RCCS 보완본[4] p.4,9",원 설계 환산값,SG-2 조건부,0.035331,,관군 배열과 열별 위치에 사용.,,,,,,
+SG,SG 설계 전열관 총 외면적,A_sg_tube_outer_total,m²,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.4,6",원 설계값,SG-2 조건부,4026.539,,FSH와 EES 외면적 합. 원 표 자체가 외면이라는 용어는 명시하지 않으며 πD_oNL로 대조.,,,,,,
+SG,FSH 설계 전열관 외면적,A_sg_tube_outer_fsh,m²,,Parameter,,,FSH,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계값,SG-2 조건부,407.882,,FSH 구간 합산 기준.,,,,,,
+SG,EES 설계 전열관 외면적,A_sg_tube_outer_ees,m²,,Parameter,,,EES,,MHTGR-350 SG/RCCS 보완본[4] p.6,원 설계값,SG-2 조건부,3618.658,,EES 구간 합산 기준.,,,,,,
+SG,SG 계산 전열관 총 내면적,A_sg_tube_inner_total,m²,,Derived,,,SG,,MHTGR-350 SG/RCCS 보완본[4] p.6,기하 계산값,SG-2 조건부,2830.06,,D_i/D_o 비로 계산한 근사값. 실제 셀 내면적은 해당 구간 길이에서 계산.,,,,,,
+SG,SG 전열관 벽 총체적,V_sg_tube_wall_total,m³,,Derived,,,SG,,MHTGR-350 SG/RCCS 보완본[4] p.6,기하 계산값,SG-2 조건부,11.32,,439개 유효관 기하에서 산출한 근사값. 재질별 열용량 배분에 사용.,,,,,,
+SG,SG 구간별 관 재질,material_sg_tube,범주,,Parameter,,,EES/FSH,,"MHTGR-350 SG/RCCS 보완본[4] p.3,4,6",원 설계값,SG-2 조건부,EES: 2¼Cr–1Mo; FSH: Alloy 800H,,이종금속 용접 경계는 고정. 예열·비등·과열 상경계는 이동.,,,,,,
+SG,SG 헬륨 관군 최소 자유유로면적,A_min_sg_he,m²,,Parameter,,,높이별,,"MHTGR-350 SG/RCCS 보완본[4] p.9,24",상세 도면 필요,SG-2 조건부,,,"피치·슈라우드 치수만으로 단정 불가. He G_max, Re와 열전달계수에 필요.",,,,,,
+SG,SG He 관군 최소 단면 질량유속,G_max_sg_he,kg/(m²·s),,Derived,,,높이별,,"MHTGR-350 SG/RCCS 보완본[4] p.9,14",유로 확정 필요,SG-2 조건부,,,He 유량/A_min. 우회유량 및 관군 배열 확인 후 산출.,,,,,,
+SG,SG He 관군 외측 열전달 상관식,mode_sg_he_crossflow,범주,,Parameter,,,SG별,,MHTGR-350 SG/RCCS 보완본[4] p.9,보완본 기준안,SG-2 조건부,Zukauskas,,직선 관군 횡류의 1차 근사. 저유량·정체·역류와 실제 나선관 효과는 별도 검토.,,,,,,
+SG,SG He 횡류 유효 열 수,N_sg_crossflow_rows,정수,,Parameter,,,관군별,,MHTGR-350 SG/RCCS 보완본[4] p.9,유효열 확인 필요,SG-2 조건부,,,설계 참고 28 반경방향 열과 상관식 F_N의 유동 방향 유효 열을 동일시하지 않음.,,,,,,
+SG,SG 관벽 바깥 반벽 온도,T_sg_wall_outer,K,,Differential,,,구간 a×셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,6",SG-2 상태 제안,SG-2 조건부,,,He 대류와 관벽 반경방향 전도에 연결. 기존 T_sg_wall과 중복 상태 등록 금지.,,,,,,
+SG,SG 관벽 안쪽 반벽 온도,T_sg_wall_inner,K,,Differential,,,구간 a×셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,6",SG-2 상태 제안,SG-2 조건부,,,물·증기 대류/비등과 관벽 전도에 연결.,,,,,,
+SG,SG 관벽 재질별 밀도,rho_sg_tube_wall,kg/m³,,Parameter,,,EES/FSH×셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.7,온도표 입력 필요,SG-2 조건부,,,"EES는 JAERI 온도표, FSH는 VDM 20°C 값과 열팽창 검토. 표점 범위 밖 외삽 금지.",,,,,,
+SG,SG 관벽 재질별 비열,c_p_sg_tube_wall,J/(kg·K),,Parameter,,,EES/FSH×셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.7,온도표 입력 필요,SG-2 조건부,,,재질별 원자료 온도표를 보간. 반벽 열용량에 사용.,,,,,,
+SG,SG 관벽 재질별 열전도율,k_sg_tube_wall,W/(m·K),,Parameter,,,EES/FSH×셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.7,온도표 입력 필요,SG-2 조건부,,,재질별 원자료 온도표를 보간. 원통형 전도저항에 사용.,,,,,,
+SG,SG 관벽 안팎 반벽 전도열률,Q_dot_sg_wall_cond,W,,Derived,,,구간 a×셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,6",SG-2 조건부,SG-2 조건부,,,외면 대류·내면 대류와 함께 각 반벽 축열을 일관되게 계산.,,,,,,
+SG,SG 관내 물·증기 셀 비엔탈피,h_sg_water_cell,J/kg,,Differential,,,셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,8,10",SG-2 상태 제안,SG-2 조건부,,,"p,h로 단상/포화 2상/과열증기 상을 판정. BOP 급수·증기 경계와 구분.",,,,,,
+SG,SG 관내 물·증기 셀 압력,p_sg_water_cell,Pa,,Algebraic,,,셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,8,10",SG-2 상태 제안,SG-2 조건부,,,포화 물성과 국소 마찰·중력·가속 손실에 사용.,,,,,,
+SG,SG 관내 물·증기 면 유량,m_dot_sg_water_face,kg/s,,Algebraic,,,face j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,10",SG-2 상태 제안,SG-2 조건부,,,439개 병렬 관의 유량 분배와 경계 포트 정의 필요.,,,,,,
+SG,SG 관내 물·증기 국소 밀도,rho_sg_water_cell,kg/m³,,Derived,,,셀 j,,MHTGR-350 SG/RCCS 보완본[4] p.8,IF97 물성,SG-2 조건부,,,"상에 따라 p,h 또는 p,x로 평가. 축적항·손실에 사용.",,,,,,
+SG,SG 관내 물·증기 국소 내부에너지,u_sg_water_cell,J/kg,,Derived,,,셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.5,8",IF97 물성,SG-2 조건부,,,포화 2상 에너지 저장항에 사용.,,,,,,
+SG,SG 관내 물·증기 질량유속,G_sg_water,kg/(m²·s),,Derived,,,구간/face j,,"MHTGR-350 SG/RCCS 보완본[4] p.10,11",기하·유량 계산,SG-2 조건부,,,439관의 실제 내면 단면으로 계산. 단상·비등·압력손실 상관식 입력.,,,,,,
+SG,SG 물·증기 단상 열전달 상관식,mode_sg_water_single_phase,범주,,Parameter,,,구간별,,"MHTGR-350 SG/RCCS 보완본[4] p.10,14",보완본 기준안,SG-2 조건부,Dittus–Boelter,,매끈한 완전발달 난류 기준. Re·Pr와 나선관 곡률 적용 범위 검사.,,,,,,
+SG,SG 습윤벽 포화비등 상관식,mode_sg_water_boiling,범주,,Parameter,,,비등 구간,,"MHTGR-350 SG/RCCS 보완본[4] p.11,14",보완본 예비 기준,SG-2 조건부,Kandlikar,,"두 분기 중 큰 값. 0<x≤0.8, 고압 나선관 검증 전. CHF·건조 이후 별도 모델.",,,,,,
+SG,SG 관내 비등 열유속,q2_sg_water_boiling,W/m²,,Algebraic,,,비등 셀 j,,"MHTGR-350 SG/RCCS 보완본[4] p.11,12",SG-2 조건부,SG-2 조건부,,,Kandlikar Bo와 관벽 열수지에 동시에 들어가므로 대수적으로 수렴.,,,,,,
+SG,SG 2상 차압 모델,mode_sg_water_two_phase_dp,범주,,Parameter,,,비등 구간,,"MHTGR-350 SG/RCCS 보완본[4] p.13,14",예비 근사,SG-2 조건부,HEM,,곡관 곡률·상간속도차를 무시하는 준정상 근사. 검증 전.,,,,,,
+SG,SG He 관군 마찰차압 정격 기준,dp_sg_he_tube_bank_fric_ref,Pa,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.13,23",원 설계값,SG-2 조건부,9651,,FSH 1329 Pa + EES 8321 Pa. 전체 SG 양단 25500 Pa와 압력탭 경계 다름.,,,,,,
+SG,SG 2차 관군 마찰차압 정격 기준,dp_sg_water_tube_fric_ref,Pa,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.13,23",원 설계 환산값,SG-2 조건부,946000,,FSH 약 0.360 MPa + EES 약 0.586 MPa. 입출구 전체 약 3.36 MPa와 구분.,,,,,,
+SG,SG 2차측 전체 양단 차압 정격 기준,dp_sg_water_total_ref,Pa,,Parameter,,,SG,,"MHTGR-350 SG/RCCS 보완본[4] p.13,23",원 설계 근사,SG-2 조건부,3360000,,약 3.36 MPa. 20.70→17.34 MPa(a) 경계의 오리피스·헤더·가속·고도 손실 포함.,,,,,,
+SG,SG 급수관 입구 직렬 오리피스 개수,N_sg_feedwater_orifices_series,정수,,Parameter,,,급수관별,,MHTGR-350 SG/RCCS 보완본[4] p.13,원 설계 제안,SG-2 조건부,20,,각 급수관 입구의 직렬 배열 방안. 개별 K는 원문 미제시.,,,,,,
+SG,SG 급수관 입구 오리피스 직경,D_sg_feedwater_orifice,m,,Parameter,,,오리피스별,,MHTGR-350 SG/RCCS 보완본[4] p.13,원 설계 제안,SG-2 조건부,0.0065,,20개 직렬 입구 오리피스 방안. K를 역산해 임의 확정하지 않음.,,,,,,
+RCCS-1,RCCS 상승관 외형 짧은 변,w_rccs_riser_outer,m,,Parameter,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,0.050,,사각형 외형. 유로 내형은 벽 두께 차감.,,,,,,
+RCCS-1,RCCS 상승관 외형 긴 변,b_rccs_riser_outer,m,,Parameter,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,0.250,,사각형 외형. 유로 내형과 구분.,,,,,,
+RCCS-1,RCCS 상승관 벽 두께,t_rccs_riser_wall,m,,Parameter,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,0.00476,,양쪽 벽을 차감한 내형 40.48×240.48 mm.,,,,,,
+RCCS-1,RCCS 상승관 내형 짧은 변,w_rccs_riser_inner,m,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 기하 계산,RCCS-1 조건부,0.04048,,외형 50 mm에서 양쪽 벽 두께를 차감.,,,,,,
+RCCS-1,RCCS 상승관 내형 긴 변,b_rccs_riser_inner,m,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 기하 계산,RCCS-1 조건부,0.24048,,외형 250 mm에서 양쪽 벽 두께를 차감.,,,,,,
+RCCS-1,RCCS 상승관 227개 병렬 총 유로면적,A_rccs_risers_total,m²,,Derived,,,상승관 전체,,"MHTGR-350 SG/RCCS 보완본[4] p.16,21",실기 기하 계산,RCCS-1 조건부,2.20976,,각 관 내면적 0.0097346304 m² × 227. 헤더·루버 유효면적과 구분.,,,,,,
+RCCS-1,RCCS 하강통로 판간 간격,gap_rccs_downcomer,m,,Parameter,,,하강통로,,"MHTGR-350 SG/RCCS 보완본[4] p.16,21",실기 설계값,RCCS-1 조건부,0.250,,통로 전체 폭·분기 길이·조도는 별도 입력 필요.,,,,,,
+RCCS-1,RCCS 외기 흡입·배기 포트 개수,N_rccs_air_ports,정수,,Parameter,,,흡기/배기 각각,,MHTGR-350 SG/RCCS 보완본[4] p.16,실기 설계값,RCCS-1 조건부,4,,2개 입출구 구조물에 배치. 실제 유로와 손실계수 연결.,,,,,,
+RCCS-1,RCCS 정상운전 설계 평가 열제거량,Q_dot_rccs_design_normal_ref,W,,Parameter,,,정상운전,,MHTGR-350 SG/RCCS 보완본[4] p.16,설계 평가 참고값,RCCS-1 조건부,718000,,시간불변 열제거 경계가 아닌 정상운전 검산 기준.,,,,,,
+RCCS-1,RCCS 가압 전도냉각·제어봉 인출 설계 평가 열제거량,Q_dot_rccs_design_pcc_ref,W,,Parameter,,,가압 전도냉각·제어봉 인출,,MHTGR-350 SG/RCCS 보완본[4] p.16,설계 평가 참고값,RCCS-1 조건부,1750000,,시간불변 열제거 경계가 아닌 해당 사고 검산 기준.,,,,,,
+RCCS-1,RCCS 감압 전도냉각·소규모 누설 설계 평가 열제거량,Q_dot_rccs_design_dcc_ref,W,,Parameter,,,감압 전도냉각·소규모 누설,,MHTGR-350 SG/RCCS 보완본[4] p.16,설계 평가 참고값,RCCS-1 조건부,1500000,,시간불변 열제거 경계가 아닌 해당 사고 검산 기준.,,,,,,
+RCCS,RPV 벽 열전도율,k_rpv_wall,W/(m·K),,Parameter,,,RPV 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,40,,SA-533 Gr.B 물성. 실기 재질 온도 의존성은 추가 확인.,,,,,,
+RCCS,RPV 벽 밀도,rho_rpv_wall,kg/m³,,Parameter,,,RPV 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,7500,,RPV 열용량 계산용.,,,,,,
+RCCS,RPV 벽 비열,c_p_rpv_wall,J/(kg·K),,Parameter,,,RPV 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,580,,RPV 열용량 계산용.,,,,,,
+RCCS,노심 배럴 열전도율,k_core_barrel,W/(m·K),,Parameter,,,배럴 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,17.8,,원자로 배럴 전도·축열.,,,,,,
+RCCS,노심 배럴 밀도,rho_core_barrel,kg/m³,,Parameter,,,배럴 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,7800,,원자로 배럴 열용량 계산용.,,,,,,
+RCCS,노심 배럴 비열,c_p_core_barrel,J/(kg·K),,Parameter,,,배럴 구간,,MHTGR-350 SG/RCCS 보완본[4] p.17,NEA 벤치마크 상수,RCCS-1 조건부,515,,원자로 배럴 열용량 계산용.,,,,,,
+RCCS-1,RCCS 패널 열전도율,k_rccs_panel,W/(m·K),,Parameter,,,패널 셀별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",대체 물성표 필요,RCCS-1 조건부,,,IAEA 탄소강 표점은 실기 강종 확정 전 대체값. 보간 범위 밖 외삽 금지.,,,,,,
+RCCS-1,RCCS 패널 밀도,rho_rccs_panel,kg/m³,,Parameter,,,패널 셀별,,MHTGR-350 SG/RCCS 보완본[4] p.17,실기 강종 미확정,RCCS-1 조건부,,,IAEA 대체 비열 계산의 임시 밀도 7850 kg/m³를 실기값으로 확정하지 않음.,,,,,,
+RCCS-1,RCCS 패널 비열,c_p_rccs_panel,J/(kg·K),,Parameter,,,패널 셀별,,MHTGR-350 SG/RCCS 보완본[4] p.17,대체 물성표 필요,RCCS-1 조건부,,,IAEA 열확산율과 k에서 rho cp=k/alpha로 도출한 비열은 대체값.,,,,,,
+RCCS-1,RPV 외면 방사율,epsilon_rpv_surface,1,,Parameter,,,면별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",표면 상태 필요,RCCS-1 조건부,,,RCCS-0 등가방사율 0.74와 분리.,,,,,,
+RCCS-1,RCCS 패널 표면 방사율,epsilon_rccs_panel_surface,1,,Parameter,,,면별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",표면 상태 필요,RCCS-1 조건부,,,RPV 면별 방사율·형상계수와 회색면 복사 계산.,,,,,,
+RCCS-1,RPV·패널·라이너 간 형상계수,F_rccs_view,1,,Parameter,,,면 i×j,,MHTGR-350 SG/RCCS 보완본[4] p.18,형상 필요,RCCS-1 조건부,,,다면 복사 시 A_iF_ij=A_jF_ji 확인.,,,,,,
+RCCS-1,RCCS 공동 공기 자연대류 Rayleigh 수,Ra_rccs_cavity,1,,Derived,,,공동/면별,,"MHTGR-350 SG/RCCS 보완본[4] p.17,18",상관식 입력,RCCS-1 조건부,,,RPV·패널 벽면과 벌크 공기 사이 막온도에서 물성 평가.,,,,,,
+RCCS-1,RCCS 공동 공기 자연대류 Nusselt 수,Nu_rccs_cavity,1,,Derived,,,공동/면별,,MHTGR-350 SG/RCCS 보완본[4] p.18,Churchill–Chu 기준,RCCS-1 조건부,,,수직 자유판 근사. 좁은 공동·구속 영향 검토.,,,,,,
+RCCS-1,RPV에서 공동 공기로의 대류열률,Q_dot_rccs_rpv_to_cavity,W,,Derived,,,RPV 면별,,"MHTGR-350 SG/RCCS 보완본[4] p.15,18",RCCS-1 조건부,RCCS-1 조건부,,,RPV→패널 직접 복사와 분리해 용기·공동 에너지수지에 연결.,,,,,,
+RCCS-1,RCCS 상승관 공기 Reynolds 수,Re_rccs_duct_air,1,,Derived,,,상승관별,,"MHTGR-350 SG/RCCS 보완본[4] p.19,20",유량·물성 계산,RCCS-1 조건부,,,"국소 (p,T), 수력직경, 관별 유량으로 계산.",,,,,,
+RCCS-1,RCCS 상승관 공기 Nusselt 수,Nu_rccs_duct_air,1,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.19,단면별 상관식,RCCS-1 조건부,,,난류 Dittus–Boelter는 1차 근사. 층류는 Shah–London 형상·가열면 조건 사용.,,,,,,
+RCCS-1,RCCS 상승관 공기 Darcy 마찰계수,f_D_rccs_duct_air,1,,Derived,,,상승관별,,MHTGR-350 SG/RCCS 보완본[4] p.20,유동영역별 상관식,RCCS-1 조건부,,,"층류 직사각형 단면보정, 매끈관 난류 Blasius 1차 근사. 전이구간 별도 검토.",,,,,,
+RCCS-1,RCCS 루버·벤드·플레넘·하강관·배기 국부손실계수,K_form_rccs_segment,1,,Parameter,,,부품 b별,,"MHTGR-350 SG/RCCS 보완본[4] p.20,21",실기 손실 미확보,RCCS-1 조건부,,,부품별 속도 기준면적과 압력탭을 함께 지정.,,,,,,
+RCCS-1,RCCS 공기 유속변화 압력손실,dp_rccs_acc,Pa,,Derived,,,루프/부품별,,"MHTGR-350 SG/RCCS 보완본[4] p.15,21",RCCS-1 조건부,RCCS-1 조건부,,,부력압과 마찰·국부손실 평형에 포함.,,,,,,
+RCCS-1,RCCS 외기 압력 경계,p_rccs_ambient,Pa,,External Input,,,흡기 경계,,"MHTGR-350 SG/RCCS 보완본[4] p.2,21",시나리오 입력 필요,RCCS-1 조건부,,,T_ambient와 함께 흡기 공기 엔탈피·밀도를 산출. 포트 고도/풍압 조건 검토.,,,,,,
+유체 포트,포트 출구 stream 비엔탈피,h_fluid_port_outflow,J/kg,,Alias / Algebraic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,기본은 구성요소 출구 셀 상태의 별칭. 독립 대수변수이면 구성요소의 정의 잔차를 함께 등록.,,,Role 2/4,conditional,{instance}.{port}.h_fluid_port_outflow,contract only
+유체 포트,포트 유입 stream 비엔탈피,h_fluid_port_instream,J/kg,,Algebraic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,접속부가 다른 공급 포트의 h_outflow를 혼합하여 결정. 포트당 하나의 스칼라 미지수.,,,Role 5 junction,yes,{instance}.{port}.h_fluid_port_instream,contract implemented
+유체 접속,정체 유량 완화 척도,m_dot_epsilon,kg/s,,Derived,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,eps_mdot_rel×해당 접속부의 검증된 정격 유량으로 계산. 정격 유량 미정이면 선정 보류.,,,Role 5,no,{junction}.m_dot_epsilon,contract implemented
+전역,초기 헬륨 총재고량 제약값,M_he_loop_initial,kg,,Parameter,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,정상 초기화의 재고량 제약 후보. 문헌 또는 초기 상태로 검증 전 값 미정.,,,Role 2/5,no,M_he_loop_initial,closure pending
+전역,폐루프 헬륨 질량수지 진단,R_he_loop_mass,kg/s,,Diagnostic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,셀 질량 잔차 합을 검산. 독립 잔차로 중복 추가 금지.,,,Role 5,no,R_he_loop_mass,contract only
+전역,계통 헬륨 내부에너지,U_he_loop,J,,Derived,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,각 유체 체적의 내부에너지를 한 번씩 합산; 실제 EOS 및 격자 필요.,,,Role 5,no,U_he_loop,contract only
+전역,계통 고체 저장에너지,U_solid_total,J,,Derived,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,노심·용기·SG 등 고체 체적을 중복 없이 합산; 실제 재료 물성 필요.,,,Role 5,no,U_solid_total,contract only
+전역,계통 에너지수지 진단,R_system_energy,W,,Diagnostic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,입력 열·출력 열·저장 에너지 변화율의 전역 검산; 독립 잔차 아님.,,,Role 5,no,R_system_energy,contract only
+노심,노심 출력 산정 방식,mode_core_power,범주,,Parameter,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,지정 총출력 또는 핵분열+잔열. P_core_thermal과 Q_dot_core_decay 중복 계상 방지.,,,Role 3,no,{instance}.mode_core_power,pending Role 3
+SG,단순 SG 열침원 신호,u_sg_heat_sink,1,,External Input,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,SG-0 단순 열침원 신호 정의와 범위는 Role 4 협의 필요. 기본값 미정.,,,Role 4,no,{instance}.u_sg_heat_sink,pending Role 4
+시나리오,이벤트 시각,t_event,s,,Scenario Parameter,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,이벤트별 절대 시각; 실제 LOFC 이력은 Role 1 자료 필요.,,,Role 1/5,no,{scenario}.{event}.t_event,schema only

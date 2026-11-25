@@ -1,0 +1,28 @@
+action,proposed_name,old_kind,new_kind,unit,shape,owner,registry_required,runtime_name_pattern,code_reference,source,old_value,new_value,reason
+update,p_sys,Differential,Differential,Pa,스칼라,Role 2/5,conditional,p_sys,config/operation.yaml :: primary.initial_pressure_Pa,"B 1,6,11; D 9,16",6390000,6390000,하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록. SystemRegistry에 단일 상태; 기준점/재고량 식은 Role 2·5 합의 필요.
+update,h_fluid_port,Algebraic,Alias (legacy FluidPort),J/kg,포트별,Role 5,no,{instance}.{port}.h_fluid_port,interfaces/ports.py :: FluidPort.h,"B 3,11; 4 13",,,포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일. 신규 stream 접속은 outflow/instream 두 항목 사용.
+update,p_fluid_port,Algebraic,Alias,Pa,포트별,Component owner,no,{instance}.{port}.p_fluid_port,interfaces/ports.py :: FluidPort.p,"B 3,11; D 10; 4 13",,,연결된 셀/플레넘 압력의 인터페이스 별칭. 접속 양단 압력 연속 또는 경계 운동량식 적용 범위를 지정하고 독립 대수 미지수 중복 등록 금지.
+update,T_thermal_port,Algebraic,Alias,K,포트별,Component owner,no,{instance}.{port}.T_thermal_port,interfaces/ports.py :: ThermalPort.T,GitHub interfaces/ports.py,,,포트별 고체/유체 온도의 별칭. 독립 온도 상태의 중복 등록 금지.
+update,Q_dot_thermal_port,Derived,Derived,W,열경계별,Component owner,no,{instance}.{port}.Q_dot_thermal_port,interfaces/ports.py :: ThermalPort.Q_dot,3 17; B 3; 4 15,,,"벽→헬륨, RPV→외기 양수. 연결 양쪽에 같은 열률을 부호 반대로 넣고 소스 중복 합산 금지."
+update,T_rpv_wall,Differential,Differential,K,벽 구간별,Role 4,conditional,,,"4 p.7,16",,,외면 온도 T_rpv_surface와 별도 노드로 둘 경우에만 등록; 단일 벽 노드면 별칭.
+update,T_rpv_surface,Derived / Differential (용기 모델별),Alias / Derived,K,용기 표면 구간 s,Role 4,no,,,"4 8,15,18",,,RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지. 단일 벽 노드에서는 T_rpv_wall 별칭; 별도 표면 노드는 식과 상태를 명시.
+update,P_core_thermal,External Input / Derived (출력모드별),External Input / Derived (출력모드별),W,시간 함수,Role 3,no,,config/operation.yaml :: reactor.initial_thermal_power_W,3 16; 4 17,350000000,350000000,고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지. mode_core_power에 따라 지정 입력 또는 핵분열+잔열의 derived 값 한 경로만 사용.
+update,Q_dot_core_decay,External Input,External Input,W,시간 함수,Role 3,no,,,"3 19; 4 8,17",,,시간 이력 전체 출력(W) 또는 체적별 붕괴열밀도(W/m³) 중 한 가지 입력을 권위값으로 선택. P_core_fission와 합산 시 정격 총출력 이중 계상 금지.
+update,R_sg_energy,Algebraic,Residual,W,SG별,Role 4,no,,,"4 p.3,12",,,m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.
+update,R_sg_pressure,Algebraic,Residual,Pa,SG별,Role 4,no,,,"4 p.3,12",,,p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.
+update,R_scs_energy_he,Algebraic,Residual,W,SCS별,Role 4,no,,,4 p.14,,,"m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+update,R_scs_energy_w,Algebraic,Residual,W,SCS별,Role 4,no,,,4 p.14,,,"m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+update,R_rccs_flow,Algebraic,Residual,Pa,루프별,Role 4,no,,,4 p.16,,,dp_rccs_buoyancy-dp_rccs_loss=0. Residual ID로 관리; StateRegistry 미지수로 등록 금지.
+update,s_y,Parameter,Parameter,상태변수별 단위,상태별,Role 5,no,,interfaces/state_registry.py :: StateRegistry.register(scale),GitHub interfaces/state_registry.py,,,StateRegistry.register(scale=...). 물리량 값이 아니라 솔버 스케일.
+update,s_R,Parameter,Parameter,잔차별 단위,잔차별,Role 5,no,,main.py :: DASSL(residual_scale),GitHub main.py; docs/interface_spec.md,,,residual_scale 전달. 물리 방정식의 잔차 계산과 분리한다.
+add,h_fluid_port_outflow,Alias / Algebraic,Alias / Algebraic,J/kg,스칼라,Role 2/4,conditional,{instance}.{port}.h_fluid_port_outflow,,"Role 5 공통 계약 v3, 2026-11-25",,,기본은 구성요소 출구 셀 상태의 별칭. 독립 대수변수이면 구성요소의 정의 잔차를 함께 등록.
+add,h_fluid_port_instream,Algebraic,Algebraic,J/kg,스칼라,Role 5 junction,yes,{instance}.{port}.h_fluid_port_instream,,"Role 5 공통 계약 v3, 2026-11-25",,,접속부가 다른 공급 포트의 h_outflow를 혼합하여 결정. 포트당 하나의 스칼라 미지수.
+add,m_dot_epsilon,Derived,Derived,kg/s,스칼라,Role 5,no,{junction}.m_dot_epsilon,,"Role 5 공통 계약 v3, 2026-11-25",,,eps_mdot_rel×해당 접속부의 검증된 정격 유량으로 계산. 정격 유량 미정이면 선정 보류.
+add,M_he_loop_initial,Parameter,Parameter,kg,스칼라,Role 2/5,no,M_he_loop_initial,,"Role 5 공통 계약 v3, 2026-11-25",,,정상 초기화의 재고량 제약 후보. 문헌 또는 초기 상태로 검증 전 값 미정.
+add,R_he_loop_mass,Diagnostic,Diagnostic,kg/s,스칼라,Role 5,no,R_he_loop_mass,,"Role 5 공통 계약 v3, 2026-11-25",,,셀 질량 잔차 합을 검산. 독립 잔차로 중복 추가 금지.
+add,U_he_loop,Derived,Derived,J,스칼라,Role 5,no,U_he_loop,,"Role 5 공통 계약 v3, 2026-11-25",,,각 유체 체적의 내부에너지를 한 번씩 합산; 실제 EOS 및 격자 필요.
+add,U_solid_total,Derived,Derived,J,스칼라,Role 5,no,U_solid_total,,"Role 5 공통 계약 v3, 2026-11-25",,,노심·용기·SG 등 고체 체적을 중복 없이 합산; 실제 재료 물성 필요.
+add,R_system_energy,Diagnostic,Diagnostic,W,스칼라,Role 5,no,R_system_energy,,"Role 5 공통 계약 v3, 2026-11-25",,,입력 열·출력 열·저장 에너지 변화율의 전역 검산; 독립 잔차 아님.
+add,mode_core_power,Parameter,Parameter,범주,스칼라,Role 3,no,{instance}.mode_core_power,,"Role 5 공통 계약 v3, 2026-11-25",,,지정 총출력 또는 핵분열+잔열. P_core_thermal과 Q_dot_core_decay 중복 계상 방지.
+add,u_sg_heat_sink,External Input,External Input,1,스칼라,Role 4,no,{instance}.u_sg_heat_sink,,"Role 5 공통 계약 v3, 2026-11-25",,,SG-0 단순 열침원 신호 정의와 범위는 Role 4 협의 필요. 기본값 미정.
+add,t_event,Scenario Parameter,Scenario Parameter,s,스칼라,Role 1/5,no,{scenario}.{event}.t_event,,"Role 5 공통 계약 v3, 2026-11-25",,,이벤트별 절대 시각; 실제 LOFC 이력은 Role 1 자료 필요.

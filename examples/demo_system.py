@@ -24,6 +24,12 @@ class DemoHeater(Component):
     def outputs(self, t, y, context):
         return {"hot_temperature_K": float(context.get(y, "demo.hot_T"))}
 
+    def residual_ids(self):
+        return ("demo.hot_energy",)
+
+    def residual_scales(self):
+        return np.array([50.0])
+
 class DemoCooler(Component):
     def __init__(self, heat_capacity=40.0, sink_ua=3.0, sink_temperature=300.0):
         self.C = heat_capacity
@@ -43,6 +49,12 @@ class DemoCooler(Component):
     def outputs(self, t, y, context):
         return {"cold_temperature_K": float(context.get(y, "demo.cold_T"))}
 
+    def residual_ids(self):
+        return ("demo.cold_energy",)
+
+    def residual_scales(self):
+        return np.array([50.0])
+
 class DemoHeatLink(Component):
     """두 열용량을 연결하는 대수식 q-UA*(T_hot-T_cold)=0."""
     def __init__(self, ua=5.0):
@@ -60,6 +72,12 @@ class DemoHeatLink(Component):
 
     def outputs(self, t, y, context):
         return {"heat_transfer_W": float(context.get(y, "demo.q_dot"))}
+
+    def residual_ids(self):
+        return ("demo.heat_link",)
+
+    def residual_scales(self):
+        return np.array([50.0])
 
 def make_demo_system():
     components = [DemoHeater(), DemoCooler(), DemoHeatLink()]
