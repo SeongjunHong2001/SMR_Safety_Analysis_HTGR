@@ -67,3 +67,16 @@ class HeatTransferCorrelation(Protocol):
     """Current trial state and geometry -> h_conv in W/(m² K)."""
 
     def coefficient(self, state: Mapping, geometry: Mapping) -> np.ndarray: ...
+
+
+@runtime_checkable
+class HeliumInventory(Protocol):
+    """One owner per helium volume; arrays use the component's cell order."""
+
+    def helium_volumes(self) -> np.ndarray:
+        """Return a finite positive 1-D array of owned control-volume m³."""
+        ...
+
+    def helium_inventory(self, t, y, context) -> np.ndarray:
+        """Return the corresponding rho(p_sys, h) * V masses in kg."""
+        ...

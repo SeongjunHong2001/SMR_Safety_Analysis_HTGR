@@ -19,10 +19,12 @@ solvers/DASSL       ↓
 
 `models/`에는 장치 상태·기하·포트·잔차를 둔다. Core는 fluid/solid/
 power/coupling을 생성자에서 주입받아 한 대표 Component로 조립한다.
-HeatExchanger도 Role 4의 helium-side/wall/secondary-side를 한
-대표 모델로 조립할 예정이다. 단순 장치는 필요 없는 하위 계층을 만들지
-않는다. ThermalLink는 서로 다른 온도 노드 사이의 열률을 한 번 계산해
-양쪽에 부호를 반대로 전달한다.
+HeatExchanger도 Role 4가 구현할 helium-side/wall/secondary-side와
+coupling을 주입받아 한 대표 모델로 조립한다. 하위 물리식은 아직 없다.
+단순 장치는 필요 없는 하위 계층을 만들지
+않는다. ThermalSurfacePort는 등록된 스칼라 온도 또는 배열의 한 셀을
+공개한다. SystemAssembly는 ThermalLink를 매 잔차 평가에서 한 번 계산해
+같은 trial의 열률 배열을 양쪽 Component에 전달한다.
 
 `interfaces/`는 상태·별칭·포트·provider 타입과 읽기 전용 context를,
 `system/`은 연결, 등록 완료 후 포트 검증, 잔차 조립과 결합 Jacobian

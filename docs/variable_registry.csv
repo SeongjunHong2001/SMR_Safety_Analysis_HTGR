@@ -1,7 +1,7 @@
 component,variable,proposed_name,unit,role,kind_tentative,dimension,location,shape,initial,source,status,stage,reference_value,original_notation,notes,code_reference,sheet_row,owner,registry_required,runtime_name_pattern,implementation_status
-전역,폐루프 헬륨 열역학 기준압력,p_sys,Pa,,Differential,,,스칼라,,"B 1,6,11; D 9,16",합의 필요,1차,6390000,p_sys,하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록. SystemRegistry에 단일 상태; 기준점/재고량 식은 Role 2·5 합의 필요.,config/operation.yaml :: primary.initial_pressure_Pa,2,Role 2/5,conditional,p_sys,closure equation pending
+전역,폐루프 헬륨 열역학 기준압력,p_sys,Pa,,Differential,,,스칼라,,"B 1,6,11; D 9,16",수학 계약 확정·실계통 미검증,1차,6390000,p_sys,전역 저마하수 EOS 기준압. Role 2의 지정 lower_plenum 인스턴스가 한 번 등록하고 Role 5 builder가 유일성을 검사한다. 국부 기준압 p_lower-p_sys=0은 별도 대수식. 셀 질량식은 rho_p*p_sysdot+rho_h*h_he_dot를 포함한다. 6.39 MPa의 절대압·위치 및 SG 6.31 MPa와 동일 운전점 여부는 미정이며 문서 기준값은 초기값이 아니다.,config/operation.yaml :: primary.initial_pressure_Pa,2,Role 2 lower_plenum,yes,p_sys,math contract; HTGR pending
 전역,노심 정격 총열출력,P_core_thermal,W,,External Input / Derived (출력모드별),,,시간 함수,,3 16; 4 17,문서 기준값,1차,350000000,P_tot,고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지. mode_core_power에 따라 지정 입력 또는 핵분열+잔열의 derived 값 한 경로만 사용.,config/operation.yaml :: reactor.initial_thermal_power_W,3,Role 3,no,,pending Role 3
-전역,1차계통 헬륨 총재고량,M_he_loop,kg,,Derived,,,스칼라,,B 6; D 9,통합 변수 제안,1차,,ΣρV,폐루프 재고량 ΣρV. 압력 초기화 및 전역 질량보존 검산에 사용; 모든 유체셀·플레넘·SG 체적을 한 번씩만 합산.,,4,,,,
+전역,1차계통 헬륨 총재고량,M_he_loop,kg,,Derived,,,스칼라,,B 6; D 9,수학 계약 구현·실계통 미검증,1차,,ΣρV,"각 헬륨 보유 Component의 rho(p_sys,h_he)*V를 체적당 한 번 합산한 Derived 재고량. system/inventory.py의 합산 계약을 사용하며 정상 초기화 제약 후보와 과도 질량보존 진단에 사용한다.",system/inventory.py :: total_helium_inventory,4,Role 5 aggregation,no,,aggregation contract; HTGR pending
 전역,외기 온도,T_ambient,K,,External Input,,,시간 함수,,"4 17,18",시나리오별 필요,1차/확장,,T_ambient,RCCS-0의 고정 열침원 온도와 구분,,5,,,,
 전역,중력가속도,g,m/s²,,Parameter,,,스칼라,,3 15; B 6; 4 8,정의 필요,1차,,g,높이 좌표는 위쪽 양으로 통일,,6,,,,
 전역,유체 포트 정압,p_fluid_port,Pa,,Alias,,,포트별,,"B 3,11; D 10; 4 13",통합 변수 제안,1차,,p,연결된 셀/플레넘 압력의 인터페이스 별칭. 접속 양단 압력 연속 또는 경계 운동량식 적용 범위를 지정하고 독립 대수 미지수 중복 등록 금지.,interfaces/ports.py :: FluidPort.p,7,Component owner,no,{instance}.{port}.p_fluid_port,contract
@@ -14,9 +14,9 @@ component,variable,proposed_name,unit,role,kind_tentative,dimension,location,sha
 헬륨 물성,정적비열,c_v_he,J/(kg·K),,Parameter,,,스칼라,,A 10,문서 제안,1차,3117,"c_v,He","cp−cv=2078 J/(kg·K), 표의 R=2077.27과 0.73 차이. 단일 상수 세트 선택 전까지 독립 정합성 검증 필요.",,14,,,,
 헬륨 물성,헬륨 비기체상수,R_he,J/(kg·K),,Parameter,,,스칼라,,A 10; 3 12,식/상수 선택 필요,1차,2077.27,R_He,"cp−cv=2078과 0.73 J/(kg·K) 편차; 근거별 상수 정의·반올림 차이를 확인하고 cp, cv, R, gamma, EOS를 한 세트로 지정.",,15,,,,
 헬륨 물성,헬륨 비열비,gamma_he,1,,Derived,,,스칼라,,A 10,제안값,1차,1.6667,γ,cp/cv=1.66667 근사. R=cp−cv 및 임계압력비 식을 선택한 동일 상수 세트로 검증.,,16,,,,
-헬륨 물성,셀별 비엔탈피 상태,h_he,J/kg,,Differential,,,유체 셀 i,,"A 10; B 1,3,6",기본 제안,1차,,h_i,유한체적 헬륨 셀의 h 상태. SG-0 출구나 무체적 경계는 대수/유도값; 전역 state_registry에서 체적 셀만 등록.,,17,,,,
+헬륨 물성,셀별 비엔탈피 상태,h_he,J/kg,,Differential,,,유체 셀 i,,"A 10; B 1,3,6",수학 계약 확정·물리 구현 대기,1차,,h_i,유한체적 셀의 독립 비엔탈피 상태. 셀 질량식에 rho_h*h_he_dot가 포함된다. 무체적 경계는 별도 독립 상태로 등록하지 않는다.,,17,Role 2,yes,{instance}.h_he,
 헬륨 물성,헬륨 벌크 절대온도,T_he,K,,Derived,,,유체 셀 i,,A 4; B 3,제안값,1차,,T_i,T=T_ref+h/cp; 벽온도와 구별,config/operation.yaml :: primary.initial_temperature_K,18,,,,
-헬륨 물성,헬륨 밀도,rho_he,kg/m³,,Derived,,,유체 셀 i,,A 10; B 1,KTA 채택 제안,1차,,ρ_i,"ρ(p_sys,h) 저마하수 근사와 국부 p_i 평가 위치의 정합성 검토",,19,,,,
+헬륨 물성,헬륨 밀도,rho_he,kg/m³,,Derived,,,유체 셀 i,,A 10; B 1,수학 계약 확정·물성 검증 대기,1차,,ρ_i,"저마하수 기본 모델의 Derived rho(p_sys,h_he). 국부 p_fluid_cell은 EOS 평가압력이 아니며 실제 EOS와 도함수는 Role 2가 검증한다.",,19,Role 2,no,,
 헬륨 물성,헬륨 동점도가 아닌 동적 점도,mu_he,Pa·s,,Derived,,,유체 셀 i,,A 10,KTA 채택 제안,1차,,μ,"Re, friction에 사용",,20,,,,
 헬륨 물성,헬륨 열전도도,k_he,W/(m·K),,Derived,,,유체 셀 i,,A 11; 3 12,KTA 채택 제안,1차,,k_He,벌크 대류 및 연료 간극 평가 온도 구분,,21,,,,
 헬륨 물성,헬륨 Prandtl 수,Pr_he,1,,Derived,,,유체 셀 i,,A 11,제안값,1차,,Pr,μcp/k,,22,,,,
@@ -63,8 +63,8 @@ component,variable,proposed_name,unit,role,kind_tentative,dimension,location,sha
 중성자·출력,즉발중성자 생성시간,Lambda_core,s,,Parameter,,,스칼라,,3 20-22,실데이터 미확보,확장,,Λ,노심 상태/연소상태 정의,,63,,,,
 중성자·출력,현재 핵분열출력,P_core_fission,W,,Derived,,,시간 함수,,3 20-21,계산 모델 선택 필요,확장,,P_f,"P_f,0 n(t); 고정 출력 입력과 동시 활성화 금지",,64,,,,
 중성자·출력,기준 핵분열출력,P_core_fission_ref,W,,Parameter,,,스칼라,,3 21,기준 운전점 필요,확장,,"P_f,0",정격 열출력과 붕괴열 포함 정의 구분,,65,,,,
-유체 FVM,유체 셀 국부 정압,p_fluid_cell,Pa,,Algebraic,,,셀 i,,"B 1,6; D 9",기본 제안,1차,,p_i,"밀도는 저마하수 기준압 p_sys, 셀 p는 운동량 압력차에 사용",,66,,,,
-유체 FVM,면별 헬륨 질량유량,m_dot_fluid_face,kg/s,,Algebraic,,,face j×유로 k,,"B 1,5-7",기본 제안,1차,,ṁ_j,정방향/역방향 허용; 폐쇄 시 0 근처 처리가 중요,config/operation.yaml :: primary.initial_mass_flow_kg_s,67,,,,
+유체 FVM,유체 셀 국부 정압,p_fluid_cell,Pa,,Algebraic,,,셀 i,,"B 1,6; D 9",수학 계약 확정·물리 구현 대기,1차,,p_i,국부 운동량 압력차용 대수 상태. EOS 밀도는 p_sys로 평가하고 지정 lower_plenum의 국부 기준압 한 개만 p_sys와 연결한다.,,66,Role 2,yes,{instance}.p_fluid_cell,
+유체 FVM,면별 헬륨 질량유량,m_dot_fluid_face,kg/s,,Algebraic,,,face j×유로 k,,"B 1,5-7",수학 계약 확정·물리 구현 대기,1차,,ṁ_j,기본 관성항 생략 모델에서는 Algebraic 면 유량. 정·역류와 0 근처를 처리하며 관성항 선택 시 kind와 운동량식을 별도 patch로 바꾼다.,config/operation.yaml :: primary.initial_mass_flow_kg_s,67,Role 2,yes,{instance}.m_dot_fluid_face,
 유체 FVM,유체 셀 체적,V_fluid_cell,m³,,Parameter,,,셀 i,,B 6-7,형상 필요,1차,,V_i,ρV 저장량에 사용,,68,,,,
 유체 FVM,유체 유동 단면적,A_fluid_cell,m²,,Parameter,,,셀 i,,"B 3,6; D 8",형상 필요,1차,,A_i,셀/face 면적 정의 및 관경 변화 연결,config/geometry.yaml :: core.flow_area_m2,69,,,,
 유체 FVM,유체 셀 축방향 길이,dz_fluid_cell,m,,Parameter,,,셀 i,,B 6; D 8,격자 확정 필요,1차,,Δz_i,경계 면에는 반셀 길이 적용,,70,,,,
@@ -76,9 +76,9 @@ component,variable,proposed_name,unit,role,kind_tentative,dimension,location,sha
 유체 FVM,분포 벽 마찰 압력항,dp_fluid_fric,Pa,,Derived,,,face j,,B 6; C 2-4,기본 제안,1차,,Δp_fric,반셀 가중; 유동 부호; Darcy f 사용,,76,,,,
 유체 FVM,국부 형상손실 압력항,dp_fluid_form,Pa,,Derived,,,face j,,B 6; C 5,기본 제안,1차,,Δp_form,K_fwd/K_rev와 정·역류 스무딩,,77,,,,
 유체 FVM,중력·부력 정압항,dp_fluid_grav,Pa,,Derived,,,face j,,B 6; D 10,기본 제안,1차,,Δp_grav,지오메트리 고정 부호; 역류 시 항 부호 임의 변경 금지,,78,,,,
-유체 FVM,셀 질량보존 잔차,R_fluid_mass,kg/s,,Derived,,,셀 i,,B 6; D 9,방정식 정의,1차,0,"R_mass,i",셀별 질량 보존 잔차. 전역 압력 미분항을 포함하며 잔차 수/미지수 수와 전체 질량보존을 확인.,,79,,,,
-유체 FVM,셀 엔탈피 에너지 잔차,R_fluid_energy,W,,Derived,,,셀 i,,B 7; D 9,방정식 정의,1차,0,"R_energy,i",비보존형 에너지 잔차; 질량 잔차와 결합 시 보존형과 동치. 파단 유출을 질량과 엔탈피에서 중복 차감하지 않음.,,80,,,,
-유체 FVM,면 압력·운동량 잔차,R_fluid_momentum,Pa,,Derived,,,face j,,B 6-7,방정식 정의,1차,0,"R_mom,j",초기안 관성항 0; 순환기 양정은 해당 face에서만 적용,,81,,,,
+유체 FVM,셀 질량보존 잔차,R_fluid_mass,kg/s,,Residual,,,셀 i,,B 6; D 9,수학 계약 확정·물리 구현 대기,1차,0,"R_mass,i",각 유한체적 셀의 V*(rho_p*p_sysdot+rho_h*h_he_dot)+sum(outflow-inflow)=0. 폐루프 전역 합은 진단이며 추가 독립 식이 아니다.,,79,Role 2,no,,equation contract; HTGR pending
+유체 FVM,셀 엔탈피 에너지 잔차,R_fluid_energy,W,,Residual,,,셀 i,,B 7; D 9,수학 계약 확정·물리 구현 대기,1차,0,"R_energy,i",저마하수 엔탈피형 에너지식의 rho*V*h_he_dot-V*p_sysdot+sum(m_in*(h_cell-h_upstream))-Q=0. 질량식과 결합해 보존형 내부에너지식과 동치인지 검증한다.,,80,Role 2,no,,equation contract; HTGR pending
+유체 FVM,면 압력·운동량 잔차,R_fluid_momentum,Pa,,Residual,,,face j,,B 6-7,수학 계약 확정·물리 구현 대기,1차,0,"R_mom,j",기본 면 유량은 Algebraic이고 해당 면 압력차·손실·순환기 양정의 대수 운동량식으로 결정한다. 관성항 선택은 별도 patch에서 kind와 식을 같이 변경한다.,,81,Role 2,no,,equation contract; HTGR pending
 유체 FVM,Reynolds 수,Re_fluid,1,,Derived,,,셀/면별,,"C 3,15",계산값,1차,,Re,영유량에서 정규화에 주의,,82,,,,
 유체 FVM,Nusselt 수,Nu_fluid,1,,Derived,,,셀/경계별,,3 10; C 6-8,상관식 협의,1차,,Nu,정격 McEligot vs 저유량 층류·자연대류 보간,,83,,,,
 유체 FVM,Darcy 마찰계수,f_D_fluid,1,,Derived,,,셀/면별,,"3 15; C 2,15",상관식 충돌,1차,,f_D,"3번 Swamee–Jain 예비안, 2번 Churchill 통합안; 최종 하나 선택",,84,,,,
@@ -363,8 +363,8 @@ RCCS-1,RCCS 외기 압력 경계,p_rccs_ambient,Pa,,External Input,,,흡기 경�
 유체 포트,포트 출구 stream 비엔탈피,h_fluid_port_outflow,J/kg,,Alias / Algebraic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,기본은 구성요소 출구 셀 상태의 별칭. 독립 대수변수이면 구성요소의 정의 잔차를 함께 등록.,,,Role 2/4,conditional,{instance}.{port}.h_fluid_port_outflow,contract only
 유체 포트,포트 유입 stream 비엔탈피,h_fluid_port_instream,J/kg,,Algebraic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,접속부가 다른 공급 포트의 h_outflow를 혼합하여 결정. 포트당 하나의 스칼라 미지수.,,,Role 5 junction,yes,{instance}.{port}.h_fluid_port_instream,contract implemented
 유체 접속,정체 유량 완화 척도,m_dot_epsilon,kg/s,,Derived,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,eps_mdot_rel×해당 접속부의 검증된 정격 유량으로 계산. 정격 유량 미정이면 선정 보류.,,,Role 5,no,{junction}.m_dot_epsilon,contract implemented
-전역,초기 헬륨 총재고량 제약값,M_he_loop_initial,kg,,Parameter,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,정상 초기화의 재고량 제약 후보. 문헌 또는 초기 상태로 검증 전 값 미정.,,,Role 2/5,no,M_he_loop_initial,closure pending
-전역,폐루프 헬륨 질량수지 진단,R_he_loop_mass,kg/s,,Diagnostic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,셀 질량 잔차 합을 검산. 독립 잔차로 중복 추가 금지.,,,Role 5,no,R_he_loop_mass,contract only
+전역,초기 헬륨 총재고량 제약값,M_he_loop_initial,kg,,Parameter,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약 확정·값 미정,공통 계약 v3,,,검증된 초기 재고량을 선택하면 정상 초기화에서 종속 국부 질량식 한 개 대신 M_he_loop-M_he_loop_initial=0을 사용한다. 기준압 선택 시 정상해에서 초기 재고량을 유도한다. 실제 kg 값은 미정.,,,Role 5,no,M_he_loop_initial,math contract; value pending
+전역,폐루프 헬륨 질량수지 진단,R_he_loop_mass,kg/s,,Diagnostic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",수학 계약 확정·실계통 미검증,공통 계약 v3,,,모든 국부 질량 잔차의 합 = dM_he_loop/dt인 진단값. 폐루프 과도 DAE에 독립 잔차로 추가하지 않는다.,,,Role 5,no,R_he_loop_mass,diagnostic contract; HTGR pending
 전역,계통 헬륨 내부에너지,U_he_loop,J,,Derived,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,각 유체 체적의 내부에너지를 한 번씩 합산; 실제 EOS 및 격자 필요.,,,Role 5,no,U_he_loop,contract only
 전역,계통 고체 저장에너지,U_solid_total,J,,Derived,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,노심·용기·SG 등 고체 체적을 중복 없이 합산; 실제 재료 물성 필요.,,,Role 5,no,U_solid_total,contract only
 전역,계통 에너지수지 진단,R_system_energy,W,,Diagnostic,,,스칼라,,"Role 5 공통 계약 v3, 2026-11-25",계약안,공통 계약 v3,,,입력 열·출력 열·저장 에너지 변화율의 전역 검산; 독립 잔차 아님.,,,Role 5,no,R_system_energy,contract only

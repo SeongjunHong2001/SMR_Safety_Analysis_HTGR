@@ -1,0 +1,1023 @@
+{
+  "date": "2026-11-25",
+  "authoritative_source": "docs/variable_registry.csv",
+  "original_commits": [
+    "7333067",
+    "f71b43c",
+    "52016a8"
+  ],
+  "baseline_differences": [
+    {
+      "proposed_name": "p_sys",
+      "field": "notes",
+      "csv_before": "하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록. SystemRegistry에 단일 상태; 기준점/재고량 식은 Role 2·5 합의 필요.",
+      "excel_before": "하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "전역 저마하수 EOS 기준압. Role 2의 지정 lower_plenum 인스턴스가 한 번 등록하고 Role 5 builder가 유일성을 검사한다. 국부 기준압 p_lower-p_sys=0은 별도 대수식. 셀 질량식은 rho_p*p_sysdot+rho_h*h_he_dot를 포함한다. 6.39 MPa의 절대압·위치 및 SG 6.31 MPa와 동일 운전점 여부는 미정이며 문서 기준값은 초기값이 아니다.",
+      "excel_after": "전역 저마하수 EOS 기준압. Role 2의 지정 lower_plenum 인스턴스가 한 번 등록하고 Role 5 builder가 유일성을 검사한다. 국부 기준압 p_lower-p_sys=0은 별도 대수식. 셀 질량식은 rho_p*p_sysdot+rho_h*h_he_dot를 포함한다. 6.39 MPa의 절대압·위치 및 SG 6.31 MPa와 동일 운전점 여부는 미정이며 문서 기준값은 초기값이 아니다."
+    },
+    {
+      "proposed_name": "P_core_thermal",
+      "field": "notes",
+      "csv_before": "고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지. mode_core_power에 따라 지정 입력 또는 핵분열+잔열의 derived 값 한 경로만 사용.",
+      "excel_before": "고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지. mode_core_power에 따라 지정 입력 또는 핵분열+잔열의 derived 값 한 경로만 사용.",
+      "excel_after": "고정 출력 모드에서는 입력 350 MWt; 점동특성 모드에서는 핵분열출력+붕괴열 관계로 계산. P_core_fission 및 Q_dot_core_decay와 중복 입력 금지. mode_core_power에 따라 지정 입력 또는 핵분열+잔열의 derived 값 한 경로만 사용."
+    },
+    {
+      "proposed_name": "h_fluid_port",
+      "field": "notes",
+      "csv_before": "포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일. 신규 stream 접속은 outflow/instream 두 항목 사용.",
+      "excel_before": "포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일. 신규 stream 접속은 outflow/instream 두 항목 사용.",
+      "excel_after": "포트 상태 h와 실제 수송되는 상류 엔탈피 h*를 구분. 정·역류 시 상류 상태 선택; 헬륨 엔탈피 기준 통일. 신규 stream 접속은 outflow/instream 두 항목 사용."
+    },
+    {
+      "proposed_name": "T_rpv_surface",
+      "field": "notes",
+      "csv_before": "RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지. 단일 벽 노드에서는 T_rpv_wall 별칭; 별도 표면 노드는 식과 상태를 명시.",
+      "excel_before": "RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지. 단일 벽 노드에서는 T_rpv_wall 별칭; 별도 표면 노드는 식과 상태를 명시.",
+      "excel_after": "RCCS-0에서 용기 고체표면 온도 입력/별칭. 용기 자체 열용량을 별도 모델링할 때만 Differential; C_rpv_wall와 노심 고체 상태 중복 금지. 단일 벽 노드에서는 T_rpv_wall 별칭; 별도 표면 노드는 식과 상태를 명시."
+    },
+    {
+      "proposed_name": "sigma_SB",
+      "field": "reference_value",
+      "csv_before": "5.6704e-8",
+      "excel_before": 5.6704e-08,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "5.6704e-8",
+      "excel_after": 5.6704e-08
+    },
+    {
+      "proposed_name": "D_h_rccs_duct",
+      "field": "reference_value",
+      "csv_before": "0.06930",
+      "excel_before": 0.0693,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "0.06930",
+      "excel_after": 0.0693
+    },
+    {
+      "proposed_name": "include_nc",
+      "field": "reference_value",
+      "csv_before": "1",
+      "excel_before": true,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "1",
+      "excel_after": true
+    },
+    {
+      "proposed_name": "R_sg_energy",
+      "field": "notes",
+      "csv_before": "m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_before": "m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_after": "m_dot_He*(h_in-h_out)-Q_dot_sg_removed. SG-2 1D 셀 에너지 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+    },
+    {
+      "proposed_name": "R_sg_pressure",
+      "field": "notes",
+      "csv_before": "p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_before": "p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_after": "p_in-p_out-dp_sg_he. SG-2 면 운동량 잔차와 중복 등록 금지. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+    },
+    {
+      "proposed_name": "R_scs_energy_he",
+      "field": "notes",
+      "csv_before": "m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_before": "m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_after": "m_dot_he*(h_he,in-h_he,out)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+    },
+    {
+      "proposed_name": "R_scs_energy_w",
+      "field": "notes",
+      "csv_before": "m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_before": "m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_after": "m_dot_w*(h_w,out-h_w,in)-Q_dot_scs_removed. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+    },
+    {
+      "proposed_name": "R_rccs_flow",
+      "field": "notes",
+      "csv_before": "dp_rccs_buoyancy-dp_rccs_loss=0. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_before": "dp_rccs_buoyancy-dp_rccs_loss=0.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "dp_rccs_buoyancy-dp_rccs_loss=0. Residual ID로 관리; StateRegistry 미지수로 등록 금지.",
+      "excel_after": "dp_rccs_buoyancy-dp_rccs_loss=0. Residual ID로 관리; StateRegistry 미지수로 등록 금지."
+    },
+    {
+      "proposed_name": "S_sg_tube_transverse",
+      "field": "reference_value",
+      "csv_before": "0.038100",
+      "excel_before": 0.0381,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "0.038100",
+      "excel_after": 0.0381
+    },
+    {
+      "proposed_name": "w_rccs_riser_outer",
+      "field": "reference_value",
+      "csv_before": "0.050",
+      "excel_before": 0.05,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "0.050",
+      "excel_after": 0.05
+    },
+    {
+      "proposed_name": "b_rccs_riser_outer",
+      "field": "reference_value",
+      "csv_before": "0.250",
+      "excel_before": 0.25,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "0.250",
+      "excel_after": 0.25
+    },
+    {
+      "proposed_name": "gap_rccs_downcomer",
+      "field": "reference_value",
+      "csv_before": "0.250",
+      "excel_before": 0.25,
+      "normalized_equivalent": true,
+      "resolution": "typed numeric/Boolean equivalent; retain original representation",
+      "csv_after": "0.250",
+      "excel_after": 0.25
+    },
+    {
+      "proposed_name": "h_fluid_port_outflow",
+      "field": "shape",
+      "csv_before": "스칼라",
+      "excel_before": "포트별 스칼라",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "스칼라",
+      "excel_after": "스칼라"
+    },
+    {
+      "proposed_name": "h_fluid_port_outflow",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "h_fluid_port_outflow",
+      "field": "notes",
+      "csv_before": "기본은 구성요소 출구 셀 상태의 별칭. 독립 대수변수이면 구성요소의 정의 잔차를 함께 등록.",
+      "excel_before": "구성요소 출구 상태 별칭을 우선 사용. 독립 대수변수면 정의 잔차 필요.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "기본은 구성요소 출구 셀 상태의 별칭. 독립 대수변수이면 구성요소의 정의 잔차를 함께 등록.",
+      "excel_after": "기본은 구성요소 출구 셀 상태의 별칭. 독립 대수변수이면 구성요소의 정의 잔차를 함께 등록."
+    },
+    {
+      "proposed_name": "h_fluid_port_outflow",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "h_outflow",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "h_fluid_port_instream",
+      "field": "shape",
+      "csv_before": "스칼라",
+      "excel_before": "포트별 스칼라",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "스칼라",
+      "excel_after": "스칼라"
+    },
+    {
+      "proposed_name": "h_fluid_port_instream",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "h_fluid_port_instream",
+      "field": "status",
+      "csv_before": "계약안",
+      "excel_before": "계약 구현",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "계약안",
+      "excel_after": "계약안"
+    },
+    {
+      "proposed_name": "h_fluid_port_instream",
+      "field": "notes",
+      "csv_before": "접속부가 다른 공급 포트의 h_outflow를 혼합하여 결정. 포트당 하나의 스칼라 미지수.",
+      "excel_before": "연결식이 다른 공급 포트의 출구 stream을 혼합하여 결정.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "접속부가 다른 공급 포트의 h_outflow를 혼합하여 결정. 포트당 하나의 스칼라 미지수.",
+      "excel_after": "접속부가 다른 공급 포트의 h_outflow를 혼합하여 결정. 포트당 하나의 스칼라 미지수."
+    },
+    {
+      "proposed_name": "h_fluid_port_instream",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "h_instream",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "m_dot_epsilon",
+      "field": "shape",
+      "csv_before": "스칼라",
+      "excel_before": "접속부별 스칼라",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "스칼라",
+      "excel_after": "스칼라"
+    },
+    {
+      "proposed_name": "m_dot_epsilon",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "m_dot_epsilon",
+      "field": "status",
+      "csv_before": "계약안",
+      "excel_before": "계약 구현",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "계약안",
+      "excel_after": "계약안"
+    },
+    {
+      "proposed_name": "m_dot_epsilon",
+      "field": "notes",
+      "csv_before": "eps_mdot_rel×해당 접속부의 검증된 정격 유량으로 계산. 정격 유량 미정이면 선정 보류.",
+      "excel_before": "eps_mdot_rel과 정격 유량으로 결정. 정격값 미정이면 사용 보류.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "eps_mdot_rel×해당 접속부의 검증된 정격 유량으로 계산. 정격 유량 미정이면 선정 보류.",
+      "excel_after": "eps_mdot_rel×해당 접속부의 검증된 정격 유량으로 계산. 정격 유량 미정이면 선정 보류."
+    },
+    {
+      "proposed_name": "m_dot_epsilon",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "epsilon_mdot",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "status",
+      "csv_before": "계약안",
+      "excel_before": "합의 필요",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "계약 확정·값 미정",
+      "excel_after": "계약 확정·값 미정"
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "notes",
+      "csv_before": "정상 초기화의 재고량 제약 후보. 문헌 또는 초기 상태로 검증 전 값 미정.",
+      "excel_before": "Role 2/5의 기준압·재고량 closure 선택 이후 결정.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "검증된 초기 재고량을 선택하면 정상 초기화에서 종속 국부 질량식 한 개 대신 M_he_loop-M_he_loop_initial=0을 사용한다. 기준압 선택 시 정상해에서 초기 재고량을 유도한다. 실제 kg 값은 미정.",
+      "excel_after": "검증된 초기 재고량을 선택하면 정상 초기화에서 종속 국부 질량식 한 개 대신 M_he_loop-M_he_loop_initial=0을 사용한다. 기준압 선택 시 정상해에서 초기 재고량을 유도한다. 실제 kg 값은 미정."
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "M_he,0",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "variable",
+      "csv_before": "폐루프 헬륨 질량수지 진단",
+      "excel_before": "헬륨 질량수지 진단",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "폐루프 헬륨 질량수지 진단",
+      "excel_after": "폐루프 헬륨 질량수지 진단"
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "notes",
+      "csv_before": "셀 질량 잔차 합을 검산. 독립 잔차로 중복 추가 금지.",
+      "excel_before": "셀 질량식을 합산한 진단값. 독립 잔차로 중복 등록 금지.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "모든 국부 질량 잔차의 합 = dM_he_loop/dt인 진단값. 폐루프 과도 DAE에 독립 잔차로 추가하지 않는다.",
+      "excel_after": "모든 국부 질량 잔차의 합 = dM_he_loop/dt인 진단값. 폐루프 과도 DAE에 독립 잔차로 추가하지 않는다."
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "R_M",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "U_he_loop",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "U_he_loop",
+      "field": "notes",
+      "csv_before": "각 유체 체적의 내부에너지를 한 번씩 합산; 실제 EOS 및 격자 필요.",
+      "excel_before": "실제 셀별 물성·체적 미정. 합산 시 중복 제외.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "각 유체 체적의 내부에너지를 한 번씩 합산; 실제 EOS 및 격자 필요.",
+      "excel_after": "각 유체 체적의 내부에너지를 한 번씩 합산; 실제 EOS 및 격자 필요."
+    },
+    {
+      "proposed_name": "U_he_loop",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "U_He",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "U_solid_total",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "U_solid_total",
+      "field": "notes",
+      "csv_before": "노심·용기·SG 등 고체 체적을 중복 없이 합산; 실제 재료 물성 필요.",
+      "excel_before": "노심·용기·SG 고체 체적 및 물성 미정.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "노심·용기·SG 등 고체 체적을 중복 없이 합산; 실제 재료 물성 필요.",
+      "excel_after": "노심·용기·SG 등 고체 체적을 중복 없이 합산; 실제 재료 물성 필요."
+    },
+    {
+      "proposed_name": "U_solid_total",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "U_solid",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "R_system_energy",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "R_system_energy",
+      "field": "notes",
+      "csv_before": "입력 열·출력 열·저장 에너지 변화율의 전역 검산; 독립 잔차 아님.",
+      "excel_before": "입출력 열과 저장에너지 변화율의 검산. 독립 잔차 아님.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "입력 열·출력 열·저장 에너지 변화율의 전역 검산; 독립 잔차 아님.",
+      "excel_after": "입력 열·출력 열·저장 에너지 변화율의 전역 검산; 독립 잔차 아님."
+    },
+    {
+      "proposed_name": "R_system_energy",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "R_E",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "mode_core_power",
+      "field": "shape",
+      "csv_before": "스칼라",
+      "excel_before": "모드별",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "스칼라",
+      "excel_after": "스칼라"
+    },
+    {
+      "proposed_name": "mode_core_power",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "mode_core_power",
+      "field": "status",
+      "csv_before": "계약안",
+      "excel_before": "Role 3 필요",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "계약안",
+      "excel_after": "계약안"
+    },
+    {
+      "proposed_name": "mode_core_power",
+      "field": "notes",
+      "csv_before": "지정 총출력 또는 핵분열+잔열. P_core_thermal과 Q_dot_core_decay 중복 계상 방지.",
+      "excel_before": "지정 총출력 또는 핵분열+잔열 중 한 경로만 선택.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "지정 총출력 또는 핵분열+잔열. P_core_thermal과 Q_dot_core_decay 중복 계상 방지.",
+      "excel_after": "지정 총출력 또는 핵분열+잔열. P_core_thermal과 Q_dot_core_decay 중복 계상 방지."
+    },
+    {
+      "proposed_name": "mode_core_power",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "mode_core_power",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "u_sg_heat_sink",
+      "field": "shape",
+      "csv_before": "스칼라",
+      "excel_before": "시간 함수",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "스칼라",
+      "excel_after": "스칼라"
+    },
+    {
+      "proposed_name": "u_sg_heat_sink",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "u_sg_heat_sink",
+      "field": "status",
+      "csv_before": "계약안",
+      "excel_before": "Role 4 필요",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "계약안",
+      "excel_after": "계약안"
+    },
+    {
+      "proposed_name": "u_sg_heat_sink",
+      "field": "notes",
+      "csv_before": "SG-0 단순 열침원 신호 정의와 범위는 Role 4 협의 필요. 기본값 미정.",
+      "excel_before": "SG-0 열침원 신호의 실제 정의·범위는 Role 4와 확정.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "SG-0 단순 열침원 신호 정의와 범위는 Role 4 협의 필요. 기본값 미정.",
+      "excel_after": "SG-0 단순 열침원 신호 정의와 범위는 Role 4 협의 필요. 기본값 미정."
+    },
+    {
+      "proposed_name": "u_sg_heat_sink",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "u_sg",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    },
+    {
+      "proposed_name": "t_event",
+      "field": "shape",
+      "csv_before": "스칼라",
+      "excel_before": "이벤트별",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "스칼라",
+      "excel_after": "스칼라"
+    },
+    {
+      "proposed_name": "t_event",
+      "field": "source",
+      "csv_before": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_before": "Role 5 공통 계약 v3",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "Role 5 공통 계약 v3, 2026-11-25",
+      "excel_after": "Role 5 공통 계약 v3, 2026-11-25"
+    },
+    {
+      "proposed_name": "t_event",
+      "field": "status",
+      "csv_before": "계약안",
+      "excel_before": "Role 1 필요",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "계약안",
+      "excel_after": "계약안"
+    },
+    {
+      "proposed_name": "t_event",
+      "field": "notes",
+      "csv_before": "이벤트별 절대 시각; 실제 LOFC 이력은 Role 1 자료 필요.",
+      "excel_before": "실제 LOFC 이력 및 이벤트 시각 미정.",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "이벤트별 절대 시각; 실제 LOFC 이력은 Role 1 자료 필요.",
+      "excel_after": "이벤트별 절대 시각; 실제 LOFC 이력은 Role 1 자료 필요."
+    },
+    {
+      "proposed_name": "t_event",
+      "field": "original_notation",
+      "csv_before": "",
+      "excel_before": "t_event",
+      "normalized_equivalent": false,
+      "resolution": "sync Excel to authoritative CSV; preserve both prior values here",
+      "csv_after": "",
+      "excel_after": null
+    }
+  ],
+  "contract_updates": [
+    {
+      "proposed_name": "p_sys",
+      "field": "status",
+      "csv_before": "합의 필요",
+      "csv_after": "수학 계약 확정·실계통 미검증",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_sys",
+      "field": "notes",
+      "csv_before": "하부 플레넘 기준압 제안. 6.39 MPa의 절대/게이지·위치와 SG 입구 6.31 MPa가 동일 운전점인지 확인. 전역 상태는 하나만 등록. SystemRegistry에 단일 상태; 기준점/재고량 식은 Role 2·5 합의 필요.",
+      "csv_after": "전역 저마하수 EOS 기준압. Role 2의 지정 lower_plenum 인스턴스가 한 번 등록하고 Role 5 builder가 유일성을 검사한다. 국부 기준압 p_lower-p_sys=0은 별도 대수식. 셀 질량식은 rho_p*p_sysdot+rho_h*h_he_dot를 포함한다. 6.39 MPa의 절대압·위치 및 SG 6.31 MPa와 동일 운전점 여부는 미정이며 문서 기준값은 초기값이 아니다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_sys",
+      "field": "owner",
+      "csv_before": "Role 2/5",
+      "csv_after": "Role 2 lower_plenum",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_sys",
+      "field": "registry_required",
+      "csv_before": "conditional",
+      "csv_after": "yes",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_sys",
+      "field": "implementation_status",
+      "csv_before": "closure equation pending",
+      "csv_after": "math contract; HTGR pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "h_he",
+      "field": "status",
+      "csv_before": "기본 제안",
+      "csv_after": "수학 계약 확정·물리 구현 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "h_he",
+      "field": "notes",
+      "csv_before": "유한체적 헬륨 셀의 h 상태. SG-0 출구나 무체적 경계는 대수/유도값; 전역 state_registry에서 체적 셀만 등록.",
+      "csv_after": "유한체적 셀의 독립 비엔탈피 상태. 셀 질량식에 rho_h*h_he_dot가 포함된다. 무체적 경계는 별도 독립 상태로 등록하지 않는다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "h_he",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "h_he",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "yes",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "h_he",
+      "field": "runtime_name_pattern",
+      "csv_before": "",
+      "csv_after": "{instance}.h_he",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_fluid_cell",
+      "field": "status",
+      "csv_before": "기본 제안",
+      "csv_after": "수학 계약 확정·물리 구현 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_fluid_cell",
+      "field": "notes",
+      "csv_before": "밀도는 저마하수 기준압 p_sys, 셀 p는 운동량 압력차에 사용",
+      "csv_after": "국부 운동량 압력차용 대수 상태. EOS 밀도는 p_sys로 평가하고 지정 lower_plenum의 국부 기준압 한 개만 p_sys와 연결한다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_fluid_cell",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_fluid_cell",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "yes",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "p_fluid_cell",
+      "field": "runtime_name_pattern",
+      "csv_before": "",
+      "csv_after": "{instance}.p_fluid_cell",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "m_dot_fluid_face",
+      "field": "status",
+      "csv_before": "기본 제안",
+      "csv_after": "수학 계약 확정·물리 구현 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "m_dot_fluid_face",
+      "field": "notes",
+      "csv_before": "정방향/역방향 허용; 폐쇄 시 0 근처 처리가 중요",
+      "csv_after": "기본 관성항 생략 모델에서는 Algebraic 면 유량. 정·역류와 0 근처를 처리하며 관성항 선택 시 kind와 운동량식을 별도 patch로 바꾼다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "m_dot_fluid_face",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "m_dot_fluid_face",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "yes",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "m_dot_fluid_face",
+      "field": "runtime_name_pattern",
+      "csv_before": "",
+      "csv_after": "{instance}.m_dot_fluid_face",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "rho_he",
+      "field": "status",
+      "csv_before": "KTA 채택 제안",
+      "csv_after": "수학 계약 확정·물성 검증 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "rho_he",
+      "field": "notes",
+      "csv_before": "ρ(p_sys,h) 저마하수 근사와 국부 p_i 평가 위치의 정합성 검토",
+      "csv_after": "저마하수 기본 모델의 Derived rho(p_sys,h_he). 국부 p_fluid_cell은 EOS 평가압력이 아니며 실제 EOS와 도함수는 Role 2가 검증한다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "rho_he",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "rho_he",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "no",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop",
+      "field": "status",
+      "csv_before": "통합 변수 제안",
+      "csv_after": "수학 계약 구현·실계통 미검증",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop",
+      "field": "notes",
+      "csv_before": "폐루프 재고량 ΣρV. 압력 초기화 및 전역 질량보존 검산에 사용; 모든 유체셀·플레넘·SG 체적을 한 번씩만 합산.",
+      "csv_after": "각 헬륨 보유 Component의 rho(p_sys,h_he)*V를 체적당 한 번 합산한 Derived 재고량. system/inventory.py의 합산 계약을 사용하며 정상 초기화 제약 후보와 과도 질량보존 진단에 사용한다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 5 aggregation",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "no",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop",
+      "field": "code_reference",
+      "csv_before": "",
+      "csv_after": "system/inventory.py :: total_helium_inventory",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop",
+      "field": "implementation_status",
+      "csv_before": "",
+      "csv_after": "aggregation contract; HTGR pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "status",
+      "csv_before": "계약안",
+      "csv_after": "계약 확정·값 미정",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "notes",
+      "csv_before": "정상 초기화의 재고량 제약 후보. 문헌 또는 초기 상태로 검증 전 값 미정.",
+      "csv_after": "검증된 초기 재고량을 선택하면 정상 초기화에서 종속 국부 질량식 한 개 대신 M_he_loop-M_he_loop_initial=0을 사용한다. 기준압 선택 시 정상해에서 초기 재고량을 유도한다. 실제 kg 값은 미정.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "owner",
+      "csv_before": "Role 2/5",
+      "csv_after": "Role 5",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "M_he_loop_initial",
+      "field": "implementation_status",
+      "csv_before": "closure pending",
+      "csv_after": "math contract; value pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "status",
+      "csv_before": "계약안",
+      "csv_after": "수학 계약 확정·실계통 미검증",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "notes",
+      "csv_before": "셀 질량 잔차 합을 검산. 독립 잔차로 중복 추가 금지.",
+      "csv_after": "모든 국부 질량 잔차의 합 = dM_he_loop/dt인 진단값. 폐루프 과도 DAE에 독립 잔차로 추가하지 않는다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_he_loop_mass",
+      "field": "implementation_status",
+      "csv_before": "contract only",
+      "csv_after": "diagnostic contract; HTGR pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_mass",
+      "field": "kind_tentative",
+      "csv_before": "Derived",
+      "csv_after": "Residual",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_mass",
+      "field": "status",
+      "csv_before": "방정식 정의",
+      "csv_after": "수학 계약 확정·물리 구현 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_mass",
+      "field": "notes",
+      "csv_before": "셀별 질량 보존 잔차. 전역 압력 미분항을 포함하며 잔차 수/미지수 수와 전체 질량보존을 확인.",
+      "csv_after": "각 유한체적 셀의 V*(rho_p*p_sysdot+rho_h*h_he_dot)+sum(outflow-inflow)=0. 폐루프 전역 합은 진단이며 추가 독립 식이 아니다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_mass",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_mass",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "no",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_mass",
+      "field": "implementation_status",
+      "csv_before": "",
+      "csv_after": "equation contract; HTGR pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_energy",
+      "field": "kind_tentative",
+      "csv_before": "Derived",
+      "csv_after": "Residual",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_energy",
+      "field": "status",
+      "csv_before": "방정식 정의",
+      "csv_after": "수학 계약 확정·물리 구현 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_energy",
+      "field": "notes",
+      "csv_before": "비보존형 에너지 잔차; 질량 잔차와 결합 시 보존형과 동치. 파단 유출을 질량과 엔탈피에서 중복 차감하지 않음.",
+      "csv_after": "저마하수 엔탈피형 에너지식의 rho*V*h_he_dot-V*p_sysdot+sum(m_in*(h_cell-h_upstream))-Q=0. 질량식과 결합해 보존형 내부에너지식과 동치인지 검증한다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_energy",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_energy",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "no",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_energy",
+      "field": "implementation_status",
+      "csv_before": "",
+      "csv_after": "equation contract; HTGR pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_momentum",
+      "field": "kind_tentative",
+      "csv_before": "Derived",
+      "csv_after": "Residual",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_momentum",
+      "field": "status",
+      "csv_before": "방정식 정의",
+      "csv_after": "수학 계약 확정·물리 구현 대기",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_momentum",
+      "field": "notes",
+      "csv_before": "초기안 관성항 0; 순환기 양정은 해당 face에서만 적용",
+      "csv_after": "기본 면 유량은 Algebraic이고 해당 면 압력차·손실·순환기 양정의 대수 운동량식으로 결정한다. 관성항 선택은 별도 patch에서 kind와 식을 같이 변경한다.",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_momentum",
+      "field": "owner",
+      "csv_before": "",
+      "csv_after": "Role 2",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_momentum",
+      "field": "registry_required",
+      "csv_before": "",
+      "csv_after": "no",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    },
+    {
+      "proposed_name": "R_fluid_momentum",
+      "field": "implementation_status",
+      "csv_before": "",
+      "csv_after": "equation contract; HTGR pending",
+      "reason": "STEP 01C mathematical closure and ownership contract; no new physical value"
+    }
+  ],
+  "final_counts": {
+    "csv": 372,
+    "excel": 372,
+    "semantic_mismatches": 0
+  }
+}

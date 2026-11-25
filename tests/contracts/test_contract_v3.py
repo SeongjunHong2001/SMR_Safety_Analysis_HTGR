@@ -6,7 +6,7 @@ import pytest
 from interfaces.component import Component
 from interfaces.contracts import (HeliumProperties, HeatTransferCorrelation,
                                   SimulationContext)
-from interfaces.ports import FluidStreamPort
+from interfaces.ports import FluidStreamPort, ThermalSurfacePort
 from interfaces.state_registry import StateRegistry
 from models.core import Core
 from models.heat_exchanger import HeatExchanger
@@ -112,6 +112,102 @@ def test_junction_metadata_scalar_keys_media_and_alias_independence():
         StreamJunction("bad", duplicate_pressure, 1e-6, 1e6, 10, 1e5).validate(reg)
 
 
+def test_stream_instream_must_be_an_independent_algebraic_state():
+    ports = tuple(FluidStreamPort(f"{name}.p", f"{name}.m", f"{name}.h_out",
+                                  f"{name}.h_in") for name in "ab")
+    reg = StateRegistry()
+    for port in ports:
+        for key, unit in ((port.p, "Pa"), (port.m_dot, "kg/s"),
+                          (port.h_outflow, "J/kg"), (port.h_instream, "J/kg")):
+            reg.register(key, kind="differential" if key == ports[0].h_instream
+                         else "algebraic", initial=0.0, unit=unit)
+    reg.freeze()
+    with pytest.raises(ValueError, match="h_instream.*algebraic"):
+        StreamJunction("mix", ports, 1e-6, 1e6, 1.0, 1e5).validate(reg)
+
+    reg = StateRegistry()
+    for port in ports:
+        for key, unit in ((port.p, "Pa"), (port.m_dot, "kg/s"),
+                          (port.h_outflow, "J/kg")):
+            reg.register(key, kind="algebraic", initial=0.0, unit=unit)
+    reg.alias(ports[0].h_instream, ports[0].h_outflow)
+    reg.register(ports[1].h_instream, kind="algebraic", initial=0.0, unit="J/kg")
+    reg.freeze()
+    with pytest.raises(ValueError, match="independent of h_outflow"):
+        StreamJunction("mix", ports, 1e-6, 1e6, 1.0, 1e5).validate(reg)
+
+
+def test_thermal_port_heat_rate_must_be_algebraic_state():
+    from interfaces.ports import ThermalPort
+
+    class BadThermal(Component):
+        def register(self, registry):
+            registry.register("surface.T", kind="differential", initial=300, unit="K")
+            registry.register("surface.Q", kind="differential", initial=0, unit="W")
+
+        def residual(self, t, y, ydot, context):
+            return np.array([ydot[0], ydot[1]])
+
+        def ports(self):
+            return {"surface": ThermalPort("surface.T", "surface.Q")}
+
+    with pytest.raises(ValueError, match="Q_dot.*algebraic"):
+        SystemAssembly([BadThermal()])
+
+
+def test_assembly_rejects_residual_mutation_without_changing_trial_state():
+    class Mutating(Component):
+        def register(self, registry):
+            registry.register("test.x", kind="algebraic", initial=1.0, unit="1")
+
+        def residual(self, t, y, ydot, context):
+            y[0] = 2.0
+            return np.array([y[0] - 1.0])
+
+    system = SystemAssembly([Mutating()])
+    y, ydot = system.registry.initial_state(), np.zeros(1)
+    with pytest.raises(ValueError, match="read-only"):
+        system.residual(0.0, y, ydot)
+    assert y[0] == 1.0 and ydot[0] == 0.0
+    assert y.flags.writeable and ydot.flags.writeable
+
+
+def test_assembly_keeps_residual_ids_and_unequal_scales_in_one_order():
+    class First(Component):
+        def register(self, registry):
+            registry.register("a.x", kind="algebraic", initial=0, unit="1")
+            registry.register("a.y", kind="algebraic", initial=0, unit="1")
+
+        def residual(self, t, y, ydot, context):
+            return np.array([11.0, 22.0])
+
+        def residual_ids(self):
+            return ("a.first", "a.second")
+
+        def residual_scales(self):
+            return np.array([1.0, 2.0])
+
+    class Second(Component):
+        def register(self, registry):
+            registry.register("b.z", kind="algebraic", initial=0, unit="1")
+
+        def residual(self, t, y, ydot, context):
+            return np.array([33.0])
+
+        def residual_ids(self):
+            return ("b.third",)
+
+        def residual_scales(self):
+            return np.array([3.0])
+
+    system = SystemAssembly([First(), Second()])
+    residual, ids, scales = system.residual_details(0, np.zeros(3), np.zeros(3))
+    assert list(zip(ids, residual, scales)) == [
+        ("a.first", 11.0, 1.0), ("a.second", 22.0, 2.0),
+        ("b.third", 33.0, 3.0),
+    ]
+
+
 def test_missing_or_array_port_key_fails_at_assembly_construction():
     class BadPort(Component):
         def register(self, registry):
@@ -208,8 +304,73 @@ def test_thermal_link_conserves_different_grids_and_rejects_bad_transfer():
     heat = transfer.evaluate(0, np.zeros(1), None)
     assert np.sum(heat.to_a) + np.sum(heat.to_b) == 0
     assert not heat.to_a.flags.writeable
+    # Floating-point summation at reactor-scale W should use relative tolerance.
+    ThermalLink("large", lambda t, y, c: ([-1e8], [1e8 + 1e-4])).evaluate(0, [], None)
+    with pytest.raises(ValueError, match="nonempty"):
+        ThermalLink("empty", lambda t, y, c: ([], [])).evaluate(0, [], None)
     with pytest.raises(ValueError, match="not conservative"):
         ThermalLink("bad", lambda t, y, c: ([-2.0], [3.0])).evaluate(0, [], None)
+
+
+def test_assembly_distributes_one_derived_thermal_link_per_trial():
+    calls = []
+
+    class TwoCellSolid(Component):
+        def register(self, registry):
+            registry.register("solid.T", kind="differential", unit="K",
+                              initial=[400.0, 350.0], shape=(2,))
+
+        def ports(self):
+            return {f"outer.{i}": ThermalSurfacePort("solid.T", i) for i in range(2)}
+
+        def residual(self, t, y, ydot, context):
+            return context.get(ydot, "solid.T") - context.heat_rates["outer.to_a"]
+
+        def outputs(self, t, y, context):
+            return {"solid.Q": context.heat_rates["outer.to_a"].sum()}
+
+    class Vessel(Component):
+        def register(self, registry):
+            registry.register("vessel.T", kind="differential", unit="K", initial=300.0)
+
+        def ports(self):
+            return {"inner": ThermalSurfacePort("vessel.T")}
+
+        def residual(self, t, y, ydot, context):
+            return np.array([context.get(ydot, "vessel.T")
+                             - context.heat_rates["outer.to_b"][0]])
+
+    def transfer(t, y, context):
+        calls.append(t)
+        q = 10.0 * (context.get(y, "solid.T")
+                    - context.get(y, "vessel.T"))
+        return -q, np.array([q.sum()])
+
+    solid = TwoCellSolid()
+    assembly = SystemAssembly([solid, Vessel()],
+                              thermal_links=[ThermalLink("outer", transfer)])
+    y, ydot = assembly.registry.initial_state(), np.zeros(3)
+    assert solid.ports()["outer.0"].temperature(y, assembly.registry) == 400.0
+    assert np.allclose(assembly.residual(0, y, ydot), [1000.0, 500.0, -1500.0])
+    assert calls == [0]
+    assert not assembly.context.heat_rates
+    assert assembly.outputs(0, y)["solid.Q"] == -1500.0
+    changed = y.copy()
+    changed[0] = 380.0
+    assert np.allclose(assembly.residual(1, changed, ydot), [800.0, 500.0, -1300.0])
+    assert calls == [0, 0, 1]
+    assert np.array_equal(y, [400.0, 350.0, 300.0])
+    with pytest.raises(ValueError, match="Duplicate ThermalLink"):
+        SystemAssembly([TwoCellSolid(), Vessel()],
+                       thermal_links=[ThermalLink("outer", transfer),
+                                      ThermalLink("outer", transfer)])
+
+    class BadSurface(TwoCellSolid):
+        def ports(self):
+            return {"outer": ThermalSurfacePort("solid.T", 2)}
+
+    with pytest.raises(ValueError, match="invalid array index"):
+        SystemAssembly([BadSurface()])
 
 
 def test_square_system_can_still_have_singular_scaled_jacobian():
