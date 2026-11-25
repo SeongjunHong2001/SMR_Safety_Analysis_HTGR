@@ -1,6 +1,6 @@
 # SMR Safety Analysis · HTGR
 
-MHTGR-350의 정상상태와 가압 냉각재 유량 상실(P-LOFC/PCC)을 교육용으로
+MHTGR-350의 정상상태와 가압 냉각재 유량 상실(P-LOFC/PCC)을
 해석하기 위한 Python 프로젝트다. 구성요소의 상태와 보존식을 하나의
 미분대수방정식(DAE) `F(t, y, ydot) = 0`으로 조립한다.
 
