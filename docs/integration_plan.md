@@ -1,12 +1,10 @@
 # Role 5 통합 계획 (계약 v3)
 
-기준 `main` SHA: `d035aaed1f99de838e3b0f2498b34777cbed5ed7`.
-작업 브랜치: `feat/role5-contract-v3`. 이 기준에서 각 담당자가
-자기 브랜치를 만들고 `docs/interface_spec.md` 및 계약 테스트를 따른다.
+계약 v3는 기준 `d035aaed`에서 작성해 [PR #5](https://github.com/SeongjunHong2001/SMR_Safety_Analysis_HTGR/pull/5)로 `main`에 병합됐다(병합 SHA `52016a8`). 이후 담당자는 작업 시작 시 최신 `main`을 가져와 자기 브랜치를 만들고 [인터페이스 계약](interface_spec.md)과 `tests/contracts/`를 따른다.
 
 | 게이트 | 요구 증거 | 현재 상태 |
 | --- | --- | --- |
-| G0 공통 골격 | 기존 데모/pytest, 공개 import, Registry·연결·scale·ID, 합성 flat/composite DAE, 합성 폐루프 rank | 계약 코드·fixture에 구현 |
+| G0 공통 골격 | 기존 데모/pytest, 공개 import, Registry·연결·scale·ID, 합성 flat/composite DAE, 합성 폐루프 rank | PR #5로 `main` 병합 |
 | G1 담당 모델 단독 | Role 1 입력 출처, Role 2 물성/유동, Role 3 노심 고체/열, Role 4 SG/RPV/RCCS 각각의 단독 보존·범위 시험 | 미구현 |
 | G2 실제 접속 | 모두 같은 실제 입력과 EOS를 사용한 Core→SG→압축기 폐루프, RPV→RCCS 열경로, 정칙성·일치 초기화 | 미구현 |
 | G3 검증 | 문헌 운전점·LOFC 이력에 대한 정량 비교와 불확도/범위 | 자료 미확보 |

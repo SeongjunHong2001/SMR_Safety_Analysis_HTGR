@@ -1,7 +1,6 @@
 # 개발 구현 현황
 
-2026년 11월 25일, 기준 `main` SHA `d035aaed1f99de838e3b0f2498b34777cbed5ed7`
-위에 공통 계약 v3의 G0 골격을 작성했다. 실제 MHTGR-350 정상상태 또는
+2026년 11월 25일 공통 계약 v3의 G0 골격이 [PR #5](https://github.com/SeongjunHong2001/SMR_Safety_Analysis_HTGR/pull/5)로 `main`에 병합됐다(병합 SHA `52016a8`). 실제 MHTGR-350 정상상태 또는
 LOFC 해석을 실행한 결과는 없다. 현재 실행 가능한 수치는 두 열용량
 데모와 `tests/fixtures/`의 명시적 합성 모델에 한정된다.
 
@@ -19,7 +18,7 @@ LOFC 해석을 실행한 결과는 없다. 현재 실행 가능한 수치는 두
 
 ## 검증 범위
 
-`python -m pytest -q`: **43개 통과**. 기존 32개와 공통 계약 11개다.
+`python -m pytest -q`: **43개 통과**(2026-11-25 확인). 기존 32개와 공통 계약 11개다.
 `python main.py --demo`: 기본 0–5초 DAE 데모 완료, 최종 상태
 `[316.19074506, 306.64335141, 47.73696821]` (K,K,W).
 합성 flat/composite 잔차·Jacobian·적분 일치, derived 열률의 온도 궤적,

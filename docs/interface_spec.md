@@ -1,6 +1,6 @@
 # 공통 인터페이스 계약 v3 (Role 5, G0)
 
-기준 `main`: `d035aaed1f99de838e3b0f2498b34777cbed5ed7` (2026-11-25 확인).
+개발 기준 `main`: `d035aaed`. 계약 v3 구현은 [PR #5](https://github.com/SeongjunHong2001/SMR_Safety_Analysis_HTGR/pull/5)에서 병합 SHA `52016a8`로 `main`에 반영됐다.
 이 계약은 교육용 MHTGR-350 해석 코드의 **조립 경계**다. 실제 물성, 상관식,
 형상, 사고 이력은 아직 구현 또는 검증되지 않았다. G0의 실행 증거는
 `tests/contracts/`의 합성 모델과 기존 데모다. 이 문서에서 `계약`으로 적은
@@ -14,7 +14,7 @@
 제공한다. `name`, `key(variable)`, `ports()`, `residual_ids()`,
 `residual_scales()`가 공통 API다. `key(variable)`은
 `{instance}.{variable}`을 만든다. 배열 잔차는 각 스칼라에 고정 ID를
-부여한다. 데모처럼 기존 Component가 ID 또는 scale을 제공하지 않으면
+부여한다. 구형 Component가 ID 또는 scale을 제공하지 않으면
 조립기가 순서 기반 ID와 1의 scale을 생성한다. 새 물리 모델은 둘 다 명시한다.
 
 `residual`은 현재 trial의 전역 `y`, `ydot`만 읽고 1차원 유한 NumPy 배열을

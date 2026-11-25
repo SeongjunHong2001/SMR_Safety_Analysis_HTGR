@@ -1,8 +1,13 @@
 # SMR Safety Analysis · HTGR
 
-고온가스로(HTGR)의 정상상태와 냉각재 유량 상실(LOFC) 과도현상을 해석하기 위한 Python 프로젝트다. 각 구성요소가 상태변수와 방정식을 정의하면, 계통 전체의 미분대수방정식(DAE) `F(t, y, ydot) = 0`을 조립해 시간에 따른 변화를 계산한다.
+MHTGR-350의 정상상태와 가압 냉각재 유량 상실(P-LOFC/PCC)을 교육용으로
+해석하기 위한 Python 프로젝트다. 구성요소의 상태와 보존식을 하나의
+미분대수방정식(DAE) `F(t, y, ydot) = 0`으로 조립한다.
 
-현재 실행할 수 있는 예제는 두 열용량 사이의 열전달이다. 이 예제로 상태 등록부터 초기조건 계산, 시간 적분, 결과 저장까지 확인할 수 있다. 실제 원자로를 대상으로 한 계산에는 노형별 구성요소 모델과 입력 데이터가 필요하다. [개발 구현 현황](docs/implementation-status.md)
+**현재 실행 가능한 계산은 두 열용량 데모와 합성 계약 시험이다.** 실제
+원자로 모델에 필요한 물성, 장치별 잔차식, 형상과 사고 이력은 아직
+확정되지 않았다. [구현 현황](docs/implementation-status.md)에서 기능별
+범위를 확인할 수 있다.
 
 ## 설치와 첫 실행
 
@@ -15,7 +20,10 @@ python -m pip install -r requirements.txt
 python main.py --demo
 ```
 
-데모는 고온부와 저온부의 온도를 미분변수로, 두 지점 사이의 열유량을 대수변수로 둔다. 기본 설정은 0초부터 5초까지 적분한다. 터미널에는 수용·거절된 스텝 수와 사용한 최고 차수가 표시된다. 초기 시점과 이후 수용된 각 시점의 결과는 `output/results/demo_dae.csv`에 저장된다.
+`main.py`의 기본 실행과 `--demo`는 같은 **합성 데모**를 실행한다.
+고온부·저온부 온도는 미분변수, 열유량은 대수변수다. 기본 설정은
+0초부터 5초까지 적분하며 수용·거절 스텝과 사용한 최고 차수를 출력한다.
+초기 시점과 수용 시점의 결과는 `output/results/demo_dae.csv`에 저장된다.
 
 | CSV 열 | 의미 |
 | --- | --- |
@@ -23,7 +31,32 @@ python main.py --demo
 | `demo.hot_T_K`, `demo.cold_T_K` | 고온부와 저온부 온도(K) |
 | `demo.q_dot_W` | 고온부에서 저온부로 전달되는 열유량(W) |
 
-기본 적분 구간, 첫 스텝 후보 간격(`dt`), 오차 허용값(`rtol`, `atol`)은 [솔버 설정](config/solver.yaml)에서 확인할 수 있다. 다른 설정 파일을 사용하려면 `python main.py --demo --solver-config 경로/설정.yaml`을 실행한다. 전체 테스트는 `python -m pytest -q`로 실행한다.
+적분 구간, 첫 스텝 후보 간격(`dt`), 오차 허용값(`rtol`, `atol`)은
+[솔버 설정](config/solver.yaml)에 있다. 다른 설정은
+`python main.py --demo --solver-config 경로/설정.yaml`로 지정한다.
+
+```bash
+python -m pytest -q
+python -m pytest -q tests/contracts
+```
+
+2026-11-25 기준 전체 43개 테스트가 통과했다. 계약 시험은 합성
+flat/composite DAE의 잔차·Jacobian·적분 결과, 포트 검증과 폐루프
+압력 기준의 자유도 ledger를 확인한다. 합성 수치는 실제 HTGR 검증값이 아니다.
+
+## 현재 제공 범위
+
+| 부분 | 상태 | 사용 범위 |
+| --- | --- | --- |
+| 상태·포트·전역 DAE 계약 | 구현 | `StateRegistry`, `Component`, `SystemAssembly`, `StreamJunction`, `ThermalLink` |
+| 시간적분 | 구현 | DASSL, 일치 초기화, 정상상태 풀이, 데모 계산 |
+| Core 상위 및 장치 패키지 | 계약 골격 | 실제 fluid/solid/power/SG/압축기 등 구현 필요 |
+| 헬륨 물성·열전달 상관식 | API만 제공 | 실제 provider와 적용범위 검증 필요 |
+| HTGR 정상상태·LOFC | 실행 불가 | 형상·운전점·사고 이력·검증자료 필요 |
+
+기본 [형상](config/geometry.yaml)·[운전](config/operation.yaml) 설정의
+`null`은 미정 값이다. 실제 모델 실행에 시험용
+`tests/fixtures/` provider를 자동 주입하지 않는다.
 
 ## Python에서 솔버 사용
 
@@ -35,7 +68,10 @@ from solvers import DASSL, solve_steady_state
 
 system = make_demo_system()
 registry = system.registry
-result = DASSL(dt=0.1, rtol=1e-6, atol=1e-8).solve(
+result = DASSL(
+    dt=0.1, rtol=1e-6, atol=1e-8,
+    residual_scale=system.residual_scales(),
+).solve(
     system.residual,
     t_span=(0.0, 5.0),
     y0=registry.initial_state(),
@@ -51,17 +87,33 @@ y_equilibrium, ydot_equilibrium = solve_steady_state(
 
 `result.t`, `result.y`, `result.ydot`에는 초기점을 포함한 시각, 상태, 변화율이 담긴다. `result.orders[i]`, `result.error_norms[i]`, `result.newton_iterations[i]`는 `t[i]`에서 `t[i+1]`까지 수용된 스텝의 정보다. 해석적 야코비안을 사용할 때는 `∂F/∂y + cj·∂F/∂ydot`를 반환하는 `jacobian(t, y, ydot, cj)`를 `solve`에 전달한다. 기본값은 유한차분이다.
 
-## 관련 문서
+## 모델 개발과 문서
 
-- [개발 구현 현황](docs/implementation-status.md)에서 기능별 구현 범위와 테스트 결과, 실제 계통 해석에 필요한 작업을 확인할 수 있다.
-- [계통 조립과 시간 적분 구조](docs/architecture.md)는 구성요소의 잔차가 전역 솔버로 전달되는 과정을 설명한다.
-- 새 구성요소를 추가할 때는 [인터페이스 규약](docs/interface_spec.md)의 상태 등록 방법, 단위, 포트 부호 규약을 따른다.
-- 다분기 유체 연결에는 유입·유출 엔탈피를 분리한 `FluidStreamPort`와 `StreamJunction`을 사용한다. 유량 역전과 정체 상태의 혼합 기준, 잔차 ID·scale은 [인터페이스 계약 v3](docs/interface_spec.md)에 설명한다.
-- [MHTGR-350 변수 목록](docs/variable_registry.csv)에서 팀 통합안의 코드명, 단위, 정격·검산값과 출처를 확인할 수 있다. 운전점 대조와 모델 선택에 필요한 항목은 [물리 가정](docs/assumptions.md)에 정리돼 있다.
+담당 모델은 [공통 계약 v3](docs/interface_spec.md)에 따라 독립
+미지수만 Registry에 등록하고, 같은 trial의 상태에서 계산한 1차원
+잔차와 고정된 잔차 ID·scale을 제공한다. Core의 실제 fluid/solid/
+power/coupling 구현은 생성자에 명시적으로 주입한다. 접속 포트는
+모든 구성요소를 등록한 뒤 검증한다. 각 장치의 실제 입력·방정식이
+없으면 명시적 예외가 발생한다.
+
+| 문서 | 내용 |
+| --- | --- |
+| [인터페이스 계약 v3](docs/interface_spec.md) | 상태·별칭, 포트 부호, provider API, Core 열률 매핑, 폐루프 자유도 |
+| [설정 스키마](docs/config_schema.md) | YAML 키, 단위·shape, 조건별 필수 입력과 `null`의 의미 |
+| [아키텍처](docs/architecture.md) | `physics/`·`models/`·`interfaces/`·`system/`·`solvers/`의 책임 |
+| [구현 현황](docs/implementation-status.md) | 실행 가능한 범위와 테스트 증거 |
+| [통합 계획](docs/integration_plan.md) | 역할별 소유권과 G0~G3 연결 순서 |
+| [변수표](docs/variable_registry.csv)·[방정식표](docs/equation_registry.csv) | 모델 변수·식의 master 목록 |
+| [변경안 제출법](docs/registry_patches/README.md)·[Role 5 인수인계](docs/handoffs/role5.md) | 담당자별 patch와 시험·미정 항목 |
+| [물리 가정](docs/assumptions.md) | 문헌 기준값의 차이와 아직 정하지 않은 모델 선택 |
+
+master 변수표는 기존 361개 항목에 공통 계약 후보 11개를 더한
+**372개**이며 [Excel 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)와
+이름·분류·단위를 맞췄다. 실제 입력값을 새로 추정해 채우지 않았다.
 
 ## MHTGR-350 SG·RCCS 조사 입력
 
-팀의 「MHTGR-350 SG/RCCS 보완본[4]」(2026-11, pp. 4–24)을 대조해 [변수 목록](docs/variable_registry.csv)에 설계 기하, 관벽·유체 상태, 물성, 열전달·압력손실 변수 73개를 추가했다. [엑셀 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)에도 같은 내용을 반영했다. 공통 계약 v3에서 포트 stream, 재고량·에너지 진단, 출력 모드 등 11개 항목을 추가해 현재 372개다. 이 값들은 모델 구현과 단독 검산을 위한 자료다. 현재 [열교환기](models/heat_exchanger/)와 [압력용기](models/vessel/)는 변수 등록과 잔차식 구현이 필요한 단계다.
+팀의 「MHTGR-350 SG/RCCS 보완본[4]」(2026-11, pp. 4–24)을 대조해 원래 통합안 288개에 SG/RCCS 관련 변수 73개를 추가했다. 아래 수치는 설계·검산 자료이며 실행 가능한 모델 입력 세트를 뜻하지 않는다. 현재 [열교환기](models/heat_exchanger/)와 [압력용기](models/vessel/)에는 실제 변수 등록과 잔차식이 필요하다.
 
 원 설계서 DOE-HTGR-86-129 Rev.1/HFD-42102 Rev.2에 따른 SG 기준은 연속 전열관 439개, 외경 22.225 mm, 벽두께 3.302 mm, 외면 기준 총 전열면적 약 4026.539 m²다. 관벽 모델은 He 쪽과 물·증기 쪽 반벽의 전도와 축열을 다룬다. He 관군 마찰차압 9.651 kPa와 SG 전체 양단 차압 25.5 kPa는 측정 경계가 다르다. SG-2의 관내 비등·2상 차압 상관식은 보완본의 예비 기준이며 실제 고압 나선관 검증이 필요하다.
 
