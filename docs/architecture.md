@@ -5,7 +5,7 @@ config/scenario + 명시적으로 선택한 provider
                  ↓
 Core · HeatExchanger · Compressor · Piping · Plenum · Vessel · RCCS
                  ↓ 현재 trial y, ydot
-interfaces/StateRegistry + system/connection + ThermalLink
+interfaces/StateRegistry + system/connections + ThermalLink
                  ↓ 전역 F(t,y,ydot)=0, residual IDs, s_R
 solvers/DASSL       ↓
 결과·보존 진단·검증

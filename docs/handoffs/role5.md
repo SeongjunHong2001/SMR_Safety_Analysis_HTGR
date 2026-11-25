@@ -1,9 +1,8 @@
 # Role 5 공통 골격 인수인계
 
-기준 `main`은 `d035aaed1f99de838e3b0f2498b34777cbed5ed7`이다.
-계약 버전은 [v3](../interface_spec.md)이고 작업 브랜치는
-`feat/role5-contract-v3`이다. 최종 계약 commit SHA는 이 브랜치의
-PR head로 확인한다.
+계약 버전은 [v3](../interface_spec.md)이다. 기준 `main`은 `d035aaed`,
+계약 구현 commit은 `f214c8b`, `main` 병합 commit은 `52016a8`이다.
+[PR #5](https://github.com/SeongjunHong2001/SMR_Safety_Analysis_HTGR/pull/5)에 변경 범위와 시험 결과가 있다. 후속 작업은 최신 `main`에서 시작한다.
 
 ## 공개 API와 소유권
 
