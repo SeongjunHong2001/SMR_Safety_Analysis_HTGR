@@ -1,6 +1,89 @@
 """유체·열 포트 접속식. 연결식은 전역 Residual에 포함된다."""
+from dataclasses import dataclass
 import numpy as np
 from interfaces.ports import FluidPort, FluidStreamPort, ThermalPort
+
+
+def validate_port(port, registry):
+    """Resolve symbolic keys only after all components have registered."""
+    if isinstance(port, FluidStreamPort):
+        fields = (("p", "Pa"), ("m_dot", "kg/s"),
+                  ("h_outflow", "J/kg"), ("h_instream", "J/kg"))
+    elif isinstance(port, ThermalPort):
+        fields = (("T", "K"), ("Q_dot", "W"))
+    elif isinstance(port, FluidPort):  # old two-port demonstration API
+        fields = (("p", None), ("h", None), ("m_dot", None))
+    else:
+        raise TypeError(f"Unsupported port type: {type(port).__name__}")
+    for field, unit in fields:
+        key = getattr(port, field)
+        try:
+            spec = registry.spec(key)
+        except KeyError as exc:
+            raise ValueError(f"Port {field} references missing Registry key {key}") from exc
+        if spec.shape:
+            raise ValueError(f"Port {field} key {key} must be scalar")
+        if unit is not None and spec.unit != unit:
+            raise ValueError(f"Port {field} key {key}: expected {unit}, got {spec.unit}")
+
+
+def validate_stream_junction(ports, registry):
+    ports = tuple(ports)
+    if len(ports) < 2 or any(not isinstance(port, FluidStreamPort) for port in ports):
+        raise ValueError("stream junction needs at least two FluidStreamPort instances")
+    media = {port.medium for port in ports}
+    if any(not isinstance(medium, str) or not medium for medium in media):
+        raise ValueError("Fluid medium must be a nonempty name")
+    if len(media) != 1:
+        raise ValueError(f"Cannot connect different fluid media: {sorted(media)}")
+    for port in ports:
+        validate_port(port, registry)
+    for field in ("p", "m_dot", "h_instream"):
+        keys = [registry.resolve(getattr(port, field)) for port in ports]
+        if len(set(keys)) != len(keys):
+            raise ValueError(f"Junction has duplicate {field} state keys")
+    return ports
+
+
+@dataclass(frozen=True)
+class StreamJunction:
+    """Named 2N-equation junction with explicit physical residual scales."""
+
+    name: str
+    ports: tuple[FluidStreamPort, ...]
+    mass_flow_epsilon: float
+    pressure_scale: float
+    flow_scale: float
+    enthalpy_scale: float
+
+    def __post_init__(self):
+        object.__setattr__(self, "ports", tuple(self.ports))
+        if not self.name or len(self.ports) < 2:
+            raise ValueError("Junction needs a name and at least two ports")
+        for value in (self.mass_flow_epsilon, self.pressure_scale,
+                      self.flow_scale, self.enthalpy_scale):
+            if not np.isfinite(value) or value <= 0:
+                raise ValueError("Junction epsilon and residual scales must be positive")
+
+    def validate(self, registry):
+        validate_stream_junction(self.ports, registry)
+
+    def __call__(self, y, registry):
+        return ideal_fluid_stream_junction_residual(
+            y, registry, self.ports, mass_flow_epsilon=self.mass_flow_epsilon,
+        )
+
+    def residual_ids(self):
+        n = len(self.ports)
+        return tuple([f"{self.name}.pressure[{i}]" for i in range(1, n)]
+                     + [f"{self.name}.mass"]
+                     + [f"{self.name}.instream[{i}]" for i in range(n)])
+
+    def residual_scales(self):
+        n = len(self.ports)
+        return np.array([self.pressure_scale] * (n - 1)
+                        + [self.flow_scale]
+                        + [self.enthalpy_scale] * n)
 
 def ideal_fluid_two_port_residual(y, registry, a: FluidPort, b: FluidPort):
     """손실 없는 두 포트: 압력 동일, 유량합 0, 엔탈피 동일.
@@ -29,9 +112,7 @@ def ideal_fluid_stream_junction_residual(
     제외한 공급 포트들의 출구 엔탈피를 유량으로 가중한 값이다.
     epsilon은 정체·역류 시 혼합식을 매끄럽게 하는 kg/s 척도다.
     """
-    ports = tuple(ports)
-    if len(ports) < 2 or any(not isinstance(port, FluidStreamPort) for port in ports):
-        raise ValueError("stream junction needs at least two FluidStreamPort instances")
+    ports = validate_stream_junction(ports, registry)
     if not np.isfinite(mass_flow_epsilon) or mass_flow_epsilon <= 0:
         raise ValueError("mass_flow_epsilon must be positive and finite")
 

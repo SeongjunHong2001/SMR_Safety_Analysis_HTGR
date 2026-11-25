@@ -24,7 +24,7 @@ def run_demo(config_path='config/solver.yaml', write_output=True):
         if key in config
     }
     solver = DASSL(dt=config['dt'], max_order=config['max_order'],
-                   newton_options=options, residual_scale=[50.0, 50.0, 50.0],
+                   newton_options=options, residual_scale=system.residual_scales(),
                    **adaptive_options)
     result = solver.solve(system.residual,
                           t_span=(config['t_start'], config['t_end']),

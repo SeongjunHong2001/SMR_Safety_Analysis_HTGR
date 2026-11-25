@@ -1,0 +1,9 @@
+component,equation_id,governing_equation,discretization,unknowns,dependencies,residual_count,residual_scale,boundary_conditions,source,status
+tests/fixtures,test.cold_energy,40*dT_c/dt - Q + 3*(T_c-300)=0,0D synthetic,test.cold_T,"test.q_dot,test.hot_T",1,50 W,synthetic sink,test contract,implemented fixture
+tests/fixtures,test.hot_energy,20*dT_h/dt - 50 + Q=0,0D synthetic,test.hot_T,test.q_dot,1,50 W,synthetic power,test contract,implemented fixture
+tests/fixtures,test.heat_link,Q - 5*(T_h-T_c)=0,0D synthetic,test.q_dot,"test.hot_T,test.cold_T",1,50 W,none,test contract,implemented fixture
+junction,{junction}.pressure[i],p_i-p_0=0,N-port stream,port pressures,FluidStreamPort.p,N-1,pressure_scale Pa,same medium,system/connections.py,contract implemented
+junction,{junction}.mass,sum(m_dot_i)=0,N-port stream,port flows,FluidStreamPort.m_dot,1,flow_scale kg/s,closed junction,system/connections.py,contract implemented
+junction,{junction}.instream[i],h_instream_i-mix(other outflows)=0,N-port stream,port instream,"other port outflow,epsilon",N,enthalpy_scale J/kg,regularized stagnation,system/connections.py,contract implemented
+system,R_he_loop_mass,sum(cell mass residuals),closure diagnostic,none,cell mass residuals,0 independent,kg/s,closed loop,Role 2/5 pending,diagnostic only
+system,p_sys_closure,reference pressure OR verified inventory condition,normal initialization,p_sys,"M_he_loop_initial,local pressure",1 candidate; replace dependent equation,pending,closed loop,Role 2/5 pending,unresolved

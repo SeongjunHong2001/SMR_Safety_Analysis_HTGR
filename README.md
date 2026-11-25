@@ -56,12 +56,12 @@ y_equilibrium, ydot_equilibrium = solve_steady_state(
 - [개발 구현 현황](docs/implementation-status.md)에서 기능별 구현 범위와 테스트 결과, 실제 계통 해석에 필요한 작업을 확인할 수 있다.
 - [계통 조립과 시간 적분 구조](docs/architecture.md)는 구성요소의 잔차가 전역 솔버로 전달되는 과정을 설명한다.
 - 새 구성요소를 추가할 때는 [인터페이스 규약](docs/interface_spec.md)의 상태 등록 방법, 단위, 포트 부호 규약을 따른다.
-- 다분기 유체 연결에는 유입·유출 엔탈피를 분리한 `FluidStreamPort`와 `ideal_fluid_stream_junction_residual`을 사용한다. 유량 역전과 정체 상태의 혼합 기준은 [인터페이스 규약](docs/interface_spec.md#유체-stream-포트와-다분기-접속)에 설명한다.
+- 다분기 유체 연결에는 유입·유출 엔탈피를 분리한 `FluidStreamPort`와 `StreamJunction`을 사용한다. 유량 역전과 정체 상태의 혼합 기준, 잔차 ID·scale은 [인터페이스 계약 v3](docs/interface_spec.md)에 설명한다.
 - [MHTGR-350 변수 목록](docs/variable_registry.csv)에서 팀 통합안의 코드명, 단위, 정격·검산값과 출처를 확인할 수 있다. 운전점 대조와 모델 선택에 필요한 항목은 [물리 가정](docs/assumptions.md)에 정리돼 있다.
 
 ## MHTGR-350 SG·RCCS 조사 입력
 
-팀의 「MHTGR-350 SG/RCCS 보완본[4]」(2026-11, pp. 4–24)을 대조해 [변수 목록](docs/variable_registry.csv)에 설계 기하, 관벽·유체 상태, 물성, 열전달·압력손실 변수 73개를 추가했다. [엑셀 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)에도 같은 내용을 반영했다. 변수 목록에는 원래 통합표 288개를 포함해 361개 항목이 있다. 이 값들은 모델 구현과 단독 검산을 위한 자료다. 현재 [열교환기](models/heat_exchanger.py)와 [압력용기](models/vessel.py)는 변수 등록과 잔차식 구현이 필요한 단계다.
+팀의 「MHTGR-350 SG/RCCS 보완본[4]」(2026-11, pp. 4–24)을 대조해 [변수 목록](docs/variable_registry.csv)에 설계 기하, 관벽·유체 상태, 물성, 열전달·압력손실 변수 73개를 추가했다. [엑셀 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)에도 같은 내용을 반영했다. 공통 계약 v3에서 포트 stream, 재고량·에너지 진단, 출력 모드 등 11개 항목을 추가해 현재 372개다. 이 값들은 모델 구현과 단독 검산을 위한 자료다. 현재 [열교환기](models/heat_exchanger/)와 [압력용기](models/vessel/)는 변수 등록과 잔차식 구현이 필요한 단계다.
 
 원 설계서 DOE-HTGR-86-129 Rev.1/HFD-42102 Rev.2에 따른 SG 기준은 연속 전열관 439개, 외경 22.225 mm, 벽두께 3.302 mm, 외면 기준 총 전열면적 약 4026.539 m²다. 관벽 모델은 He 쪽과 물·증기 쪽 반벽의 전도와 축열을 다룬다. He 관군 마찰차압 9.651 kPa와 SG 전체 양단 차압 25.5 kPa는 측정 경계가 다르다. SG-2의 관내 비등·2상 차압 상관식은 보완본의 예비 기준이며 실제 고압 나선관 검증이 필요하다.
 

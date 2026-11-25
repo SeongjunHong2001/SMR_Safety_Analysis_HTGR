@@ -1,4 +1,6 @@
 """전역 상태벡터 y/ydot의 이름, 소유권, 순서 관리."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Literal
 import numpy as np
@@ -14,6 +16,7 @@ class VariableSpec:
     unit: str
     initial: np.ndarray
     scale: float
+    owner: str
 
     @property
     def size(self) -> int:
@@ -23,14 +26,18 @@ class StateRegistry:
     """등록 이후 freeze()로 잠가 새 변수 등록을 금지."""
     def __init__(self):
         self._variables: dict[str, VariableSpec] = {}
+        self._aliases: dict[str, str] = {}
         self._size = 0
         self._frozen = False
 
     def register(self, name: str, *, kind: Kind, initial, unit: str,
-                 shape: tuple[int, ...] = (), scale: float = 1.0) -> VariableSpec:
+                 shape: tuple[int, ...] = (), scale: float = 1.0,
+                 owner: str | None = None) -> VariableSpec:
         if self._frozen:
             raise RuntimeError("Registry is frozen")
-        if name in self._variables:
+        if not isinstance(name, str) or not name:
+            raise ValueError("State name must be a nonempty string")
+        if name in self._variables or name in self._aliases:
             raise ValueError(f"Duplicate state name: {name}")
         if kind not in ("differential", "algebraic"):
             raise ValueError(f"Invalid kind: {kind}")
@@ -52,13 +59,38 @@ class StateRegistry:
         if not np.all(np.isfinite(arr)):
             raise ValueError(f"Initial {name} contains non-finite entries")
         sz = int(np.prod(shape)) if shape else 1
+        owner = owner or (name.split(".", 1)[0] if "." in name else "system")
         spec = VariableSpec(name, slice(self._size, self._size+sz), shape,
-                            kind, unit, arr.copy(), scale)
+                            kind, unit, arr.copy(), scale, owner)
         self._variables[name] = spec
         self._size += sz
         return spec
 
+    def alias(self, name: str, target: str) -> None:
+        """Give an existing state another key without adding an unknown.
+
+        Forward references are checked at freeze, after all components register.
+        """
+        if self._frozen:
+            raise RuntimeError("Registry is frozen")
+        if not name or name in self._variables or name in self._aliases:
+            raise ValueError(f"Duplicate state name: {name}")
+        self._aliases[name] = target
+
+    def resolve(self, name: str) -> str:
+        seen = set()
+        while name in self._aliases:
+            if name in seen:
+                raise ValueError(f"Cyclic state alias: {name}")
+            seen.add(name)
+            name = self._aliases[name]
+        if name not in self._variables:
+            raise KeyError(f"Unknown state key or alias target: {name}")
+        return name
+
     def freeze(self):
+        for alias in self._aliases:
+            self.resolve(alias)
         self._frozen = True
 
     @property
@@ -69,8 +101,12 @@ class StateRegistry:
     def names(self):
         return tuple(self._variables)
 
+    @property
+    def aliases(self):
+        return dict(self._aliases)
+
     def spec(self, name: str) -> VariableSpec:
-        return self._variables[name]
+        return self._variables[self.resolve(name)]
 
     def get(self, vector: np.ndarray, name: str):
         spec = self.spec(name)
