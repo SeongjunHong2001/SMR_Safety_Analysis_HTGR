@@ -6,7 +6,7 @@
 의미를 먼저 검색하고, 중복이면 `update`로 기록한다.
 
 `docs/variable_registry.csv`가 코드 개발용 단일 기준 데이터다. Excel의
-`전체 변수표`는 같은 372개 항목의 배포용 사본이며 Role 5가 patch를
+`전체 변수표`는 같은 460개 항목의 배포용 사본이며 Role 5가 patch를
 검토한 뒤 CSV와 Excel을 함께 갱신한다. 변경 후
 `python scripts/compare_variable_registry.py`와 전체 pytest로 12개 대응
 필드의 의미상 불일치 0개를 확인한다. 숫자/Boolean 표기 차이만 정규화하고

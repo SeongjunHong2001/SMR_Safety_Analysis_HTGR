@@ -1,11 +1,11 @@
 import csv
 
-from scripts.compare_variable_registry import CSV_PATH, XLSX_PATH, _equal, compare
+from scripts.compare_variable_registry import CSV_PATH, EXPECTED_COUNT, XLSX_PATH, _equal, compare
 
 
-def test_all_372_shared_variable_fields_match_csv_and_excel():
+def test_all_shared_variable_fields_match_csv_and_excel():
     csv_count, excel_count, differences = compare()
-    assert csv_count == excel_count == 372
+    assert csv_count == excel_count == EXPECTED_COUNT
     assert differences == []
 
 

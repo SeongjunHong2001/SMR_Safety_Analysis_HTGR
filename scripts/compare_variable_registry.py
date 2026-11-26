@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = ROOT / "docs" / "variable_registry.csv"
 XLSX_PATH = next((ROOT / "docs").glob("*.xlsx"))
+EXPECTED_COUNT = 460
 FIELDS = (
     ("component", 0), ("proposed_name", 1), ("variable", 2),
     ("kind_tentative", 3), ("unit", 4), ("shape", 5),
@@ -76,4 +77,4 @@ if __name__ == "__main__":
     print(f"CSV={count_csv}, Excel={count_excel}, semantic mismatches={len(differences)}")
     for name, field, left, right in differences:
         print(f"{name} / {field}: CSV={left!r}; Excel={right!r}")
-    raise SystemExit(bool(differences or count_csv != 372 or count_excel != 372))
+    raise SystemExit(bool(differences or count_csv != EXPECTED_COUNT or count_excel != EXPECTED_COUNT))
