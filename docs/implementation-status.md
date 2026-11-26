@@ -14,14 +14,14 @@ LOFC 해석을 실행한 결과는 없다. 현재 실행 가능한 수치는 두
 | [압축기, 배관, 플레넘, 용기, RCCS](../models/) | 패키지·대표 클래스 | 실제 register/residual은 명시적 미구현. 압축기 provider는 계약만 존재 |
 | [공통 열전달](../physics/heat_transfer/) | API 동결 | base 함수 서명과 Role 3/4 파일 경계. 실제 식은 명시적 미구현 |
 | [외부 열경계](../models/thermal_link.py) | G0+01B 구현 | `ThermalSurfacePort`의 스칼라/배열 셀 온도, `ThermalLink`의 보존 열률을 `SimulationContext.heat_rates`에 trial별로 전달. 실제 Core/RPV/RCCS 열물리는 미구현 |
-| [변수표](variable_registry.csv)·[Excel](HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx) | 01C 동기화 | CSV 단일 기준, 372개 고유 항목·12개 대응 필드 의미상 불일치 0개. 기존 62셀 차이와 근거는 [이력](registry_patches/step01c_variable_sync_history.json)에 보존. 미확정 물리 수치는 미정 유지 |
+| [변수표](variable_registry.csv)·[Excel](HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx) | 01C 동기화 + 기준설계 대조 | CSV 단일 기준, 460개 고유 항목·12개 대응 필드 의미상 불일치 0개. 2026-11-26 기준설계 데이터표[1]에서 88개를 추가하고 기존 40개를 보완. STEP 01C 당시 372개·62셀 차이 근거는 [이력](registry_patches/step01c_variable_sync_history.json)에 보존. 미확정 초기 물리값은 미정 유지 |
 | [방정식표](equation_registry.csv) | 저마하수 수학 계약 | `p_sys` 소유·국부압 기준·EOS·셀 질량/에너지·정상 재고량 교체·과도 구성 명시. 합성 7미지수 정상/과도 rank·일치 초기화·DASSL 검증, 실제 HTGR 검증 대기 |
 | [실제 설정](../config/)·[검증자료](../data/) | 미정 | 형상, 물성, 운전점, 사고 이력·벤치마크 자료가 필요. `null`은 0이 아님 |
 
 ## 검증 범위
 
 `python -m pytest -q`: **55개 통과**(2026-11-26 확인; 기존 48개 회귀 통과).
-`python scripts/compare_variable_registry.py`: CSV/Excel 각각 372개,
+`python scripts/compare_variable_registry.py`: CSV/Excel 각각 460개,
 12개 대응 필드 의미상 불일치 0개.
 `python main.py --demo`: 기본 0–5초 DAE 데모 완료, 최종 상태
 `[316.19074506, 306.64335141, 47.73696821]` (K,K,W).

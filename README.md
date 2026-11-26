@@ -110,12 +110,12 @@ y_equilibrium, ydot_equilibrium = solve_steady_state(
 | [물리 가정](docs/assumptions.md) | 문헌 기준값의 차이와 아직 정하지 않은 모델 선택 |
 | [담당자별 지시서](docs/instructions/) | Role 1~5의 독립 개발 범위와 현재 코드 API |
 
-master 변수표는 기존 361개 항목에 공통 계약 후보 11개를 더한
-**372개**이며 [Excel 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)와
+master 변수표는 기존 361개 항목, 공통 계약 후보 11개,
+기준설계 데이터표[1] 대조 신규 88개를 합친 **460개**이며 [Excel 변수표](docs/HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx)와
 12개 대응 필드의 의미상 불일치를 0개로 맞췄다. CSV가 코드 개발용
 단일 기준이고 Role 5가 patch를 검토해 Excel을 동기화한다. 기존 62셀
 차이와 근거는 [변경 이력](docs/registry_patches/step01c_variable_sync_history.json)에
-보존했다. 실제 입력값을 새로 추정해 채우지 않았다.
+보존했다. 새 기준값은 출처의 설계·검산 조건으로 기록했으며 실제 초기값은 추정해 채우지 않았다.
 
 ## MHTGR-350 SG·RCCS 조사 입력
 
