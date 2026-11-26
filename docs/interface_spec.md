@@ -24,6 +24,10 @@
 `SystemAssembly.residual_details()`는 잔차·ID·`s_R`를 같은 순서로 반환한다.
 `diagnose_jacobian(t,y,ydot,cj)`는
 `diag(1/s_R) (F_y+cj F_ydot) diag(s_y)`의 rank와 조건수를 보고한다.
+`validate_for_solve(t,y,ydot,cj=...)`는 국소 rank 부족을 오류로 보고하며,
+`DASSL.solve(..., preflight=system.validate_for_solve)`로 일치 초기화 뒤
+첫 스텝 전에 실행한다. 비영 패턴을 주면 희소 구조 rank와 수치 분해를
+검사하며 조건수는 계산하지 않는다.
 `s_y`는 `StateRegistry.register(scale=...)`의 상태 척도이고 `s_R`은
 방정식 단위별 잔차 척도다. 실제 계통의 scale은 각 담당자가 정해야 한다.
 
@@ -49,6 +53,10 @@ h J/kg, 열률 W, 유량 kg/s.
 `SystemAssembly(components, *, context=None, connections=(), thermal_links=())`에서
 `thermal_links`는 `ThermalLink` 객체의 열이다. 링크가 있으면 템플릿
 context는 `SimulationContext`여야 한다(`None`이면 조립기가 생성한다).
+`connections`의 각 항목은 `ports` 메타데이터를 공개해야 한다. 기존
+`partial` 연결식은 `ports` 또는 `a`, `b` 키워드로 포트를 지정한다.
+동일 유체 포트의 유량 키 또는 동일 열 포트의 열률 키를 두 연결식에
+중복 사용할 수 없다. 배열 온도 표면의 여러 독립 열경로는 허용한다.
 각 잔차 평가와 `outputs()`에서 링크의 `transfer(t,y,context)`를 링크별로
 정확히 한 번 호출한다. 현재 trial의 열률은 `context.heat_rates`의
 `{link.name}.to_a`, `{link.name}.to_b`에 읽기 전용 W 배열로 전달한다.

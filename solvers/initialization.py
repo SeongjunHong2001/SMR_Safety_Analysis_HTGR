@@ -5,7 +5,7 @@ from .newton import newton_solve
 
 def consistent_initialize(residual, t0, y_guess, differential_mask, *,
                           ydot_guess=None, options=None, residual_scale=None,
-                          correction_scale=None):
+                          correction_scale=None, jacobian_sparsity=None):
     """미분 상태는 고정하고 대수 상태의 변화율은 0으로 두어 초기 잔차식 F=0을 푼다."""
     y0 = np.asarray(y_guess, dtype=float).copy()
     mask = np.asarray(differential_mask, dtype=bool)
@@ -28,18 +28,21 @@ def consistent_initialize(residual, t0, y_guess, differential_mask, *,
         return residual(t0, yy, yyp)
 
     sol = newton_solve(fun, z0, options=options, residual_scale=residual_scale,
-                       correction_scale=correction_scale)
+                       correction_scale=correction_scale,
+                       jacobian_sparsity=jacobian_sparsity)
     y0[~mask] = sol.x[:n_algebraic]
     yp0[mask] = sol.x[n_algebraic:]
     return y0, yp0
 
 
-def solve_steady_state(residual, t0, y_guess, *, options=None, residual_scale=None):
+def solve_steady_state(residual, t0, y_guess, *, options=None, residual_scale=None,
+                       jacobian_sparsity=None):
     """주어진 시각에서 모든 변화율을 0으로 두고 평형 상태를 구해 (y, ydot)를 반환한다."""
     y_guess = np.asarray(y_guess, dtype=float)
     if y_guess.ndim != 1 or not y_guess.size or not np.all(np.isfinite(y_guess)):
         raise ValueError("y_guess must be a nonempty finite state vector")
     ydot = np.zeros_like(y_guess)
     solution = newton_solve(lambda y: residual(t0, y, ydot), y_guess,
-                            options=options, residual_scale=residual_scale)
+                            options=options, residual_scale=residual_scale,
+                            jacobian_sparsity=jacobian_sparsity)
     return solution.x, ydot

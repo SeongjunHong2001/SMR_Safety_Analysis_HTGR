@@ -1,5 +1,5 @@
 numpy>=1.26,<3
 PyYAML>=6.0,<7
+scipy>=1.12,<2
 pytest>=8.0,<10
 openpyxl>=3.1,<4
-# Optional for later sparse solvers: scipy>=1.12

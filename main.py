@@ -29,7 +29,8 @@ def run_demo(config_path='config/solver.yaml', write_output=True):
     result = solver.solve(system.residual,
                           t_span=(config['t_start'], config['t_end']),
                           y0=system.registry.initial_state(),
-                          differential_mask=system.registry.differential_mask())
+                          differential_mask=system.registry.differential_mask(),
+                          preflight=system.validate_for_solve)
     if write_output:
         out = root / 'output' / 'results'
         out.mkdir(parents=True,exist_ok=True)

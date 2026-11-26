@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from math import factorial
 
 import numpy as np
+from scipy import sparse
 
 from .bdf import bdf_predictor, divided_differences
 from .error_control import error_weights, rms_norm, step_factor
@@ -68,7 +69,7 @@ class DASSL:
         self.residual_scale = residual_scale
 
     def solve(self, residual, *, t_span, y0, ydot0=None, differential_mask=None,
-              jacobian=None) -> IntegrationResult:
+              jacobian=None, jacobian_sparsity=None, preflight=None) -> IntegrationResult:
         """시작 시각에서 종료 시각까지 순방향 또는 역방향으로 적분하고 수용된 해를 반환한다.
 
         differential_mask가 있으면 미분 상태를 고정하고 대수 상태와 미분 상태의
@@ -77,6 +78,8 @@ class DASSL:
         모두 생략하면 모든 초기 상태를 고정하고 변화율만 구한다.
 
         jacobian(t, y, ydot, cj)는 보정 방정식의 야코비안 ∂F/∂y + cj·∂F/∂ydot를 반환해야 한다.
+        jacobian_sparsity는 F_y와 F_ydot의 가능한 모든 비영 성분의 합집합이다.
+        preflight(t, y, ydot, cj=...)는 초기화 후 첫 스텝 전에 호출한다.
         """
         t0, tf = (float(x) for x in t_span)
         if tf == t0 or not np.isfinite(tf - t0):
@@ -90,6 +93,11 @@ class DASSL:
         yp = None if ydot0 is None else np.asarray(ydot0, dtype=float).copy()
         if yp is not None and (yp.shape != y.shape or not np.all(np.isfinite(yp))):
             raise ValueError("ydot0 must be finite and match y0")
+        pattern = None
+        if jacobian_sparsity is not None:
+            pattern = sparse.csc_matrix(jacobian_sparsity, dtype=bool)
+            if pattern.shape != (y.size, y.size):
+                raise ValueError("jacobian_sparsity must be square and match y0")
         scale = (np.ones_like(y) if self.residual_scale is None
                  else np.asarray(self.residual_scale, dtype=float))
         if scale.shape != y.shape or np.any(scale <= 0) or not np.all(np.isfinite(scale)):
@@ -105,9 +113,12 @@ class DASSL:
                 # 변화율의 보정 척도는 상태 허용오차를 첫 스텝의 후보 간격으로 나누어 구한다.
                 derivative_weights = initial_weights[mask] / self.dt
                 init_scale = np.concatenate((initial_weights[~mask], derivative_weights))
+                init_pattern = (None if pattern is None else sparse.hstack(
+                    (pattern[:, ~mask], pattern[:, mask]), format="csc"))
                 y, yp = consistent_initialize(
                     residual, t0, y, mask, ydot_guess=yp, options=self.newton_options,
                     residual_scale=scale, correction_scale=init_scale,
+                    jacobian_sparsity=init_pattern,
                 )
             initial_residual = np.asarray(residual(t0, y, yp), dtype=float)
         except (NewtonFailure, FloatingPointError) as exc:
@@ -131,6 +142,11 @@ class DASSL:
         order = 1
         direction = 1.0 if tf > t0 else -1.0
         step = min(max(self.dt, self.min_step), self.max_step)
+        if preflight is not None:
+            if not callable(preflight):
+                raise TypeError("preflight must be callable")
+            first_h = direction * min(step, abs(tf - t0))
+            preflight(t0, y, yp, cj=1.0 / first_h)
 
         while times[-1] != tf:
             t = times[-1]
@@ -144,7 +160,7 @@ class DASSL:
 
             try:
                 y_new, yp_new, error, count = self._attempt_step(
-                    residual, jacobian, t_new, history_times, history_states,
+                    residual, jacobian, pattern, t_new, history_times, history_states,
                     derivatives[-1], order,
                 )
             except (NewtonFailure, FloatingPointError) as exc:
@@ -202,7 +218,8 @@ class DASSL:
             error_test_failures=error_failures, newton_failures=newton_failures,
         )
 
-    def _correct(self, residual, jacobian, t, prediction, slope, cj, previous):
+    def _correct(self, residual, jacobian, jacobian_sparsity, t, prediction,
+                 slope, cj, previous):
         if not np.all(np.isfinite(prediction)) or not np.all(np.isfinite(slope)) or not np.isfinite(cj):
             raise FloatingPointError("Non-finite BDF predictor or coefficient")
 
@@ -226,24 +243,27 @@ class DASSL:
             equations, np.zeros_like(prediction), options=self.newton_options,
             residual_scale=self.residual_scale, jacobian=iteration_matrix if jacobian is not None else None,
             correction_scale=weights, fd_scales=fd_scales,
+            jacobian_sparsity=jacobian_sparsity,
         )
         delta = solution.x
         return prediction + delta, slope + cj * delta, delta, solution.iterations
 
-    def _attempt_step(self, residual, jacobian, t, past_times, past_states, rate, order):
+    def _attempt_step(self, residual, jacobian, jacobian_sparsity, t,
+                      past_times, past_states, rate, order):
         previous = past_states[0]
         h = t - past_times[0]
         if len(past_times) > 1:
             prediction, slope, cj, error_factor = bdf_predictor(t, past_times, past_states, order)
             y, yp, correction, count = self._correct(
-                residual, jacobian, t, prediction, slope, cj, previous,
+                residual, jacobian, jacobian_sparsity, t, prediction, slope, cj, previous,
             )
             error_vector = error_factor * correction
         else:
             # 첫 스텝에는 보간 이력이 부족하다. 1차 BDF 한 스텝과 두 반 스텝을 비교해
             # 대수 상태의 초기 변화율 없이 오차를 추정하고, 수용 시에는 한 스텝의 해를 쓴다.
             y, yp, correction, count = self._correct(
-                residual, jacobian, t, previous, np.zeros_like(rate), 1.0 / h, previous,
+                residual, jacobian, jacobian_sparsity, t, previous,
+                np.zeros_like(rate), 1.0 / h, previous,
             )
             midpoint = past_times[0] + 0.5 * h
             if midpoint == past_times[0] or midpoint == t:
@@ -251,11 +271,13 @@ class DASSL:
                 error_vector = 0.5 * (correction - h * rate)
             else:
                 half, _, first_delta, first_count = self._correct(
-                    residual, jacobian, midpoint, previous, np.zeros_like(rate),
+                    residual, jacobian, jacobian_sparsity, midpoint,
+                    previous, np.zeros_like(rate),
                     1.0 / (midpoint - past_times[0]), previous,
                 )
                 _, _, second_delta, second_count = self._correct(
-                    residual, jacobian, t, half, np.zeros_like(rate), 1.0 / (t - midpoint), half,
+                    residual, jacobian, jacobian_sparsity, t, half,
+                    np.zeros_like(rate), 1.0 / (t - midpoint), half,
                 )
                 # 대수 상태는 두 계산의 끝값이 같을 수 있다. 두 반 스텝의 변화량 차이로
                 # 중점 부근의 곡률까지 반영해 이런 경우에도 오차를 감지한다.

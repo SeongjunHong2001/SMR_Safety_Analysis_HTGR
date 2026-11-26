@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = ROOT / "docs" / "variable_registry.csv"
-XLSX_PATH = next((ROOT / "docs").glob("*.xlsx"))
+XLSX_PATH = ROOT / "docs" / "HTGR_전체시스템_통합변수표_SG_RCCS_보완반영.xlsx"
 EXPECTED_COUNT = 460
 FIELDS = (
     ("component", 0), ("proposed_name", 1), ("variable", 2),

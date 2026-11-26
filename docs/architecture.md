@@ -28,10 +28,12 @@ coupling을 주입받아 한 대표 모델로 조립한다. 하위 물리식은 
 
 `interfaces/`는 상태·별칭·포트·provider 타입과 읽기 전용 context를,
 `system/`은 연결, 등록 완료 후 포트 검증, 잔차 조립과 결합 Jacobian
-진단을 맡는다. `solvers/`의 DASSL은 index-1 DAE 일치 초기화와
+진단을 맡는다. 동일 유체·열률 포트의 중복 연결을 거부하고, 해석 전
+결합 Jacobian의 국소 정칙성을 검사할 수 있다. `solvers/`의 DASSL은 index-1 DAE 일치 초기화와
 가변 스텝 BDF 1~5차를 사용한다. Python에 Modelica의 자동 flattening
 또는 index reduction은 없다. 모델 개발자가 미지수·잔차 ledger와
-독립성을 직접 검증해야 한다.
+독립성을 직접 검증해야 한다. 확인된 Jacobian 비영 패턴을 주면
+색칠 유한차분과 희소 선형 풀이를 사용하며, 기본 경로는 밀집 행렬이다.
 
 `tests/fixtures/`의 숫자와 provider는 합성 시험 전용이다. 실제 HTGR
 설정에서 자동으로 선택되지 않는다. 실제 형상·운전점·물성·시나리오가

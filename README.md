@@ -41,9 +41,10 @@ python -m pytest -q tests/contracts
 python scripts/compare_variable_registry.py
 ```
 
-2026-11-26 기준 전체 55개 테스트가 통과했다(기존 48개 포함). 계약 시험은
+2026-11-26 기준 전체 65개 테스트가 통과했다(기존 55개 포함). 계약 시험은
 Core·HeatExchanger 합성 flat/composite DAE의 잔차·Jacobian·DASSL 적분,
-포트 검증, 저마하수 폐루프 정상/과도 closure와 변수표 동기화를 확인한다.
+포트 중복 접속·rank 사전 검증, 희소 Jacobian 경로, 저마하수 폐루프
+정상/과도 closure와 변수표 동기화를 확인한다.
 합성 수치는 실제 HTGR 검증값이 아니다.
 
 ## 현재 제공 범위
@@ -78,6 +79,7 @@ result = DASSL(
     t_span=(0.0, 5.0),
     y0=registry.initial_state(),
     differential_mask=registry.differential_mask(),
+    preflight=system.validate_for_solve,
 )
 
 y_equilibrium, ydot_equilibrium = solve_steady_state(
@@ -87,7 +89,7 @@ y_equilibrium, ydot_equilibrium = solve_steady_state(
 
 `differential_mask`를 주면 미분변수의 초깃값을 유지하면서 잔차식을 만족하는 대수변수와 미분변수의 초기 변화율을 구한다. 잔차식이 대수변수의 시간미분에 의존하지 않을 때 사용할 수 있다. 일치하는 초기조건을 알고 있다면 마스크를 생략하고 `y0`와 `ydot0`를 함께 전달한다. `solve_steady_state`는 모든 변화율을 0으로 두고 평형 상태를 구한다.
 
-`result.t`, `result.y`, `result.ydot`에는 초기점을 포함한 시각, 상태, 변화율이 담긴다. `result.orders[i]`, `result.error_norms[i]`, `result.newton_iterations[i]`는 `t[i]`에서 `t[i+1]`까지 수용된 스텝의 정보다. 해석적 야코비안을 사용할 때는 `∂F/∂y + cj·∂F/∂ydot`를 반환하는 `jacobian(t, y, ydot, cj)`를 `solve`에 전달한다. 기본값은 유한차분이다.
+`result.t`, `result.y`, `result.ydot`에는 초기점을 포함한 시각, 상태, 변화율이 담긴다. `result.orders[i]`, `result.error_norms[i]`, `result.newton_iterations[i]`는 `t[i]`에서 `t[i+1]`까지 수용된 스텝의 정보다. `preflight=system.validate_for_solve`는 일치 초기화 뒤 첫 스텝의 결합 Jacobian 정칙성을 확인한다. 해석적 야코비안을 사용할 때는 `∂F/∂y + cj·∂F/∂ydot`를 반환하는 `jacobian(t, y, ydot, cj)`를 `solve`에 전달한다. 기본값은 밀집 유한차분이며, `jacobian_sparsity`에 `∂F/∂y`와 `∂F/∂ydot`의 가능한 비영 성분을 모두 포함한 패턴을 주면 묶음 유한차분과 SciPy 희소 선형 풀이를 사용한다. 패턴을 누락하면 Jacobian이 잘못 계산되므로 모델의 결합 구조에서 검증해야 한다.
 
 ## 모델 개발과 문서
 

@@ -1,6 +1,7 @@
 """잔차식의 크기를 조정하고 후퇴 선 탐색으로 보정량을 줄이는 뉴턴법."""
 from dataclasses import dataclass
 import numpy as np
+from scipy import sparse
 from .jacobian import finite_difference_jacobian
 from .error_control import rms_norm
 from .linear_solver import LinearSolveFailure, solve_linear
@@ -25,7 +26,8 @@ class NewtonResult:
     residual_norm: float
 
 def newton_solve(fun, x0, *, options=None, residual_scale=None,
-                 jacobian=None, correction_scale=None, fd_scales=1.0) -> NewtonResult:
+                 jacobian=None, correction_scale=None, fd_scales=1.0,
+                 jacobian_sparsity=None) -> NewtonResult:
     """잔차 벡터의 크기와 미지수 수가 같은 비선형 연립방정식 fun(x) = 0을 푼다."""
     options = options or NewtonOptions()
     x = np.asarray(x0, dtype=float).copy()
@@ -53,16 +55,20 @@ def newton_solve(fun, x0, *, options=None, residual_scale=None,
             return NewtonResult(x=x, iterations=k, residual_norm=err)
         if k == options.max_iter and (correction_scale is None or k == 0):
             break
-        jac = (finite_difference_jacobian(fun, x, step_scales=fd_scales)
+        jac = (finite_difference_jacobian(fun, x, step_scales=fd_scales,
+                                          sparsity=jacobian_sparsity)
                if jacobian is None else jacobian(x))
-        jac = np.asarray(jac, dtype=float)
+        jac = jac.astype(float) if sparse.issparse(jac) else np.asarray(jac, dtype=float)
         if jac.shape != (r.size, x.size):
             raise ValueError("Newton Jacobian shape must match the system")
-        if not np.all(np.isfinite(jac)):
+        entries = jac.data if sparse.issparse(jac) else jac
+        if not np.all(np.isfinite(entries)):
             raise NewtonFailure("Newton Jacobian is non-finite")
         try:
             # 단위가 다른 잔차식을 비교할 수 있도록 야코비안의 각 행과 우변을 같은 척도로 나눈다.
-            dx = solve_linear(jac / scale[:, None], -r / scale)
+            scaled_jac = (jac.multiply(1.0 / scale[:, None]) if sparse.issparse(jac)
+                          else jac / scale[:, None])
+            dx = solve_linear(scaled_jac, -r / scale)
         except LinearSolveFailure as exc:
             raise NewtonFailure(str(exc)) from exc
         # 보정 척도가 주어지면 잔차와 함께 보정량의 가중 RMS도 수렴 판정에 사용한다.
