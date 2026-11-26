@@ -1,8 +1,12 @@
 """물리모델 순회는 Residual 평가 순서일 뿐 시간전진 순서가 아님."""
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import partial
 import numpy as np
+from scipy import sparse
+from scipy.sparse.linalg import splu
 from interfaces.contracts import SimulationContext
+from interfaces.ports import FluidPort, FluidStreamPort, ThermalPort
 from interfaces.state_registry import StateRegistry
 from models.thermal_link import ThermalLink
 from solvers.jacobian import finite_difference_jacobian
@@ -13,8 +17,8 @@ from system.connections import validate_port, validate_stream_junction
 class JacobianDiagnostic:
     rank: int
     size: int
-    condition: float
-    singular_values: np.ndarray
+    condition: float | None
+    singular_values: np.ndarray | None
     residual_ids: tuple[str, ...]
 
 class SystemAssembly:
@@ -49,16 +53,64 @@ class SystemAssembly:
         for component in self.components:
             for port in component.ports().values():
                 validate_port(port, self.registry)
-        for connection in self.connections:
-            if hasattr(connection, "validate"):
-                connection.validate(self.registry)
-            elif isinstance(connection, partial):
-                arguments = connection.keywords or {}
-                if "ports" in arguments:
-                    validate_stream_junction(arguments["ports"], self.registry)
-                for key in ("a", "b"):
-                    if key in arguments:
-                        validate_port(arguments[key], self.registry)
+        connection_ports = tuple(self._connection_ports(connection)
+                                 for connection in self.connections)
+        for connection, ports in zip(self.connections, connection_ports):
+            if not callable(connection):
+                raise TypeError("Connections must be callable")
+            for port in ports:
+                validate_port(port, self.registry)
+            validator = getattr(connection, "validate", None)
+            if validator is not None:
+                if not callable(validator):
+                    raise TypeError("Connection validate must be callable")
+                validator(self.registry)
+            elif isinstance(connection, partial) and "ports" in (connection.keywords or {}):
+                validate_stream_junction(ports, self.registry)
+        self._validate_unique_connection_ports(connection_ports)
+
+    @staticmethod
+    def _connection_ports(connection):
+        if isinstance(connection, partial):
+            arguments = connection.keywords or {}
+            if "ports" in arguments:
+                ports = tuple(arguments["ports"])
+            elif "a" in arguments and "b" in arguments:
+                ports = (arguments["a"], arguments["b"])
+            else:
+                raise TypeError("Connections must declare ports or both a and b")
+        else:
+            ports = getattr(connection, "ports", None)
+            if callable(ports):
+                ports = ports()
+            if ports is None:
+                raise TypeError("Connections must declare ports")
+            if isinstance(ports, Mapping):
+                ports = ports.values()
+            ports = tuple(ports)
+        if not ports:
+            raise ValueError("Connections must declare at least one port")
+        return ports
+
+    def _validate_unique_connection_ports(self, connection_ports):
+        """A flow or heat-rate port may belong to only one connection."""
+        owners = {}
+        for index, ports in enumerate(connection_ports):
+            for port in ports:
+                if isinstance(port, (FluidPort, FluidStreamPort)):
+                    key = ("fluid", self.registry.resolve(port.m_dot))
+                    label = port.m_dot
+                elif isinstance(port, ThermalPort):
+                    key = ("thermal", self.registry.resolve(port.Q_dot))
+                    label = port.Q_dot
+                else:
+                    continue
+                if key in owners:
+                    raise ValueError(
+                        f"Port {label} is used by connection[{owners[key]}] "
+                        f"and connection[{index}]"
+                    )
+                owners[key] = index
 
     def residual(self, t, y, ydot):
         return self.residual_details(t, y, ydot)[0]
@@ -154,6 +206,52 @@ class SystemAssembly:
         condition = (float(singular_values[0] / singular_values[-1])
                      if singular_values[-1] > 0 else float("inf"))
         return JacobianDiagnostic(rank, y.size, condition, singular_values, ids)
+
+    def validate_for_solve(self, t, y, ydot, *, cj, jacobian_sparsity=None):
+        """Check the local iteration matrix before time integration.
+
+        With a sparsity pattern, check structural rank and sparse numerical
+        factorization. Its condition number and singular values are not computed.
+        """
+        if jacobian_sparsity is None:
+            diagnostic = self.diagnose_jacobian(t, y, ydot, cj=cj)
+            if diagnostic.rank != diagnostic.size:
+                raise ValueError(
+                    f"DAE iteration Jacobian is rank deficient at t={t}: "
+                    f"rank {diagnostic.rank}/{diagnostic.size} (cj={cj})"
+                )
+            return diagnostic
+
+        if not np.isfinite(cj):
+            raise ValueError("cj must be finite")
+        y = np.asarray(y, dtype=float)
+        ydot = np.asarray(ydot, dtype=float)
+        _, ids, residual_scales = self.residual_details(t, y, ydot)
+        state_scales = self.registry.scale_vector()
+        scaled_y = y / state_scales
+
+        def scaled_residual(z):
+            delta = (z - scaled_y) * state_scales
+            return self.residual(t, y + delta, ydot + cj * delta) / residual_scales
+
+        jacobian = finite_difference_jacobian(
+            scaled_residual, scaled_y, step_scales=1.0,
+            sparsity=jacobian_sparsity,
+        )
+        jacobian.eliminate_zeros()
+        rank = sparse.csgraph.structural_rank(jacobian)
+        if rank != y.size:
+            raise ValueError(
+                f"DAE iteration Jacobian is structurally rank deficient at t={t}: "
+                f"rank {rank}/{y.size} (cj={cj})"
+            )
+        try:
+            splu(jacobian)
+        except RuntimeError as exc:
+            raise ValueError(
+                f"DAE iteration Jacobian is numerically singular at t={t} (cj={cj})"
+            ) from exc
+        return JacobianDiagnostic(y.size, y.size, None, None, ids)
 
     @staticmethod
     def _residual_part(values, source):

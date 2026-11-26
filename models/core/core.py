@@ -98,5 +98,11 @@ class Core(Component):
         self._require_parts()
         power_outputs = (self.power.outputs(t, y, context)
                          if callable(getattr(self.power, "outputs", None)) else {})
-        return {**self.fluid.outputs(t, y, context),
-                **self.solid.outputs(t, y, context), **power_outputs}
+        values = {}
+        for part_outputs in (self.fluid.outputs(t, y, context),
+                             self.solid.outputs(t, y, context), power_outputs):
+            duplicates = values.keys() & part_outputs.keys()
+            if duplicates:
+                raise ValueError(f"Core submodel output names overlap: {sorted(duplicates)}")
+            values.update(part_outputs)
+        return values

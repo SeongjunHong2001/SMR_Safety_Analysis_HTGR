@@ -28,7 +28,8 @@ from tests.fixtures.providers import (SyntheticHeliumProperties,
                                       SyntheticSGBoundary)
 from tests.fixtures.closed_loop import make_loop
 from tests.fixtures.synthetic_models import (SyntheticCoupling, SyntheticFluid,
-                                             SyntheticHeatConstraint, SyntheticSolid,
+                                             SyntheticHeatConstraint, SyntheticPower,
+                                             SyntheticSolid,
                                              make_composite, make_derived, make_flat)
 
 
@@ -255,6 +256,16 @@ def test_flat_and_composite_dae_match_residual_jacobian_and_dassl():
     assert np.array_equal(result_flat.t, result_composite.t)
     assert np.allclose(result_flat.y, result_composite.y, atol=1e-7)
     assert np.allclose(result_flat.ydot, result_composite.ydot, atol=1e-7)
+
+
+def test_core_rejects_overlapping_submodel_output_names():
+    fluid, solid, power = SyntheticFluid(), SyntheticSolid(), SyntheticPower()
+    fluid.outputs = lambda t, y, context: {"shared": 1}
+    solid.outputs = lambda t, y, context: {"shared": 2}
+    core = Core(fluid=fluid, solid=solid, power=power,
+                coupling=SyntheticCoupling())
+    with pytest.raises(ValueError, match="output names overlap.*shared"):
+        core.outputs(0.0, np.empty(0), None)
 
 
 def test_core_can_register_stateful_power_with_its_own_residual():

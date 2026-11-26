@@ -7,8 +7,8 @@ LOFC 해석을 실행한 결과는 없다. 현재 실행 가능한 수치는 두
 | 기능 | 상태 | 증거·남은 일 |
 | --- | --- | --- |
 | [Component/Registry 계약](../interfaces/) | G0 구현 | 독립 상태·별칭·owner·shape·단위, 공개 name/key/ports/잔차 ID·scale, 읽기 전용 context와 HeliumProperties Protocol |
-| [접속·전역 조립](../system/) | G0+01C 구현 | N포트 2N 잔차, 읽기 전용 trial, 열링크 전달, 조립 순서·ID·scale, scaled 결합 Jacobian 진단. `HeliumInventory` 합산 계약 구현. 실제 압력손실과 HTGR 폐루프 물리 검증 대기 |
-| [DASSL](../solvers/) | 기존 구현 유지 | 일치 초기화와 가변 BDF 1~5차. 합성 flat/composite DAE 적분 결과 일치 |
+| [접속·전역 조립](../system/) | G0+01C 구현 | N포트 2N 잔차, 읽기 전용 trial, 열링크 전달, 조립 순서·ID·scale, 전역 포트 중복 검사와 결합 Jacobian 사전 검증. `HeliumInventory` 합산 계약 구현. 실제 압력손실과 HTGR 폐루프 물리 검증 대기 |
+| [DASSL](../solvers/) | 기존 구현 확장 | 일치 초기화와 가변 BDF 1~5차. 비영 패턴을 지정하면 색칠 유한차분·희소 선형 풀이; 기본 밀집 경로 유지. 합성 flat/composite DAE 적분 결과 일치 |
 | [Core](../models/core/) | 상위 조립 계약 | fluid/solid/power/coupling 생성자 주입과 현재 trial의 보존적 열률 전달. 실제 하위 물리식은 Roles 2/3 대기 |
 | [HeatExchanger](../models/heat_exchanger/) | 상위 Composite 구현 | helium_side→wall→secondary_side DI 조립·ID·scale·외부 포트·보존 열률·출력, 합성 flat/Composite·DASSL 검증. 실제 하위 SG 물리식과 상관식은 Role 4 대기 |
 | [압축기, 배관, 플레넘, 용기, RCCS](../models/) | 패키지·대표 클래스 | 실제 register/residual은 명시적 미구현. 압축기 provider는 계약만 존재 |
@@ -20,7 +20,7 @@ LOFC 해석을 실행한 결과는 없다. 현재 실행 가능한 수치는 두
 
 ## 검증 범위
 
-`python -m pytest -q`: **55개 통과**(2026-11-26 확인; 기존 48개 회귀 통과).
+`python -m pytest -q`: **65개 통과**(2026-11-26 확인; 기존 55개 회귀 통과).
 `python scripts/compare_variable_registry.py`: CSV/Excel 각각 460개,
 12개 대응 필드 의미상 불일치 0개.
 `python main.py --demo`: 기본 0–5초 DAE 데모 완료, 최종 상태
