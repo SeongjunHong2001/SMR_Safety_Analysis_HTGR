@@ -2,7 +2,7 @@
 
 ``SecondarySide`` 계약과 SG-0용 ``FixedTemperatureWaterSink``.
 
-SG-0 (팀 결정 2026-11-26, operation.yaml ``boundaries.sg_heat_sink``)
+SG-0 ([제안] 2026-11-26, operation.yaml ``boundaries.sg_heat_sink``)
     2차측 = 일정량·일정 온도의 액체 물 (상변화·2차측 유동 없음). He 셀 i의 제거열 Q_i = U A_i (T_He,i − T_물).
     물 포트가 없고(ports 빈 dict), 상태는 U 보정 모드에서만 하나다:
         U 보정 (정상 초기화)  ``{name}.U_overall`` (algebraic, W/(m²·K))와 잔차 T_He,출구 − T_목표 = 0

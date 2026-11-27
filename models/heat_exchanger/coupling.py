@@ -5,7 +5,7 @@
     (−Q, +Q, −Q, +Q)를 돌려준다. 벽(NoStorageWall)의 순열률은 0이다.
     T_He,i는 FVM 셀 값(1차 상류차분에서 셀 출구 상태)이고, U는 S0에서 He 출구 528.15 K가 되도록 보정한
     등가값이라 셀 평균 대신 셀 값을 쓴 차이를 흡수한다.
-    A_i = geometry heat_exchanger.heat_transfer_area_m2 (관 외면, 높이 비례 배분, 팀 결정).
+    A_i = geometry heat_exchanger.heat_transfer_area_m2 (관 외면, 높이 비례 배분, [제안]).
 """
 import numpy as np
 

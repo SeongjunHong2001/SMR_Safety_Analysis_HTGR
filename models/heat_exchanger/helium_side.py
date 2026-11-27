@@ -4,7 +4,7 @@
 (팀 보고서 [2] 파트 B 커널, Role 2 ``Piping``을 그대로 쓴다).
 
 geometry.yaml ``heat_exchanger.helium_side``:
-    elevation_profile_m (10,)  셀 경계 고도 (FSH 1셀 + EES 8셀, FSH–EES 간격은 FSH 셀에 포함, 팀 결정)
+    elevation_profile_m (10,)  셀 경계 고도 (FSH 1셀 + EES 8셀, FSH–EES 간격은 FSH 셀에 포함, [제안])
     shell_flow_area_total_m2   shroud 환형 전면 단면 (관 단면 미차감) [계산] 9.23 m²
     mean_flow_area_m2          다발 공극률 × 전면 단면 = 자유체적/길이 [계산] 6.66 m² — 1D 셀 체적·평균 속도에 쓴다
     min_free_flow_area_m2      관군 최소 자유유로면적 [계산] 3.85 m² (Zukauskas 교차류 상관식용, SG-2)

@@ -39,7 +39,7 @@ rho = he.density(p_sys, h_he)                     # SI, 스칼라·배열 broadc
 | `drho_dp(p, h)` | ∂ρ/∂p│h = 1 / (R T) | kg/(m³·Pa) |
 | `drho_dh(p, h)` | ∂ρ/∂h│p = −p / (R T² c_p) | kg²/(m³·J) |
 
-- **기체상수:** R = 2077.46 J/(kg·K) (= 8.314 / 0.004002). 팀 결정(2026-11-26)대로 R1 세트를 전 계통에 쓴다.
+- **기체상수:** R = 2077.46 J/(kg·K) (= 8.314 / 0.004002). [제안](2026-11-26)에 따라 R1 세트를 전 계통에 쓴다.
 - **엔탈피 기준:** `T_ref` 기본값은 변수표 `T_he_enthalpy_ref` 제안값 0 K다. 기준을 바꾸면 h 값만 평행이동하고 같은 (p, T)의 밀도·도함수는 같다.
 - **출력 형태:** 입력의 broadcast shape이다. 스칼라 입력은 NumPy 스칼라로 돌려준다.
 - **비물리 입력:** p ≤ 0, T ≤ 0(h로 계산한 T 포함), 비유한 값은 그 원소만 NaN이다. 예외나 경고를 내지 않는다.
@@ -187,7 +187,7 @@ core = Core(fluid=fluid, solid=..., power=..., coupling=...)
 ### 순환기 `Compressor` (`models/compressor/`)
 
 체적 없는 두 포트 장치(`helium_inlet` 흡입, `helium_outlet` 토출). `config`는 operation.yaml `compressor` dict.
-- **`mode="prescribed_flow"` (S0 전용, 팀 결정):** `m_dot_set`과 `m_rated`가 필수다. 미지수 `{name}.dp_comp`와 유량식을 더하고, 승압은 결과로 나온다.
+- **`mode="prescribed_flow"` (S0 전용, [제안]):** `m_dot_set`과 `m_rated`가 필수다. 미지수 `{name}.dp_comp`와 유량식을 더하고, 승압은 결과로 나온다.
 - **`mode="performance"`:** `performance`(예: `QuadraticPerformance`)와 `speed_schedule(t)`가 필수다. 유량은 루프 운동량이 정한다.
   `QuadraticPerformance`는 ΔP = (ρ/ρ_R) ΔP_R (c0 α² + c1 α ν − c2 ν|ν|)이다. 변수표 부호 규약(c0 + c1 − c2 = 1)을 따르고 계수 기본값은 없다.
 - **`mode="coastdown_inertia"`:** 회전자 관성 `I_circ_rotor`가 미확보(M09)라 `ModelInputMissing`을 낸다.
