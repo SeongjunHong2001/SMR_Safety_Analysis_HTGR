@@ -167,6 +167,8 @@ core = Core(fluid=fluid, solid=..., power=..., coupling=...)
 - **벽 열:** 기본 단열. `heat_source(t, y, context, pipe)`가 (N,) W를 주면 에너지식에 넣는다. 루프 시험의 SG-0 모양 열침원이 이 경로다.
 - **구현 정리:** 노심 유체와 배관은 같은 면 압력 항 함수 `pressure_loss.channel_face_terms`를 쓴다 (리팩터링 뒤 노심 유체 시험 결과 동일).
 
+- **열 링크용 추가 (Role 4 단계에서):** `Piping.z_faces`(셀 경계 고도), `Piping.coupling_state()`(노심 유체와 같은 키). riser 벽 열은 `heat_source`가 링크 열률을 읽어 받는다.
+
 ### 플레넘 `Plenum` (`models/plenum/plenum.py`)
 
 `Plenum(nodes["lower_plenum"], he, name="lower_plenum", initial=..., port_labels=("from_core", "to_hot_duct"), owns_p_sys=True, steady_pressure_closure=None)`

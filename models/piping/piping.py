@@ -67,6 +67,7 @@ class Piping(Component):
         if abs(z_out - z_in) > L * (1 + 1e-9):
             raise ValueError(f"{GEOMETRY}: {where} elevation change exceeds length")
         self.V = self.A * self.dz
+        self.z_faces = np.linspace(z_in, z_out, n + 1)        # 셀 경계 고도 (열 링크의 축방향 대응에 사용)
         self.roughness = float(c.get("roughness_m", 0.0) or 0.0)
         shape = c.get("shape", "circular")
         self.phi_s = pl.PHI_S_CIRCULAR if shape == "circular" else pl.PHI_S_PARALLEL_PLATES
@@ -185,6 +186,20 @@ class Piping(Component):
     def helium_inventory(self, t, y, context):
         p_sys = float(context.get(y, self.p_sys_key))
         return np.asarray(self.properties.density(p_sys, context.get(y, self.key("h_he"))), dtype=float) * self.V
+
+    def coupling_state(self, t, y, context):
+        """벽 열전달 결합용 현재 trial 상태 (셀 순서, 각 (N,)). ParallelChannelCoreFluid.coupling_state와 같은 키."""
+        he = self.properties
+        p_sys = float(context.get(y, self.p_sys_key))
+        h = np.asarray(context.get(y, self.key("h_he")), dtype=float)
+        m = np.asarray(context.get(y, self.key("m_dot_fluid_face")), dtype=float)
+        T = np.asarray(he.temperature(p_sys, h), dtype=float)
+        return {"T_bulk": T, "rho": np.asarray(he.density(p_sys, h), dtype=float),
+                "mu": np.asarray(he.viscosity(p_sys, T), dtype=float),
+                "k": np.asarray(he.conductivity(p_sys, T), dtype=float),
+                "cp": np.asarray(he.cp(p_sys, T), dtype=float), "m_dot": 0.5 * (m[:-1] + m[1:]),
+                "D_h": self.D_h.copy(), "A_flow": self.A.copy(), "dz": self.dz.copy(), "p_sys": p_sys,
+                "shape": ("circular" if self.phi_s == pl.PHI_S_CIRCULAR else "parallel_plates",) * self.n}
 
     def outputs(self, t, y, context):
         p_sys = float(context.get(y, self.p_sys_key))
