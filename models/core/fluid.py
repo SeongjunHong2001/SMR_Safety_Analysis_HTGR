@@ -232,14 +232,33 @@ class ParallelChannelCoreFluid(Component):
             drho_dh=np.asarray(he.drho_dh(p_sys, h), dtype=float),
             mu=np.asarray(he.viscosity(p_sys, T), dtype=float))
 
+    def _face_terms(self, ch, s, k_index):
+        return pl.channel_face_terms(s["m"], s["rho"], s["mu"], ch.A, ch.D_h, ch.dz, ch.dz_elev,
+                                     m_eps=self.m_eps[k_index], roughness=ch.roughness, phi_s=ch.phi_s,
+                                     inlet=("plenum", *self.inlet_K), outlet=("plenum", *self.outlet_K),
+                                     face_K=self.face_K.get(ch.label))
+
+    def face_pressure_terms(self, t, y, context):
+        """유로별 면 운동량 압력 항 [Pa] {유로: dict(acc, fric, form, grav, m, rho, A)} (잔차와 같은 계산).
+
+        비가역 손실 = fric + form. Type I 고정 우회 분율이면 우회 유로에 ``dp_cal``(출구 면 보정 압력손실)도 준다.
+        """
+        p_sys = float(context.get(y, self.p_sys_key))
+        out = {}
+        for k, ch in enumerate(self.channels):
+            s = self._channel_state(ch, y, np.zeros_like(y), context, p_sys)
+            terms = {**self._face_terms(ch, s, k), "m": s["m"], "rho": s["rho"],
+                     "A": np.broadcast_to(ch.A, (ch.n,)).copy()}
+            if self.bypass_fraction is not None and k == self.bypass_index:
+                terms["dp_cal"] = float(context.get(y, self._ck(ch, "dp_bypass_cal")))
+            out[ch.label] = terms
+        return out
+
     def _momentum(self, ch, s, k_index, p_in, p_out):
         n = ch.n
         p_left = np.concatenate(([p_in], s["p"]))
         p_right = np.concatenate((s["p"], [p_out]))
-        terms = pl.channel_face_terms(s["m"], s["rho"], s["mu"], ch.A, ch.D_h, ch.dz, ch.dz_elev,
-                                      m_eps=self.m_eps[k_index], roughness=ch.roughness, phi_s=ch.phi_s,
-                                      inlet=("plenum", *self.inlet_K), outlet=("plenum", *self.outlet_K),
-                                      face_K=self.face_K.get(ch.label))
+        terms = self._face_terms(ch, s, k_index)
         acc, fric, form, grav = terms["acc"], terms["fric"], terms["form"], terms["grav"]
         dp_cal = 0.0
         if self.bypass_fraction is not None and k_index == self.bypass_index:

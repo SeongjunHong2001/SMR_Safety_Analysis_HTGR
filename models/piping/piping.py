@@ -51,23 +51,33 @@ class Piping(Component):
     def _setup(self):
         where = f"flow_network.nodes.{self.name}"
         c = self.config
-        n = c.get("cells")
-        if n is None or isinstance(n, bool) or not isinstance(n, int) or n < 1:
-            raise ModelInputMissing(f"{GEOMETRY}: {where}.cells must be a positive integer")
         A = require(c, "flow_area_m2", where)
         D = require(c, "hydraulic_diameter_m", where)
-        L = require(c, "length_m", where)
-        z_in = require(c, "z_inlet_m", where, positive=False)
-        z_out = require(c, "z_outlet_m", where, positive=False)
+        if c.get("z_faces_m") is not None:
+            # 비균일 수직 셀: 셀 경계 고도 배열 (예: SG He 측 heat_exchanger.helium_side.elevation_profile_m)
+            z = np.asarray(c["z_faces_m"], dtype=float)
+            if z.ndim != 1 or z.size < 2 or np.any(np.diff(z) == 0):
+                raise ValueError(f"{where}.z_faces_m must be a strictly monotone 1-D array")
+            n = z.size - 1
+            self.dz = np.abs(np.diff(z))
+            self.dz_elev = np.diff(z)
+            self.z_faces = z.copy()
+        else:
+            n = c.get("cells")
+            if n is None or isinstance(n, bool) or not isinstance(n, int) or n < 1:
+                raise ModelInputMissing(f"{GEOMETRY}: {where}.cells must be a positive integer")
+            L = require(c, "length_m", where)
+            z_in = require(c, "z_inlet_m", where, positive=False)
+            z_out = require(c, "z_outlet_m", where, positive=False)
+            if abs(z_out - z_in) > L * (1 + 1e-9):
+                raise ValueError(f"{GEOMETRY}: {where} elevation change exceeds length")
+            self.dz = np.full(n, L / n)
+            self.dz_elev = np.full(n, (z_out - z_in) / n)
+            self.z_faces = np.linspace(z_in, z_out, n + 1)    # 셀 경계 고도 (열 링크의 축방향 대응에 사용)
         self.n = n
         self.A = np.full(n, A)
         self.D_h = np.full(n, D)
-        self.dz = np.full(n, L / n)
-        self.dz_elev = np.full(n, (z_out - z_in) / n)
-        if abs(z_out - z_in) > L * (1 + 1e-9):
-            raise ValueError(f"{GEOMETRY}: {where} elevation change exceeds length")
         self.V = self.A * self.dz
-        self.z_faces = np.linspace(z_in, z_out, n + 1)        # 셀 경계 고도 (열 링크의 축방향 대응에 사용)
         self.roughness = float(c.get("roughness_m", 0.0) or 0.0)
         shape = c.get("shape", "circular")
         self.phi_s = pl.PHI_S_CIRCULAR if shape == "circular" else pl.PHI_S_PARALLEL_PLATES
@@ -138,16 +148,21 @@ class Piping(Component):
 
     def residual(self, t, y, ydot, context):
         self._require_ready()
+        return self.residual_with_heat(t, y, ydot, context, self.wall_heat(t, y, context))
+
+    def residual_with_heat(self, t, y, ydot, context, q):
+        """벽 열 q (N,) W를 직접 받는 잔차 (SG He 측처럼 상위 조립기가 열률을 넘길 때)."""
+        self._require_ready()
+        q = np.asarray(q, dtype=float)
+        if q.shape != (self.n,):
+            raise ValueError(f"Piping '{self.name}': wall heat must have shape ({self.n},)")
         g = lambda key: float(context.get(y, key))  # noqa: E731
         s = self._state(y, ydot, context)
-        q = self.wall_heat(t, y, context)
         cell = flow.cell_residuals(V=self.V, rho=s["rho"], drho_dp=s["drho_dp"], drho_dh=s["drho_dh"], h=s["h"],
                                    h_dot=s["h_dot"], p_sys_dot=s["p_sys_dot"], q_wall=q, m_faces=s["m"],
                                    h_inlet_boundary=g(self._pk("helium_inlet", "h_instream")),
                                    h_outlet_boundary=g(self._pk("helium_outlet", "h_instream")), m_eps=self.m_eps)
-        terms = pl.channel_face_terms(s["m"], s["rho"], s["mu"], self.A, self.D_h, self.dz, self.dz_elev,
-                                      m_eps=self.m_eps, roughness=self.roughness, phi_s=self.phi_s,
-                                      inlet=self.inlet, outlet=self.outlet, face_K=self.face_K)
+        terms = self._face_terms(s)
         p_left = np.concatenate(([g(self._pk("helium_inlet", "p"))], s["p"]))
         p_right = np.concatenate((s["p"], [g(self._pk("helium_outlet", "p"))]))
         l_over_A = flow.face_inertia_length(np.concatenate(([0.0], self.dz)), np.concatenate(([1.0], self.A)),
@@ -160,6 +175,20 @@ class Piping(Component):
                           g(self._pk("helium_outlet", "m_dot")) + s["m"][-1],
                           g(self._pk("helium_outlet", "h_outflow")) - s["h"][-1]])
         return np.concatenate((cell["R_mass"], cell["R_energy"], np.asarray(mom, dtype=float), ports))
+
+    def _face_terms(self, s):
+        return pl.channel_face_terms(s["m"], s["rho"], s["mu"], self.A, self.D_h, self.dz, self.dz_elev,
+                                     m_eps=self.m_eps, roughness=self.roughness, phi_s=self.phi_s,
+                                     inlet=self.inlet, outlet=self.outlet, face_K=self.face_K)
+
+    def face_pressure_terms(self, t, y, context):
+        """현재 trial의 면별 운동량 압력 항 [Pa] (N+1,): acc·fric·form·grav (잔차와 같은 계산).
+
+        비가역 손실 = fric + form. 압력손실 K 보정·진단용이며 잔차에 영향이 없다. m(면 유량), rho·A(셀)도 함께 준다.
+        """
+        self._require_ready()
+        s = self._state(y, np.zeros_like(y), context)
+        return {**self._face_terms(s), "m": s["m"], "rho": s["rho"], "A": np.broadcast_to(self.A, (self.n,)).copy()}
 
     def residual_ids(self):
         if not self._ready:

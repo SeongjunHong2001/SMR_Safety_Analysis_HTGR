@@ -168,6 +168,7 @@ core = Core(fluid=fluid, solid=..., power=..., coupling=...)
 - **구현 정리:** 노심 유체와 배관은 같은 면 압력 항 함수 `pressure_loss.channel_face_terms`를 쓴다 (리팩터링 뒤 노심 유체 시험 결과 동일).
 
 - **열 링크용 추가 (Role 4 단계에서):** `Piping.z_faces`(셀 경계 고도), `Piping.coupling_state()`(노심 유체와 같은 키). riser 벽 열은 `heat_source`가 링크 열률을 읽어 받는다.
+- **SG He 측용 추가 (Role 4 SG-0 단계):** config `z_faces_m`(비균일 수직 셀, `cells`·`length_m`·`z_*` 대신), `residual_with_heat(t, y, ydot, context, q)`(상위 조립기가 넘긴 벽 열).
 
 ### 플레넘 `Plenum` (`models/plenum/plenum.py`)
 
@@ -290,3 +291,15 @@ Protocol 만족, 파일 계수와 R = R_u/M·c_v = c_p − R 일관성, Role 1 `
 - **조립과 입력 오류:**
   - Core 상위 조립기 주입 (최소 고체·결합)
   - 입력 오류 메시지: 우회 D_h null, `bypass_K_cal` 누락, `initial` 누락, heat_rate shape
+
+## 면 압력 항 공개 (2026-11-27, Role 5 K 보정용)
+
+- `Piping.face_pressure_terms(t, y, context)`, `ParallelChannelCoreFluid.face_pressure_terms(...)`(유로별 dict), `SGHeliumSide.face_pressure_terms(...)`.
+  - 잔차와 같은 `channel_face_terms` 계산(공용 `_face_terms`)으로 면별 `acc·fric·form·grav` [Pa]와 `m`(면), `rho`·`A`(셀)를 준다.
+  - Type I 우회 유로는 `dp_cal`도 준다.
+  - 잔차에는 영향이 없다 (진단·보정 전용).
+- 연결부 K는 builder가 `geometry.junctions.<J>.K_form`(증분)을 인접 유로 면의 경계 K에 더해 넣는다.
+  - 배관·SG: `inlet`/`outlet` 튜플
+  - 노심: 유로별 `face_K`
+- S0 보정값은 `config/calibration/s0_pressure_loss_K.yaml`이다. 변수표 patch에 `K_form_fluid_fwd` 행을 추가했다 (46행).
+
