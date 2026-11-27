@@ -79,9 +79,10 @@ Role 1의 실제 데이터가 들어오면 G1 단독 시험 후 G2 전역 조립
 
 ```bash
 python main.py --demo                                         # 기존 3변수 데모 (변경 없음)
-python main.py --scenario steady_state                        # 기본 조건 core_benchmark. 가정 파일 없으면 미정 입력 목록, 종료 코드 2
+python main.py --scenario steady_state                        # 기본 조건 core_benchmark → output/results/
 python main.py --scenario steady_state --condition system_loop \
-    --assumptions config/assumptions/provisional_s0.yaml      # 정상해 → 검증 → 무외란 유지 → output/results/
+    --calibration config/calibration/s0_pressure_loss_K.yaml  # 정상해 → 검증 → 무외란 유지 (K 보정 적용)
+# config에 null 입력이 있으면 파일·키 목록과 함께 종료 코드 2. [가정] 파일은 --assumptions (config/assumptions/README.md)
 ```
 
 출력은 `output/results/steady_state_<condition>_{states.csv, outputs.csv, meta.json}`이다.
@@ -99,7 +100,7 @@ python main.py --scenario steady_state --condition system_loop \
 | `system/boundaries.py` | 개방 영역 경계 `FixedSystemPressure`(ṗ + (p − p_ref)/τ = 0), `PortBoundary`(유량 또는 압력 + 유입 엔탈피) — 원형에서 이전 |
 | `system/simulation.py` | `settings_from_scenario`(시나리오 `solution` 절), `solve_steady`, `verify_steady`, `run_hold`, `summary`, `compare`, `flatten_names`, `write_outputs`, `run_scenario` |
 | `validation/conservation.py` | `helium_mass`, `helium_energy`, `solid_energy`, `boundary_rates`, `steady_energy_balance`, `transient_balance` |
-| `config/assumptions/provisional_s0.yaml` | null 입력의 [가정]값 (우회 D_h 4 mm 평행평판, SG He D_h 0.05 m, M10 체적, 340 유로) |
+| `config/assumptions/README.md` | null 입력을 채우는 [가정] 파일 형식·규칙. 처음 쓴 provisional_s0.yaml은 #31·#32에서 모두 원문 치수로 대체해 삭제 |
 | `config/scenarios/steady_state.yaml` `solution` | Newton·희소 Jacobian·허용 잔차·무외란 유지 설정. `pressure_closure.replaced_residual_id: lower_plenum.mass` |
 
 ### 조립 규칙
@@ -149,8 +150,8 @@ python main.py --scenario steady_state --condition system_loop \
 ## 압력손실 K 보정 (2026-11-27)
 
 ```bash
-python main.py --calibrate --assumptions config/assumptions/provisional_s0.yaml      # → config/calibration/s0_pressure_loss_K.yaml
-python main.py --scenario steady_state --condition system_loop     --assumptions config/assumptions/provisional_s0.yaml --calibration config/calibration/s0_pressure_loss_K.yaml
+python main.py --calibrate                                    # → config/calibration/s0_pressure_loss_K.yaml
+python main.py --scenario steady_state --condition system_loop --calibration config/calibration/s0_pressure_loss_K.yaml
 ```
 
 - **목표:** `geometry.pressure_loss_calibration.segments.*.design_Pa`(PSID R19 Table 5.3-5)를 구간별 비가역 손실(마찰 + 형상손실)로 본다.
@@ -176,25 +177,25 @@ python main.py --scenario steady_state --condition system_loop     --assumptions
 - **회귀 시험:** `tests/integration/test_calibration.py`는 현재 입력으로 다시 보정한 K가 저장 파일과 같은지 본다.
   입력이 바뀌어 실패하면 `--calibrate`로 파일을 다시 만든다.
 
-현재 값 (2026-11-27 #31 형상 보완 뒤 재보정. 괄호 안은 #30 가정 입력 때 값):
+현재 값 (2026-11-27 #31·#32 형상 보완 뒤 재보정. 괄호 안은 #30 가정 입력 때 값):
 
 | 구간 | 목표 Pa | K 연결부 | K_form 증분 | 비고 |
 | --- | --- | --- | --- | --- |
-| mc_outlet_to_core_inlet | 3,400 | J02 | −0.090 (−0.090) | 기본 플레넘 경계 손실만으로 목표 초과 → 입구 K 0.41 |
+| mc_outlet_to_core_inlet | 3,400 | J02 | −0.068 (−0.090) | 기본 플레넘 경계 손실만으로 목표 초과 → 입구 K 0.43 |
 | riser | 4,800 | J05 | +1.654 (+1.649) | |
 | core | 34,500 | J06, J07 | +14.81 (+12.11) | 하부 블록 셀별 D_h(0.068–0.116 m) 반영으로 마찰이 줄어 K 증가 |
 | core_outlet_plenum | 15,800 | J12 | +4.529 (+4.529) | hot duct 입구 면 |
-| hot_duct | 4,800 | J13 | +0.477 (+0.477) | |
+| hot_duct | 4,800 | J13 | +0.484 (+0.477) | 덕트 5.52 m (#32, 기존 6.5 m) |
 | sg_inlet_plenum | 2,100 | J14 | +26.05 (+50.47) | SG 평균 유로면적 6.66 m² 동압 기준 |
 | sg_bundle | 20,000 | J16 | +409.2 (+789.7) | 번들 마찰(D_h 0.0577) 외 나머지를 출구 면에 몰아 둠 → SG-2 교차류 상관식(A_min 3.85 m²)이 대체 |
 | sg_outlet | 3,400 | J17 | +9.383 (+5.865) | 340 단면 2.49 m² (가정 2.0) |
 | mc_inlet | 2,000 | J18 | +4.225 (+1.403) | |
 
-**결과 (system_loop, 가정 2개 + 보정 K):**
+**결과 (system_loop, config + 보정 K, 가정 없음):**
 - **순환기 승압:** 91.93 kPa = 비가역 90.80 + 가역 순합 1.13 kPa. PSID 91.0 kPa보다 1.0 % 높다.
 - **지점 압력:** PSID 대비 3.5 kPa 이내다 (시험). 지점 3과 지점 8의 차이는 지점 정의 때문이다.
 - **노심:** Δp 34.7 kPa, 연료 최고 1119.2 K, 배럴 평균 559 K, RPV 최고 462.5 K, RCCS 425 kW.
-- **He 재고량:** 유로 2,314.9 kg + 정체 공간 243.6 kg = 2,558.5 kg. R22 2,585 kg 대비 −1.0 %다.
+- **He 재고량:** 유로 2,304.2 kg + 정체 공간 243.6 kg = 2,547.8 kg. R22 2,585 kg(비교 기준) 대비 −1.4 %다.
 - **유지 적분:** 10 s 표류 2.3e-8, 질량 오차 4e-16, 에너지 오차 5e-10.
 - **core_benchmark:** 가정 파일 없이 돈다. 노심 Δp 20.7 kPa로 R3 19.95 kPa와 +3.6 % 차이다 (보정 전 23.1 kPa).
   연료 최고는 1124.7 K다.

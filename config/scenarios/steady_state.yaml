@@ -106,7 +106,8 @@ conditions:
       # SG 용기 HS-13의 외측 공동 경계는 미확보라 단열로 둔다 [가정].
 
     pressure_closure:                      # interface_spec §5 정상 초기화 제약
-      type: pressure                       # p_sys − p_sys_initial = 0 (재고량 제약 대신, 체적 미확보 M10)
+      type: pressure                       # p_sys − p_sys_initial = 0 (재고량 제약 대신, 팀 결정 D2). 체적은 #31·#32에서 확보,
+                                           #   정상해 재고 2,547.8 kg을 R22 2,585 kg과 비교만 한다
       location: lower_plenum
       pressure_Pa: 6337300                 # PSID 절대압 분포 (팀 결정 D2, operation.yaml primary.initial_pressure_Pa)
       replaced_residual_id: lower_plenum.mass   # 교체할 종속 국부 질량식 ID (담당 5 builder 지정, 2026-11-27).
@@ -137,7 +138,7 @@ conditions:
     bypass_model: type_I_fixed_fraction
     loss_calibration: geometry.pressure_loss_calibration   # 이 정상해로 연결부 K를 보정 (보고서 식 7)
       # 결과는 config/calibration/s0_pressure_loss_K.yaml (python main.py --calibrate, 담당 5 2026-11-27).
-      # 실행 때 --calibration으로 넘기며, 이 조건과 가정 입력(provisional_s0)에만 유효하다
+      # 실행 때 --calibration으로 넘기며, 이 조건과 파일에 기록한 입력 해시의 형상에만 유효하다 (바뀌면 다시 보정)
     helium_properties: data/properties/r1_benchmark_properties.yaml#helium   # 팀 결정: 전 계통 R1 값
     rccs:
       model_level: RCCS-0
@@ -163,7 +164,8 @@ conditions:
       circulator_pressure_rise_Pa: 91000   # [원문]
       core_inlet_temperature_K: 532.15     # [원문] 259 °C (PSID 258.6–259)
       sg_heat_removal_W: 352200000         # [원문]
-      helium_inventory_kg: 2585            # [원문] R22. 노드 체적이 확보돼야 비교 가능 (M10)
+      helium_inventory_kg: 2585            # [원문] R22, 비교 기준 (사용자 결정 2026-11-27). 노드 체적은 #31·#32에서 확보.
+                                           #   정상해 재고는 유로 체적만 세므로 정체 공간(배럴 간극·UPTPS 위)을 더해 비교
       # PSID의 RCCS 887 kW, RPV 벽 222/216 °C는 외기 21 °C 실제 플랜트 값이라
       # 30 °C 고정 경계인 RCCS-0 결과와 직접 비교하지 않는다 (operation.yaml reference.psid_R19).
 
@@ -204,7 +206,6 @@ missing_inputs:
   - {item: "Ex. 2 전체 참가자 비교 결과 (현재 INL R3·R4만 확보)", owner: 1, conditions: [core_benchmark]}
   # M08 SG–노심 고도차는 보고서 판 1.1 §3.4로 확보해 geometry.yaml에 반영 (2026-11-26)
   # M11 SG He 측 최소 자유유로면적·D_h·환형 상승부 단면은 R19 Table 5.2-2·5.3-8로 계산해 geometry.yaml에 반영 (2026-11-27, #31)
-  - {item: Cross duct 길이 (M07), owner: 1, conditions: [system_loop]}
-  - {item: "M10 남은 부분 — SG 용기 상부 영역 48.85 m³를 110(토출 플레넘)과 350(순환기 입구)에 나누는 경계 치수. 300·330·340은 R19 도면으로 채움 (#31)", owner: 1, conditions: [system_loop]}
+  # M07 cross duct 길이는 5.52 m로 결정 (사용자 2026-11-27, PSID 수평 2구간). M10 110·350 분배는 R19 Fig. 5.3-4로 채움 (#32)
   - {item: "SG-0 물 온도 확인 (제안 193 °C = 급수 온도)", owner: "1/4", conditions: [system_loop]}
   # 정상 초기화에서 교체할 질량식 ID는 builder가 lower_plenum.mass로 지정 (2026-11-27, pressure_closure.replaced_residual_id)

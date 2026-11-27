@@ -4,7 +4,7 @@
 그리고 보정 U로 만든 과도 계의 출력 증가 과도에서 질량 보존을 본다.
 
 PSID 정격값은 비교용이며 판정 기준이 아니다. K 보정 전이라 압력은 PSID와 직접 비교하지 않는다 (보정은 test_calibration).
-SG 용기 내부 체적은 R19 치수로 채웠고(#31), 상부 영역을 110·350에 나누는 비율만 config/assumptions/provisional_s0.yaml [가정]이다.
+SG 용기 내부 체적은 R19 치수·도면으로 채웠다(#31·#32). 가정 파일 없이 config만으로 돈다.
 """
 import json
 
@@ -17,13 +17,10 @@ from system.builder import build_system
 from system.simulation import jacobian_pattern, run_scenario, transfer_state
 from validation import conservation
 
-ASSUME = ["config/assumptions/provisional_s0.yaml"]
-
-
 @pytest.fixture(scope="module")
 def run(tmp_path_factory):
     out = tmp_path_factory.mktemp("s0_loop")
-    report = run_scenario("steady_state", "system_loop", assumptions=ASSUME, output_dir=out, log=lambda *_: None)
+    report = run_scenario("steady_state", "system_loop", output_dir=out, log=lambda *_: None)
     return report
 
 
@@ -64,7 +61,7 @@ def test_loop_hold_transient_and_metadata(run):
     assert hold.balance["mass_error_rel_max"] < 1e-10 and hold.balance["energy_error_rel_max"] < 1e-8
     meta = json.loads(run.paths["meta"].read_text(encoding="utf-8"))
     assert meta["p_sys_owner"] == "lower_plenum" and meta["replaced_residual_id"] == "lower_plenum.mass"
-    assert len(meta["assumptions"]) == 2 and meta["assumptions_outside_domain"] == []
+    assert meta["assumptions"] == [] and meta["assumptions_outside_domain"] == []
     assert meta["solver"]["verification"]["U_sg_fixed"] == pytest.approx(run.summary["sg_overall_U_W_m2K"])
 
 

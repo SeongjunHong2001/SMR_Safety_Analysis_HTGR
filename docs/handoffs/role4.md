@@ -97,8 +97,8 @@ Role 5 `HeatExchanger` 상위 조립기에 네 부품을 주입한다:
 ## S0 system_loop 첫 계산
 
 steady_state.yaml `conditions.system_loop`의 폐루프를 실제 Component로 조립했다. 아래 표는 손 조립 원형(삭제) 결과다.
-Role 5 builder 판은 110·300·330·340·350을 `config/assumptions/provisional_s0.yaml`의 [가정] 체적·유로로 넣어 481 미지수이고,
-순환기 승압 36.8 kPa, He 재고 1,762 kg으로 바뀌었다 (나머지는 같은 수준). 최신 값은 `docs/handoffs/role5.md`.
+Role 5 builder 판은 110·300·330·340·350을 모두 넣어 481 미지수다. 체적·유로는 R19(PSID) 치수·도면으로 채웠다
+(#31·#32, geometry.yaml). K 보정 뒤 순환기 승압 91.93 kPa, He 재고 2,547.8 kg(정체 공간 포함)이다. 최신 값은 `docs/handoffs/role5.md`.
 - **루프:** 하부 플레넘(p_sys 소유) → hot duct → SG-0 → [340 대용] → 순환기(유량 157.1 kg/s 지정, 3.1 MW) → [110 대용] → cold annulus
   → RV 입구 → riser(배럴·RPV 링크) → 상부 플레넘 → Core → 하부 플레넘. RPV·RCCS-0도 포함한다.
 - **정상 초기화:** 하부 플레넘 질량식을 p_sys − 6.3373 MPa로 바꾼다(D2). SG-0 U를 He 출구 528.15 K에 맞춘다.

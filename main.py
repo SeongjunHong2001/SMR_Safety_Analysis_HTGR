@@ -109,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--condition', help='conditions.<name> (default: scenario default_condition)')
     parser.add_argument('--config-dir', default=None, help='directory with geometry.yaml, operation.yaml, scenarios/')
     parser.add_argument('--assumptions', action='append',
-                        help='[가정] file filling null inputs (repeatable), e.g. config/assumptions/provisional_s0.yaml')
+                        help='[가정] file filling null inputs (repeatable); see config/assumptions/README.md')
     parser.add_argument('--calibration', action='append',
                         help='calibration file (e.g. config/calibration/s0_pressure_loss_K.yaml), repeatable')
     parser.add_argument('--calibrate', action='store_true',

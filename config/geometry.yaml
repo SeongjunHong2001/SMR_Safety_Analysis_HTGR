@@ -266,8 +266,8 @@ flow_network:
       node_id: 110
       type: branch
       cells: 1
-      volume_m3: null                   # [미확보] M10. SG 용기 상부 영역(plane N 위) 합 48.85 m³ [계산]을 350과 나누는 비율이
-                                        #   도면에 없어 config/assumptions/provisional_s0.yaml이 [가정]으로 반씩 준다
+      volume_m3: 46.25                  # [도면해석] SG 용기 상부 영역 48.85 m³ − 순환기 입구 덕트(350) 2.60 m³.
+                                        #   R19 Fig. 5.3-4: 토출 플레넘이 가운데 입구 덕트를 둘러싼 상부 용기 대부분을 차지
       z_inlet_m: 8.2                    # [계산] 순환기 토출
       z_outlet_m: 1.58                  # [계산] cross duct 외측 환형부 입구 (기준면 P). SG 상부 용기 안 하강 경로 형상은 미확보
       dz_m: -6.62
@@ -277,8 +277,10 @@ flow_network:
       cells: 2
       flow_area_m2: 1.122               # [계산] r 0.673–0.900 m 환형
       hydraulic_diameter_m: 0.454       # [계산] 2(r_o − r_i)
-      length_m: 6.5                     # [가정] M07. 대안 근사 1.5 + 2×2.76 = 7.02 m
-      volume_m3: 7.29                   # [계산]
+      length_m: 5.52                    # [가정] M07, 사용자 결정 2026-11-27: hot duct 수평 구간과 같게 (상한값).
+                                        #   PSID: 교차덕트 용기 2.943 m (R19 Fig. 5.2-11), 노즐 길이 수치 없음.
+                                        #   RV 안쪽 hot duct 부분(0.3–0.6 m)만큼 실제로는 짧을 수 있다
+      volume_m3: 6.193                  # [계산] 1.122 × 5.52
       z_inlet_m: 1.58                   # [계산] 기준면 P에서 수평 (M08). SG 안 수직 하강부는 110에 포함
       z_outlet_m: 1.58
       dz_m: 0.0
@@ -299,7 +301,9 @@ flow_network:
       cells: 5
       channels: 12                      # [원문] inlet channel, 내부 152 × 660 mm
       channel_depth_m: 0.1524
-      channel_width_m: 0.6604           # M04: '길이 66.04 cm' 해석 확인 필요
+      channel_width_m: 0.6604           # [원문] PSID Vol.1 p.4.4-8 '12 primary coolant inlet channels with internal
+                                        #   dimensions of 152 mm x 660 mm (6 in. x 26 in.)'. R1 Table I.9의 'coolant channel
+                                        #   length 66.04 cm'는 단면 원주 방향 폭이다 (M04 해소, #32)
       flow_area_m2: 1.2077              # [계산] 12 × 0.1524 × 0.6604
       hydraulic_diameter_m: 0.2477      # [계산]
       length_m: 12.74
@@ -336,8 +340,10 @@ flow_network:
       cells: 2
       flow_area_m2: 1.112               # [계산] D 1.19 m (R8). R1 내반경 0.597 m 기준이면 1.120
       hydraulic_diameter_m: 1.19        # [원문] R8 §4.4.4.1.2.4
-      length_m: 6.5                     # [가정] 수평 2구간 × ≈2.76 m + 90° 엘보 (M07)
-      volume_m3: 7.23
+      length_m: 5.52                    # [원문] 수평 2구간 × 2.76 m (108.5 in), 노심 출구 플레넘 → SG 용기 플랜지
+                                        #   (PSID Vol.1 §4.4.4.1.2.4). 90° 엘보는 SG 안이라 노드 300 체적에 포함.
+                                        #   M07 해소, 사용자 결정 2026-11-27 (기존 가정 6.5 m, 보고서 대안 7.02 m)
+      volume_m3: 6.138                  # [계산] 1.112 × 5.52
       z_inlet_m: 1.58                   # [계산] 기준면 P에서 수평 (M08)
       z_outlet_m: 1.58
       dz_m: 0.0
@@ -380,7 +386,9 @@ flow_network:
       node_id: 350
       type: valve                       # MLSV: 이중 flapper 체크밸브, 역류 차단
       cells: 1
-      volume_m3: null                   # [미확보] M10. 110과 같이 SG 용기 상부 영역 48.85 m³ [계산]의 일부 — 분배는 [가정] 파일
+      volume_m3: 2.60                   # [도면해석·개략] 가운데 세로 입구 덕트(MLSV 포함) π/4 × 1.15² × 2.65 m.
+                                        #   R19 Fig. 5.3-4 축척: 플레넘 폭 382 px = 용기 내경 4.015 m → 덕트 외경 109 px, 높이 252 px.
+                                        #   그림이 개략도라 ±30 %. 저온 He라 재고량에는 ±3 kg 수준
       z_inlet_m: 8.2                    # [계산] SG 용기 상단
       z_outlet_m: 8.2
 
@@ -396,12 +404,13 @@ flow_network:
   #   340 51.59, 상부 영역 48.85 (110·350). 합 285.3 m³ (용기 내부 323.7 − 관·shroud 등 ≈ 38).
   #   정격 정상해 재고량은 docs/handoffs/role1.md M10 절.
 
-  # SG 용기 상부 영역: SGS 상단(plane N, z 2.98) → 순환기 장착면(z 8.2). 순환기 토출 플레넘(지점 1)과
-  # 순환기 입구 덕트(지점 12–13)가 함께 있으나 두 공간의 경계 치수는 R19에 없다 (M10 남은 부분)
+  # SG 용기 상부 영역: SGS 상단(plane N, z 2.98) → 순환기 장착면(z 8.2). 순환기 토출 플레넘(지점 1, 110)이
+  # 가운데 세로 입구 덕트(지점 12–13, 350, MLSV 포함)를 둘러싼다 (R19 Fig. 5.3-4). 340 상승부는 플레넘 바닥 아래에서
+  # 입구 덕트로 모인다
   sg_vessel_upper_region:
     volume_m3: 48.85                    # [계산·가정] π/4 × 4.015² × 5.22 − 상부 경판 감소분(2:1 타원 경판 깊이 1.0 m [가정])
                                         #   − 340 환형부 몫 2.4921 × 5.22
-    shared_by_nodes: [110, 350]
+    split_m3: {mc_discharge_plenum: 46.25, mc_inlet_mlsv: 2.60}   # [도면해석] Fig. 5.3-4 (#32)
 
 # ---------------------------------------------------------------------
 # 증기발생기 (HeatExchanger Composite, Role 4) — PSID Amd.3–6, R19 Table 5.3-8

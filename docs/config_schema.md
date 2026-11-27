@@ -41,3 +41,75 @@ builder는 필수값이 빠진 채 실행하면 파일 경로와 키를 포함�
 `GitHub 이름 대조` 시트를 따른다. 실제 builder가 추가되면 위
 스키마의 조건부 항목을 해당 mode별로 검증하고 fixture 자동 사용을
 막는 시험을 추가한다.
+
+## 실제 builder가 읽는 키 (2026-11-27, Role 5 `system/builder.py`)
+
+builder는 실행 전에 조건의 계산 영역에 필요한 키를 모두 검사한다(`check_inputs`).
+`null`이나 누락이 있으면 파일·키·시나리오·조건을 모아 `MissingInputsError`(종료 코드 2)로 멈춘다.
+아래 키는 실제 Role 1–4 모델과 builder가 쓰는 것이다. 값의 근거 표시([원문]·[계산]·[도면해석]·[가정])는 각 YAML 주석에 있다.
+
+### `geometry.yaml`
+
+| 키 | 단위·shape | 쓰는 곳 |
+| --- | --- | --- |
+| `core.elevation_profile_m` | m, face (N+1,) = 18, 유동 방향(위 → 아래) | 노심 유체·고체 공통 격자 |
+| `core.channels.<average\|hot\|bypass>.node_id` | 노드 ID 200/210/220 | builder: 세 노드를 Core 하나로 묶음 |
+| `core.channels.*.flow_area_m2` 또는 `cell_flow_area_m2` | m², 스칼라 또는 cell (N,) | 노심 유체 (셀 배열이 우선) |
+| `core.channels.*.hydraulic_diameter_m` 또는 `cell_hydraulic_diameter_m` | m, 스칼라 또는 (N,) | 마찰·대류, 결합의 젖은 면적 4A/D_h·Δz |
+| `core.channels.*.shape` | `circular` \| `parallel_plates` | 층류 f·Re, Nu |
+| `core.channels.bypass.type_I_fraction` | 영역별 분율, 합 0.11 | 우회 고정 분율, 결합의 우회 면적 배분 |
+| `core.fuel_block`, `core.radial_m`, `core.layout`, `core.block_porosity`, `core.cell_region` | m, 개수 | 노심 고체(단위격자·링), 배럴·riser·RPV 반경 |
+| `flow_network.nodes.<이름>.node_id`, `type` | ID, `pipe`\|`branch`\|`pump`\|`valve` | builder: 장치 종류 |
+| pipe: `flow_area_m2`, `hydraulic_diameter_m`, `length_m`, `cells`, `z_inlet_m`, `z_outlet_m` | m², m, m, 정수, m | Piping (또는 `z_faces_m` 비균일 셀) |
+| branch·valve: `volume_m3`, `z_inlet_m`, `z_outlet_m` (`z_bottom_m`·`z_top_m` 선택) | m³, m | Plenum (valve는 `mlsv: open`일 때 무손실 플레넘) |
+| `junctions.<J>.from`, `to`, `K_form` (선택) | 노드 ID, 무차원 증분 | builder: 연결 조립. K_form은 인접 유로 면의 기본 경계 K에 정·역 대칭으로 더함 |
+| `heat_structures.HS-06.outer` | 노드 ID | builder: 배럴·RPV 열링크를 붙일 riser |
+| `heat_exchanger.axial_cells`, `heat_transfer_area_m2` | 9, m² (9,) | SG-0 |
+| `heat_exchanger.helium_side.{fsh,ees}_node_id`, `elevation_profile_m` | ID, m (10,) | builder·SG He 측 셀 고도 |
+| `heat_exchanger.helium_side.mean_flow_area_m2`, `hydraulic_diameter_m` | m², m | SG He 측 1D 면적(공극률 × 전면)·D_h. `min_free_flow_area_m2`는 SG-2 상관식용 |
+| `rpv.inner_diameter_m`, `outer_diameter_m` | m | RPV 측벽 |
+| `rccs.boundary.radius_m`, `emissivity` | m, 1 | RCCS-0 |
+| `pressure_loss_calibration.segments.<구간>.{junctions, nodes, design_Pa}` | ID 목록, Pa | K 보정 목표 (`system/calibration.py`) |
+
+### `operation.yaml`
+
+| 키 | 단위 | 쓰는 곳 |
+| --- | --- | --- |
+| `reactor.power_distribution.{type, axial_fraction, channel_fraction}` | 1, (17,), 유로별 | 지정 출력 분포. 조건의 `reactor.power_distribution`과 같아야 함 |
+| `compressor.*` (`rated_heat_to_helium_W` 등) | W, rad/s, Pa | 순환기 입열 Q = Q_rated (ṁ/ṁ_rated)³ |
+| `boundaries.sg_heat_sink.{mode, phase_change, water_temperature_K, overall_U_estimate_W_m2K}` | –, K, W/(m²·K) | SG-0 (조건의 물 온도와 같아야 함) |
+| `initial_distribution.stations[].{node, T_K, p_Pa}` | K, Pa | 초기 추정 온도, 지점 압력 비교 |
+| `helium_inventory.reference_kg` | kg | 재고량 비교 기준 (R22 2,585 kg) |
+
+### `scenarios/steady_state.yaml`
+
+- `id: S0`, `default_condition`, `conditions.<이름>`
+- **공통:**
+  - `domain.{nodes, heat_structures, closed_junctions}`
+  - `reactor.{thermal_power_W, power_distribution}`, `bypass_model`
+  - `helium_properties` (`파일#helium`), `solid_properties`
+  - `rccs.{model_level: RCCS-0, boundary_temperature_K}`
+  - `comparison` (참고), `acceptance` (판정)
+- **개방 영역 (core_benchmark):**
+  - `inlet_boundary.{junction, mass_flow_kg_s, temperature_K}`
+  - `outlet_boundary.{junction, pressure_Pa}`
+  - `benchmark_subcases`, `default_subcase` (2b 고정 물성만 구현)
+- **폐루프 (system_loop):**
+  - `pressure_closure.{type: pressure, location, pressure_Pa, replaced_residual_id}`
+  - `circulator.{boundary_type: prescribed_mass_flow, mass_flow_kg_s}`, `mlsv: open`
+  - `sg_heat_sink.{model_level: SG-0, calibration_target_helium_outlet_K}`
+- **`solution`:**
+  - `method: solve_steady_state`, `jacobian: sparse_finite_difference`
+  - `newton.{max_iter, rtol, atol}`, `acceptance.scaled_residual_max`
+  - `hold_transient.{t_end_s, dt_initial_s, rtol, atol, max_step_s, max_order}`
+  - 데모용 `solver.yaml`과 별개다.
+
+### 덮어쓰기 파일
+
+- **`config/assumptions/*.yaml` (`--assumptions`):**
+  - `meta`·`geometry`·`operation`만 쓴다.
+  - config의 `null`/누락 키만 채운다. 원문 값을 바꾸면 오류다.
+  - 메타데이터의 `assumptions`에 기록된다. 형식은 `config/assumptions/README.md`.
+- **`config/calibration/*.yaml` (`--calibration`, `python main.py --calibrate`로 생성):**
+  - `meta.kind: calibration`, `meta.basis.condition`, `meta.depends_on_assumptions`, 입력 해시를 담는다.
+  - 다른 조건에 넘기거나 의존 가정 파일 없이 넘기면 오류다.

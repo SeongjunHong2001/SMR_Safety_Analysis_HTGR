@@ -12,13 +12,12 @@ from system.builder import ROOT, build_system, load_inputs
 from system.calibration import calibrate_pressure_losses, segments, with_junction_k
 from system.simulation import run_hold, settings_from_scenario, verify_steady
 
-ASSUME = ["config/assumptions/provisional_s0.yaml"]
 CAL_FILE = "config/calibration/s0_pressure_loss_K.yaml"
 
 
 @pytest.fixture(scope="module")
 def loop_inputs():
-    return load_inputs("steady_state", "system_loop", assumptions=ASSUME)
+    return load_inputs("steady_state", "system_loop")
 
 
 def test_junction_k_goes_to_the_adjacent_flow_face(loop_inputs):
@@ -49,13 +48,17 @@ def test_segments_carry_k_on_the_first_placeable_junction(loop_inputs):
 
 def test_calibration_file_rules(tmp_path):
     with pytest.raises(ValueError, match="calibrated for condition 'system_loop'"):
-        load_inputs("steady_state", "core_benchmark", assumptions=ASSUME + [CAL_FILE])
+        load_inputs("steady_state", "core_benchmark", assumptions=[CAL_FILE])
+    dep = tmp_path / "cal_dep.yaml"                       # 가정 파일에 기대는 보정은 그 파일도 넘겨야 한다
+    dep.write_text(yaml.safe_dump({"meta": {"kind": "calibration", "basis": {"condition": "system_loop"},
+                                            "depends_on_assumptions": ["config/assumptions/x.yaml"]},
+                                   "geometry": {"junctions": {"J05": {"K_form": 1.0}}}}), encoding="utf-8")
     with pytest.raises(ValueError, match="load those assumption files too"):
-        load_inputs("steady_state", "system_loop", assumptions=[CAL_FILE])
-    inputs = load_inputs("steady_state", "system_loop", assumptions=ASSUME + [CAL_FILE])
-    assert inputs.files["calibration[1]"] == CAL_FILE
+        load_inputs("steady_state", "system_loop", assumptions=[dep])
+    inputs = load_inputs("steady_state", "system_loop", assumptions=[CAL_FILE])
+    assert inputs.files["calibration[0]"] == CAL_FILE
     d = build_system(inputs).describe()
-    assert len(d["calibration"]) == 10 and len(d["assumptions"]) == 2
+    assert len(d["calibration"]) == 10 and d["assumptions"] == []
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +86,7 @@ def test_saved_calibration_file_is_current(cal):
     assert set(K_saved) == set(cal.K)
     for j, v in cal.K.items():
         assert K_saved[j] == pytest.approx(v, rel=1e-4, abs=1e-5), f"{j}: rerun python main.py --calibrate"
-    assert saved["meta"]["depends_on_assumptions"] == ASSUME
+    assert saved["meta"]["depends_on_assumptions"] == []
 
 
 def test_calibrated_loop_holds_steady(cal):

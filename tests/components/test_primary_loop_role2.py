@@ -89,8 +89,9 @@ def test_legacy_constructors_fail_with_missing_input_message():
     for cls in (Piping, Plenum, Compressor):
         with pytest.raises(ModelInputMissing, match="required"):
             cls().register(StateRegistry())
+    node = dict(NODES["mc_discharge_plenum"], volume_m3=None)                   # 체적 없으면 키 이름으로 실패
     with pytest.raises(ModelInputMissing, match=r"flow_network\.nodes\.mc_discharge_plenum\.volume_m3"):
-        Plenum(NODES["mc_discharge_plenum"], HE, name="mc_discharge_plenum", initial=ini(T_COLD))   # M10 남은 부분
+        Plenum(node, HE, name="mc_discharge_plenum", initial=ini(T_COLD))
     with pytest.raises(ModelInputMissing, match="I_circ_rotor"):
         Compressor(OP["compressor"], HE, mode="coastdown_inertia", m_rated=M, initial=ini(T_COLD)).register(
             StateRegistry())

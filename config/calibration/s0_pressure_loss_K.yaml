@@ -9,18 +9,16 @@ meta:
     condition: system_loop
     targets: geometry.yaml pressure_loss_calibration.segments.*.design_Pa (PSID R19
       Table 5.3-5)
-  created_utc: '2026-11-27T06:35:46+00:00'
+  created_utc: '2026-11-27T07:36:08+00:00'
   code_version:
-    commit: 8530b9b7bdfb385209ec61a56246e8890c8f222d
-    branch: role4/vessel-rccs-s0
+    commit: bd516d112735bcd76118e9db0abdb9580216d8c3
+    branch: role5/s0-builder-calibration
     dirty: true
-  depends_on_assumptions:
-  - config/assumptions/provisional_s0.yaml
+  depends_on_assumptions: []
   input_sha256:
-    geometry: 9f09f56a5e89d0c4826793f852e10799fdf2ad32ee431a248eb38b4738fe03ce
-    operation: c2160ea2db71d08a8ecc03e1da4817455295bc776507ec874b93a21140194227
-    scenario: fc84a098222c3426beff73625f6ea6feb415d38907c20fd3ff034d849623b58a
-    assumptions[0]: 973d54f301f314ab099759e86116077b5dda053cd29117686d3d8227f785bad0
+    geometry: 94ca4c05480fddf8bbab1d0a1e18c721ee6a6bc9a9a684fb9836cf794a10c567
+    operation: c24c7e85ccda6c35e31ebec172b58511345b0570fc78afe0f3b3de2b81488956
+    scenario: b200b05cfb34ba73e724480e441c7263387332bf1979215cf39b412696481040
   iterations: 3
   segments_Pa:
     mc_outlet_to_core_inlet:
@@ -74,7 +72,7 @@ meta:
 geometry:
   junctions:
     J02:
-      K_form: -0.089792
+      K_form: -0.067651
     J05:
       K_form: 1.653685
     J06:
@@ -84,7 +82,7 @@ geometry:
     J12:
       K_form: 4.52943
     J13:
-      K_form: 0.476551
+      K_form: 0.484297
     J14:
       K_form: 26.053923
     J16:

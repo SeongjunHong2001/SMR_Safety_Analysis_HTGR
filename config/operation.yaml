@@ -152,13 +152,15 @@ boundaries:
   # RCCS-0 고정 온도 경계 [원문] R1 Table I.10 #4. 위치와 방사율 0.80은 geometry.yaml rccs.boundary
   rccs:
     model_level: RCCS-0
-    boundary_temperature_K: 303.15       # 30 °C. R3(INL)은 20 °C, 실제 플랜트 외기 설계값은 21 °C
+    boundary_temperature_K: 303.15       # 30 °C. R3(INL)은 20 °C, 실제 플랜트 외기 설계값은 21 °C.
+                                         #   사용자 결정 2026-11-27: system_loop도 30 °C 유지 (21 °C는 패널이 아닌 외기 온도)
 
 # ---------------------------------------------------------------------
 # 4) 헬륨 재고량
 # ---------------------------------------------------------------------
 helium_inventory:
-  reference_kg: 2585                     # [원문] 5,700 lb, RV + SG 용기 + cross duct (R22 Table F-1 각주 b)
+  reference_kg: 2585                     # [원문] 5,700 lb, RV + SG 용기 + cross duct (R22 Table F-1 각주 b).
+                                         #   사용자 결정 2026-11-27: 비교 기준. S0 system_loop 정상해 2,547.8 kg (−1.4 %, 정체 공간 포함)
   conflicting_value_kg: 2900             # [원문] HPS 감압 요건 기준 (R19 Table 5.3-6) — 상충
   # 정상 초기화 제약: 확인된 노드 체적이 He 약 1,123 kg분뿐이라(M10) 재고량 제약은 아직 쓸 수 없다.
   # interface_spec §5에 따라 기준압 제약 p_sys − p_sys_initial = 0 을 쓰고 재고량은 정상해에서 유도해 2,585 kg과 비교한다.

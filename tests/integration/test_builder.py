@@ -4,6 +4,8 @@
 """
 import copy
 import dataclasses
+import shutil
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -14,27 +16,44 @@ from models._inputs import ModelInputMissing
 from system.builder import MissingInputsError, build_system, check_inputs, load_inputs
 from system.simulation import flatten_names, settings_from_scenario
 
-ASSUME = ["config/assumptions/provisional_s0.yaml"]
+ROOT_CONFIG = Path(__file__).resolve().parents[2] / "config"
+NODE_110 = "flow_network.nodes.mc_discharge_plenum.volume_m3"
 
 
 @pytest.fixture(scope="module")
 def loop_inputs():
-    return load_inputs("steady_state", "system_loop", assumptions=ASSUME)
+    return load_inputs("steady_state", "system_loop")
 
 
-def test_missing_inputs_are_listed_with_file_key_and_condition():
-    with pytest.raises(MissingInputsError) as err:
-        build_system(load_inputs("steady_state", "system_loop"))
-    msg = str(err.value)
-    assert "scenario 'steady_state' condition 'system_loop'" in msg
-    keys = {(m.file, m.key) for m in err.value.items}
-    # 남은 M10: SG 용기 상부 영역을 110·350에 나누는 비율 (#31에서 나머지는 R19·R1 치수로 채움)
-    assert keys == {("config/geometry.yaml", "flow_network.nodes.mc_discharge_plenum.volume_m3"),
-                    ("config/geometry.yaml", "flow_network.nodes.mc_inlet_mlsv.volume_m3")}
-    assert isinstance(err.value, ModelInputMissing)
-    # 노심 단독 조건은 가정 없이 원문·계산 입력만으로 조립된다
+def _config_with_null(tmp_path, dotted):
+    """config 사본에서 geometry 키 하나를 null로 만든다 (가정 파일 기능 시험용)."""
+    cfg = tmp_path / "config"
+    (cfg / "scenarios").mkdir(parents=True)
+    for name in ("operation.yaml", "scenarios/steady_state.yaml"):
+        shutil.copyfile(ROOT_CONFIG / name, cfg / name)
+    geo = yaml.safe_load((ROOT_CONFIG / "geometry.yaml").read_text(encoding="utf-8"))
+    node = geo
+    *path, leaf = dotted.split(".")
+    for part in path:
+        node = node[part]
+    node[leaf] = None
+    (cfg / "geometry.yaml").write_text(yaml.safe_dump(geo, allow_unicode=True), encoding="utf-8")
+    return cfg
+
+
+def test_missing_inputs_are_listed_with_file_key_and_condition(tmp_path):
+    # S0 두 조건 모두 가정 없이 config만으로 조립된다 (#31·#32에서 M10·M11 등을 R19·R1 치수로 채움)
+    assert check_inputs(load_inputs("steady_state", "system_loop")) == []
     assert check_inputs(load_inputs("steady_state", "core_benchmark")) == []
-    # null을 하나 만들면 파일·키로 보고한다
+    cfg = _config_with_null(tmp_path, NODE_110)
+    with pytest.raises(MissingInputsError) as err:
+        build_system(load_inputs("steady_state", "system_loop", config_dir=cfg))
+    assert "scenario 'steady_state' condition 'system_loop'" in str(err.value)
+    assert [m.key for m in err.value.items] == [NODE_110] and isinstance(err.value, ModelInputMissing)
+    assert err.value.items[0].note == "M10"
+    # 노심 단독 조건은 영역 밖 노드의 null을 요구하지 않는다
+    assert check_inputs(load_inputs("steady_state", "core_benchmark", config_dir=cfg)) == []
+    # 메모리 안 사본도 같은 규칙
     inputs = load_inputs("steady_state", "core_benchmark")
     geo = copy.deepcopy(inputs.geometry)
     geo["core"]["channels"]["bypass"]["hydraulic_diameter_m"] = None
@@ -43,12 +62,21 @@ def test_missing_inputs_are_listed_with_file_key_and_condition():
     assert [(m.file, m.key) for m in missing] == [("config/geometry.yaml", "core.channels.bypass.hydraulic_diameter_m")]
 
 
-def test_assumptions_fill_only_nulls_and_are_recorded(tmp_path, loop_inputs):
-    assert check_inputs(loop_inputs) == []
-    keys = {a.key: a.value for a in loop_inputs.assumptions}
-    assert keys == {"geometry.flow_network.nodes.mc_discharge_plenum.volume_m3": 24.425,
-                    "geometry.flow_network.nodes.mc_inlet_mlsv.volume_m3": 24.425}
-    assert loop_inputs.files["assumptions[0]"] == "config/assumptions/provisional_s0.yaml"
+def test_assumptions_fill_only_nulls_and_are_recorded(tmp_path):
+    cfg = _config_with_null(tmp_path, NODE_110)
+    fill = tmp_path / "fill.yaml"
+    fill.write_text(yaml.safe_dump({"meta": {"status": "test"}, "geometry": {"flow_network": {"nodes": {
+        "mc_discharge_plenum": {"volume_m3": 46.25}}}}}), encoding="utf-8")
+    inputs = load_inputs("steady_state", "system_loop", config_dir=cfg, assumptions=[fill])
+    assert check_inputs(inputs) == []
+    assert {a.key: a.value for a in inputs.assumptions} == {"geometry." + NODE_110: 46.25}
+    assert inputs.files["assumptions[0]"].endswith("fill.yaml")
+    built = build_system(inputs)
+    assert [a.key for a in built.assumptions_used] == ["geometry." + NODE_110]
+    assert built.describe()["assumptions"][0]["value"] == 46.25
+    # 노심 단독 조건에서는 영역 밖 가정으로 따로 기록
+    bench = build_system(load_inputs("steady_state", "core_benchmark", config_dir=cfg, assumptions=[fill]))
+    assert bench.assumptions_used == () and bench.describe()["assumptions_outside_domain"] == ["geometry." + NODE_110]
     bad = tmp_path / "bad.yaml"
     bad.write_text(yaml.safe_dump({"geometry": {"flow_network": {"nodes": {"riser": {"flow_area_m2": 9.9}}}}}),
                    encoding="utf-8")
@@ -74,18 +102,17 @@ def test_loop_is_assembled_from_the_junction_table(loop_inputs):
     assert "core" in comps and "sg" in comps and "core.fluid" not in comps
     assert len({id(c) for c in built.inventory}) == len(built.inventory) == 13
     assert built.parts["fluid"] in built.inventory and built.parts["sg_he"] in built.inventory
-    assert {a.key for a in built.assumptions_used} == {a.key for a in loop_inputs.assumptions}
+    assert built.assumptions_used == () and loop_inputs.assumptions == ()
+    assert built.parts["mc_discharge_plenum"].V == 46.25 and built.parts["mc_inlet_mlsv"].V == 2.60   # R19 Fig. 5.3-4
     assert any("HS-09" in s for s in built.model_assumptions) and any("350" in s for s in built.model_assumptions)
 
 
-def test_open_domain_boundaries_and_assumption_scope():
-    built = build_system(load_inputs("steady_state", "core_benchmark", assumptions=ASSUME))
+def test_open_domain_boundaries():
+    built = build_system(load_inputs("steady_state", "core_benchmark"))
     comps = [c.name for c in built.system.components]
     assert comps[:3] == ["bc_p_sys", "bc_J03", "bc_J12"]
     assert built.p_sys_owner == "bc_p_sys" and built.replaced_residual_id is None
     assert built.system.registry.size == 347
-    assert built.assumptions_used == ()                     # 110·350 가정은 노심 단독 영역 밖
-    assert "geometry.flow_network.nodes.mc_discharge_plenum.volume_m3" in built.describe()["assumptions_outside_domain"]
 
 
 def test_p_sys_single_owner_and_steady_closure(loop_inputs):
@@ -123,7 +150,7 @@ def test_domain_errors_are_reported(loop_inputs):
     cond["sg_heat_sink"]["model_level"] = "SG-1"
     with pytest.raises(NotImplementedError, match="SG-0"):
         build_system(dataclasses.replace(loop_inputs, condition=cond))
-    bench = load_inputs("steady_state", "core_benchmark", assumptions=ASSUME)
+    bench = load_inputs("steady_state", "core_benchmark")
     cond = copy.deepcopy(bench.condition)
     cond["default_subcase"] = "2c"
     with pytest.raises(NotImplementedError, match="fluence"):
