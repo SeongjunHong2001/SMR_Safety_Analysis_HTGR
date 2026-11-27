@@ -139,10 +139,15 @@ def test_core_rated_steady_state(rated):
     assert q_fluid.sum() == pytest.approx(3.5e8, rel=1e-9)        # 외면 단열: 출력 전부 헬륨으로
     assert q_fluid.sum() == pytest.approx(q_solid.sum(), rel=1e-12)
     assert out["core.fluid.T_outlet_mixed"] == pytest.approx(532.15 + 3.5e8 / (157.1 * HE.cp_const), abs=1e-5)
-    # 보고서 [2] C §5.1: 우회가 39.1 MW를 흡수하면 유효 채널 출구 687 °C (960 K). 이 모델: 반사체 전도로 우회가 가열됨
+    # 보고서 [2] C §5.1: 우회가 39.1 MW를 흡수하면 유효 채널 출구 687 °C (960 K). 이 모델: 반사체 전도로 우회가 가열됨.
+    # 우회 D_h = 4A/P_w(#31)로 젖은 면적이 4 mm 가정의 절반이라 우회 흡수 ≈ 34.5 MW, 평균 유로 출구 ≈ 966 K
     q_bypass = q_fluid[34:].sum()
     assert 3.0e7 < q_bypass < 4.5e7
-    assert out["core.fluid.average.T_he"][-1] == pytest.approx(960.15, abs=5.0)
+    for ch, sl in (("bypass", slice(34, None)), ("average", slice(0, 17))):
+        m_ch = out[f"core.fluid.{ch}.m_dot_inlet"]                 # 유로별 에너지 수지: ṁ c_p ΔT = 흡수 열
+        assert m_ch * HE.cp_const * (out[f"core.fluid.{ch}.T_he"][-1] - 532.15) == pytest.approx(q_fluid[sl].sum(),
+                                                                                                rel=1e-6)
+    assert 955.0 < out["core.fluid.average.T_he"][-1] < 975.0
     # 연료 온도: 균일 출력이라 R3(Ex. 2, 실제 분포) 최고 1261 K보다 낮다
     T_max = out["core.solid.T_fuel_max"]
     assert 1050.0 < T_max < 1300.0

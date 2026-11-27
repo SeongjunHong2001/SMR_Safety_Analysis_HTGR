@@ -95,6 +95,13 @@ core:
       #   셀 16 포스트: 65 × 2 × π/4 × 0.116² = 1.3739 (PSID, RSC 기둥도 표준과 같게 [가정])
       cell_flow_area_m2: [1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308,
                           1.3308, 1.3308, 1.3308, 1.3308, 1.4222, 1.4164, 1.3750, 1.3739]
+      # cell (17,) 수력직경 [m]
+      #   셀 0–12 (CRE [가정]·상부반사체·연료): 냉각공 가중 0.0157
+      #   셀 13 하부반사체: 0.0157 [원문 해석] '상·하부 반사체 블록은 노심과 맞는 냉각공' (R1 §I.5.1.4).
+      #     R1 공극률 0.199(연료 0.186)와 차이는 남음
+      #   셀 14 전이 0.068, 셀 15 유량분배 0.067 (위쪽 원형 유로), 셀 16 포스트 0.116 (인접 3블록 꼭짓점 원) [원문] PSID
+      cell_hydraulic_diameter_m: [0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157,
+                                  0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.068, 0.067, 0.116]
     hot:
       node_id: 210
       fuel_columns: 1            # [가정] 최고 출력 표준 기둥 1개. 출력첨두계수는 Role 3
@@ -104,18 +111,33 @@ core:
       # 하부반사체 0.199 × 0.112237 = 0.022335 (R1), 전이·유량분배·포스트는 블록 1개의 PSID 유로면적
       cell_flow_area_m2: [0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096,
                           0.02096, 0.02096, 0.02096, 0.02096, 0.022335, 0.021790, 0.021154, 0.021137]
+      cell_hydraulic_diameter_m: [0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.0157,
+                                  0.0157, 0.0157, 0.0157, 0.0157, 0.0157, 0.068, 0.067, 0.116]   # average와 같음
     bypass:
       node_id: 220
-      flow_area_m2: 0.51         # [계산·근사] 블록 간극·제어봉 채널·반사체 간극 합 (M03: 분율·ΔP로 역산 예정)
-      hydraulic_diameter_m: null # 두 유로 형태가 섞여 단일값 미정
+      flow_area_m2: 0.5118       # [계산] 상부 13셀 값. 아래 bypass_composition 합 (보고서 [1] 0.51 재현)
+      # 수력직경 = 4 × 면적 / 젖은 둘레 (병렬 유로 합). 결합(Role 3)의 젖은 면적 4A/D_h·Δz가 실제 둘레와 같아진다 [계산]
+      hydraulic_diameter_m: 0.00818      # [계산] 상부 13셀 (z 3.9181 위)
+      shape: parallel_plates             # [계산] 젖은 둘레의 96 %(하부 99 %)가 평행 간극 → 층류 f·Re 96, Nu 8.235
       hydraulic_diameter_candidates_m:
         block_gap: 0.004         # [계산] 2 × 간극 2 mm
         control_rod_channel: 0.102   # [원문] 상부 구간 반경 5.08 cm
+      # 우회 유로 구성 [계산] R1 Table I.12 치수, Table I.2–I.4 기둥 수 (블록 맞변 0.36 m, 변 a = 0.2078 m)
+      bypass_composition:
+        block_gaps:        {width_m: 0.002, columns: 163, area_m2: 0.2033, wetted_perimeter_m: 203.3}   # 연료 66 + 내측 19 + 외측 78, 기둥당 3a·g
+        psr_barrel_gap:    {width_m: 0.0035, radius_m: 2.9715, area_m2: 0.0653, wetted_perimeter_m: 37.34}
+        control_rod_channels: {count: 30, area_upper_m2: 0.2432, area_lower_m2: 0.0147,    # 내측 반사체 6 + 외측 24 (R1 §I.2)
+                               wetted_perimeter_upper_m: 9.576, wetted_perimeter_lower_m: 2.356}
+      # cell (17,): 셀 0–12 제어봉 채널 반경 50.8 mm, 셀 13–16 (z 3.9181 아래) 12.5 mm
+      cell_flow_area_m2: [0.5118, 0.5118, 0.5118, 0.5118, 0.5118, 0.5118, 0.5118, 0.5118, 0.5118,
+                          0.5118, 0.5118, 0.5118, 0.5118, 0.2833, 0.2833, 0.2833, 0.2833]
+      cell_hydraulic_diameter_m: [0.00818, 0.00818, 0.00818, 0.00818, 0.00818, 0.00818, 0.00818, 0.00818, 0.00818,
+                                  0.00818, 0.00818, 0.00818, 0.00818, 0.00466, 0.00466, 0.00466, 0.00466]
       # 제어봉 채널 반경 (R1 Table I.9, I.12) [원문]. 하부 구간은 유량 제한용으로 좁다
       control_rod_channel:
         - {z_m: [1.9356, 3.9181], radius_m: 0.0125}
         - {z_m: [3.9181, 13.4339], radius_m: 0.0508}
-      volume_m3: 5.9             # [계산·근사]
+      volume_m3: 5.432           # [계산] Σ 셀 면적 × 셀 길이 (0.5118 × 9.5158 + 0.2833 × 1.9825). 판 1.0 근사 5.9 대체
       # 벤치마크 Type I 고정 분율 (R1 Table I.11) [원문]. 총유량 대비 분율, 합 0.11
       type_I_fraction:
         intra_core: 0.0150
@@ -244,7 +266,8 @@ flow_network:
       node_id: 110
       type: branch
       cells: 1
-      volume_m3: null                   # [미확보] M10
+      volume_m3: null                   # [미확보] M10. SG 용기 상부 영역(plane N 위) 합 48.85 m³ [계산]을 350과 나누는 비율이
+                                        #   도면에 없어 config/assumptions/provisional_s0.yaml이 [가정]으로 반씩 준다
       z_inlet_m: 8.2                    # [계산] 순환기 토출
       z_outlet_m: 1.58                  # [계산] cross duct 외측 환형부 입구 (기준면 P). SG 상부 용기 안 하강 경로 형상은 미확보
       dz_m: -6.62
@@ -322,7 +345,8 @@ flow_network:
       node_id: 300
       type: branch
       cells: 1
-      volume_m3: null                   # [미확보] 엘보·분배 cone
+      volume_m3: 44.29                  # [도면해석] π/4 × 3.56² × 4.45 m: 외측 shroud 내경 기둥, SGS 상단(plane N) → FSH 상단
+                                        #   (R19 Fig. 5.3-9·5.3-10, Table 5.3-8). 엘보·분배 cone 구조물 체적은 빼지 않음
       z_top_m: 2.98                     # [원문 도면] SGS 상단
       z_inlet_m: 1.58                   # hot duct 유입 (P)
       z_outlet_m: -1.47                 # [계산] FSH 번들 상단. P 기준 −3.05
@@ -330,7 +354,10 @@ flow_network:
       node_id: 330
       type: branch
       cells: 1
-      volume_m3: null                   # [미확보] 180° 전환
+      volume_m3: 70.26                  # [계산·도면해석] shroud 안 EES 하단→shroud 하단 9.23 × 0.48 = 4.43
+                                        #   + 용기 하부 π/4 × 4.015² × (5.7 − h/3) = 65.83 (shroud 하단 −12.5 → 용기 바닥 −18.2,
+                                        #   하부 경판 깊이 h ≈ 1.5 m는 R19 Fig. 5.2-8 축척 판독. h 1.0–1.6 m에서 ±1 %).
+                                        #   급수 유입관(lead-in) 체적은 빼지 않음
       z_bottom_m: -14.7                 # [계산] 출구 cone 하단
       z_top_m: -12.02
       z_inlet_m: -12.02                 # EES 번들 하단
@@ -339,10 +366,13 @@ flow_network:
       node_id: 340
       type: pipe
       cells: 3
-      flow_area_m2: null                # [미확보] M11 (shroud 외경 4.10 m vs 용기 내경 ≈4.02 m 불일치)
-      hydraulic_diameter_m: null
+      flow_area_m2: 2.4921              # [계산] π/4 (4.015² − 3.598²): 용기 내경 4.015 (= 4.18 − 2 × 0.0826, R19 Table 5.2-2)
+                                        #   − 외측 shroud 외경 3.598 (= ID 3.56 + 2 × 0.019, R19 Table 5.3-8).
+                                        #   M11의 'shroud 외경 4.10 m'(R22)는 용기 내경보다 커서 다른 설계판으로 보고 쓰지 않음.
+                                        #   SGS 상단(z 2.98) 위 5.22 m 구간도 같은 단면으로 둠 [가정] (용기 상부 내부 배치 도면 없음)
+      hydraulic_diameter_m: 0.4168      # [계산] 4.015 − 3.598 (환형 D_h = D_o − D_i)
       length_m: 20.7                    # [계산] 수직 상승 길이 (M08). 판 1.0 노드표의 가정 ≈10 m를 대체
-      volume_m3: null
+      volume_m3: 51.59                  # [계산] 2.4921 × 20.7
       z_inlet_m: -12.5
       z_outlet_m: 8.2                   # 순환기 흡입 (SG 용기 상단)
       dz_m: 20.7                        # PCC 때 주루프 자연순환·역류 판단의 부력항에 직접 들어감
@@ -350,7 +380,7 @@ flow_network:
       node_id: 350
       type: valve                       # MLSV: 이중 flapper 체크밸브, 역류 차단
       cells: 1
-      volume_m3: null
+      volume_m3: null                   # [미확보] M10. 110과 같이 SG 용기 상부 영역 48.85 m³ [계산]의 일부 — 분배는 [가정] 파일
       z_inlet_m: 8.2                    # [계산] SG 용기 상단
       z_outlet_m: 8.2
 
@@ -362,6 +392,16 @@ flow_network:
       volume_m3: 22.9                   # [계산]
   # 확인된 체적 합 ≈ 210 m³(He ≈ 1,123 kg). 나머지 ≈ 1,462 kg은 SG 용기 내부(≈330 m³),
   # 110·300·330·340·350 노드, 흑연 기공에 있다 (M10).
+  # 2026-11-27 (#31): SG 용기 내부를 R19 치수로 나눔 — 300 44.29, SG He 측 70.29(번들 공극률), 330 70.26,
+  #   340 51.59, 상부 영역 48.85 (110·350). 합 285.3 m³ (용기 내부 323.7 − 관·shroud 등 ≈ 38).
+  #   정격 정상해 재고량은 docs/handoffs/role1.md M10 절.
+
+  # SG 용기 상부 영역: SGS 상단(plane N, z 2.98) → 순환기 장착면(z 8.2). 순환기 토출 플레넘(지점 1)과
+  # 순환기 입구 덕트(지점 12–13)가 함께 있으나 두 공간의 경계 치수는 R19에 없다 (M10 남은 부분)
+  sg_vessel_upper_region:
+    volume_m3: 48.85                    # [계산·가정] π/4 × 4.015² × 5.22 − 상부 경판 감소분(2:1 타원 경판 깊이 1.0 m [가정])
+                                        #   − 340 환형부 몫 2.4921 × 5.22
+    shared_by_nodes: [110, 350]
 
 # ---------------------------------------------------------------------
 # 증기발생기 (HeatExchanger Composite, Role 4) — PSID Amd.3–6, R19 Table 5.3-8
@@ -392,9 +432,14 @@ heat_exchanger:
     elevation_profile_m: [-1.47, -4.16, -5.1425, -6.125, -7.1075,
                           -8.09, -9.0725, -10.055, -11.0375, -12.02]
     fsh_ees_gap_attached_to_cell: 0
-    shell_flow_area_total_m2: 9.23       # [계산] shroud 환형 π/4(3.56² − 0.96²), 관 단면 미차감
-    min_free_flow_area_m2: null          # [미확보] M11, Zukauskas 상관식에 필요
-    hydraulic_diameter_m: null           # [미확보]
+    shell_flow_area_total_m2: 9.23       # [계산] shroud 환형 π/4(3.56² − 0.96²), 관 단면 미차감 (전면 면적)
+    # M11 [계산] R19 Table 5.3-8 (in 값): d_o 0.875 in, 반경(가로) 피치 1.5 in, 축(세로) 피치 1.44 in.
+    #   34열 × 38.1 mm = 코일 중심선 반경 폭 1.259 m와 일치하고, 반 피치 띠가 shroud 사이(0.48–1.78 m)를 정확히 채운다.
+    #   He는 축 방향으로 흘러 헬리컬 관(원주 방향)을 가로지르므로 가로 피치 S_T = 반경 피치인 관군 교차류다.
+    bundle_porosity: 0.7218              # [계산] 1 − (π d²/4)/(S_T S_L). 검산: 관 부피 (1−φ)·9.23·8.72 = 22.39 vs 350관 22.34 m³
+    min_free_flow_area_m2: 3.8458        # [계산] 9.23 × (S_T − d)/S_T (Zukauskas A_min, 엇갈림 배열이어도 가로 간극이 최소)
+    mean_flow_area_m2: 6.6622            # [계산] 공극률 × 9.23 = 자유체적/길이. 1D He 측 셀 체적·평균 속도 기준 (SGHeliumSide)
+    hydraulic_diameter_m: 0.05766        # [계산] 4 (S_T S_L − π d²/4)/(π d). 검산: 4 V_자유/A_관외면 = 4 × 58.1/4020 = 0.0578
 
   # 2차측 관내 유동(노드 500)은 SG-2 상세 모델용이다. 1차계통 해석 코드의 SG-0은 2차측을
   # 일정 온도·일정량의 액체 물로 두고 열이 빠져나가는 것만 모사한다 (operation.yaml boundaries.sg_heat_sink)
@@ -430,13 +475,19 @@ heat_exchanger:
     coil_outer_diameter_m: 3.518
     coil_inner_diameter_m: 1.00
     outer_shroud_inner_diameter_m: 3.56
+    outer_shroud_thickness_m: 0.019      # [원문] 0.75 in (R19 Table 5.3-8)
+    outer_shroud_outer_diameter_m: 3.598 # [계산] 3.56 + 2 × 0.019. R19 Fig. 5.3-10의 3.72 m는 외측 관열 3.31 m(표 3.518 m)와
+                                         #   함께 다른 설계판 그림이라 쓰지 않음
     inner_shroud_outer_diameter_m: 0.96
+    inner_shroud_inner_diameter_m: 0.927 # [원문] 36.5 in (R19 Table 5.3-8). 안쪽 기둥은 유로 아님
     fsh_ees_gap_height_m: 1.83           # [원문 도면] 6 ft, 이종용접부 공간 (R19 Fig. 5.3-10). 간격 안 관 길이는 미확보
 
   vessel:
     outer_diameter_m: [4.18, 4.30]       # [원문] 구간별 범위 (R19 p.5.2-18)
     length_m: 26.4
-    wall_thickness_candidates_m: [0.0826, 0.140]   # 적용 구간 미상
+    wall_thickness_candidates_m: [0.0826, 0.140]   # 외경 4.18 ↔ 82.6 mm, 4.30 ↔ 140 mm로 짝지으면 내경이 같다
+    inner_diameter_m: 4.015              # [계산] 4.18 − 2 × 0.0826 = 4.015 (4.30 − 2 × 0.140 = 4.020). R19 Fig. 5.2-8 하부 4.01 m.
+                                         #   같은 그림의 상부 내경 4.57 m는 본문·표(외경 4.2–4.3 m)와 맞지 않아 쓰지 않음
     material: SA533B_Cl1                 # RV와 동일
     z_bottom_m: -18.2                    # [원문 도면] 하부헤드·급수 노즐, P − 19.8 m (64.9 ft) (M08)
     z_top_m: 8.2                         # [계산] 상부헤드 = 순환기 장착면, 바닥 + 용기 길이 26.4 m

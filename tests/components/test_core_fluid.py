@@ -4,6 +4,7 @@
 지정 열률로 정상해·과도·역류를 푼다. 고체·결합(Role 3)과 플레넘(Role 2 후속)은 아직 없으므로
 경계 Component는 이 시험에서만 쓴다. 실제 HTGR 정상상태 결과가 아니다.
 """
+import copy
 from pathlib import Path
 
 import numpy as np
@@ -25,7 +26,8 @@ HE = make_helium_properties()
 GEO = yaml.safe_load((ROOT / "config/geometry.yaml").open(encoding="utf-8"))
 OP = yaml.safe_load((ROOT / "config/operation.yaml").open(encoding="utf-8"))
 # [시험 가정] 우회 유로 수력직경은 geometry에서 미정(null)이라 블록 간극 후보 4 mm 평행평판으로 둔다.
-BYPASS_OVERRIDE = {"bypass": {"hydraulic_diameter_m": 0.004, "shape": "parallel_plates"}}
+# 우회 유로 D_h·shape는 geometry.yaml에 [계산]값이 있다 (#31: 4A/P_w 8.18/4.66 mm, 평행평판). 덮어쓰기 없음
+BYPASS_OVERRIDE = {}
 P_OUT = 6.3373e6
 
 
@@ -269,8 +271,12 @@ def test_inside_core_composite_with_minimal_solid():
 
 def test_input_errors_name_the_missing_item():
     init = initial_from_operation(OP)
+    geo_null = copy.deepcopy(GEO)
+    bypass = geo_null["core"]["channels"]["bypass"]
+    bypass["hydraulic_diameter_m"] = None
+    del bypass["cell_hydraulic_diameter_m"]
     with pytest.raises(ValueError, match=r"core\.channels\.bypass\.hydraulic_diameter_m"):
-        ParallelChannelCoreFluid(GEO, HE, initial=init)              # 우회 D_h가 geometry에서 null
+        ParallelChannelCoreFluid(geo_null, HE, initial=init)         # 우회 D_h가 없으면 키 이름으로 실패
     with pytest.raises(ValueError, match="bypass_K_cal"):
         ParallelChannelCoreFluid(GEO, HE, initial=init, channel_overrides=BYPASS_OVERRIDE,
                                  mode_bypass="calibrated_parallel")
