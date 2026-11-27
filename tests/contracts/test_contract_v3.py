@@ -38,12 +38,15 @@ def test_legacy_public_imports_and_unimplemented_production_fail():
                 Vessel, Boundary, RCCS):
         with pytest.raises(NotImplementedError):
             cls().register(StateRegistry())
-    for function, args in ((heat_transfer.conduction, (400, 300, 1, 1, 1)),
-                           (heat_transfer.convection, (400, 300, 1, 1)),
-                           (heat_transfer.radiation, (400, 300, 1, 1, 1)),
-                           (heat_transfer.heat_transfer_coefficient, (1, 1, 1))):
-        with pytest.raises(NotImplementedError):
-            function(*args)
+    # Role 3 kernels are implemented: the public functions return finite a→b rates, and
+    # stay callable on repeated calls (submodule names equal the function names).
+    for _ in range(2):
+        for function, args in ((heat_transfer.conduction, (400, 300, 1, 1, 1)),
+                               (heat_transfer.convection, (400, 300, 1, 1)),
+                               (heat_transfer.radiation, (400, 300, 1, 1, 1e-8)),
+                               (heat_transfer.heat_transfer_coefficient, (1, 1, 1))):
+            value = function(*args)
+            assert np.isfinite(value) and value > 0
 
 
 def test_context_is_read_only_and_fixture_provider_broadcasts():
