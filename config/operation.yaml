@@ -1,9 +1,224 @@
-# TODO: Do not interpret these null values as zero.
+# =====================================================================
+# MHTGR-350 운전점·초기조건 입력 (Role 1)
+# =====================================================================
+# 출처: 「SMR 안전해석 · HTGR 시스템 코드 개발 초기 조사 [1] 기준 설계와
+#   계통 구성 조사 보고서」 판 1.0, 담당 1, 2026-11-26 (이하 '보고서').
+#   §2.3 정격 운전조건, §3 데이터표, §4.4 정격 압력·온도 분포, §7.1 검산.
+#
+# 구성
+#   1) reactor / primary / compressor 의 initial_* 키 (기존 스키마):
+#      S0 정상상태 초기화에 쓰는 초기값. 값의 위치를 옆 키에 적는다.
+#   2) initial_distribution: 보고서 §4.4 노드별 압력·온도 (정상상태 초기 추정값).
+#   3) boundaries: 여러 시나리오에 공통인 경계값 (SG 2차측, SG-0 열침원, RCCS-0).
+#   4) helium_inventory: 재고량 참고값과 정상 초기화 제약 선택.
+#   5) reference: 출처별 정격·검산값. 초기값으로 직접 쓰지 않는다.
+#      벤치마크(R1)와 원설계(R19)는 측정 경계·설계 개정이 달라 섞지 않는다.
+#
+# 규약
+#   - 단위: SI. 압력 Pa(절대압), 온도 K, 유량 kg/s, 열량 W, 각속도 rad/s.
+#     원문 단위(°C, MPa, rpm)는 주석에 적는다. K = °C + 273.15.
+#   - 유량 부호: 정격 유동 방향 = + (geometry.yaml meta.array_order와 같음).
+#   - null은 미정이며 0이 아니다.
+#   - 상태 표시: [원문] 원문 확인, [계산] 원문 기반 계산값, [제안] 보고서의
+#     담당 1 제안(팀 합의 대기), [가정] 가정, [미확보] 자료 없음.
+#
+# 압력 기준 — 팀 결정 2026-11-26 (보고서 D2): 압력 분포는 PSID 절대압 기준이다
+#   (순환기 토출 6.38 MPa(a) = 925 psia). 노심 단독 벤치마크 비교 조건(S0 core_benchmark)만
+#   R1의 노심 출구 6.39 MPa를 경계로 쓴다 (절대압 해석은 M06 제안). 두 값의 차이는 약 0.8 %다.
+# 헬륨 물성 — 팀 결정 2026-11-26: R1 값으로 전 계통 통일 (R = 8.314/0.004002 = 2077.46, c_p = 5195)
+# =====================================================================
+
+meta:
+  reference_design: MHTGR-350
+  source_report: "[1] 기준 설계와 계통 구성 조사 보고서 v1.0 (2026-11-26)"
+  operating_point: rated_100_percent
+  pressure_basis: psid_absolute_loop_distribution   # 팀 결정 2026-11-26 (보고서 D2)
+  pressure_reference: absolute
+  helium_property_set: data/properties/r1_benchmark_properties.yaml#helium   # 팀 결정: 전 계통 R1 값
+
+# ---------------------------------------------------------------------
+# 1) 초기값 (기존 스키마 키)
+# ---------------------------------------------------------------------
 reactor:
-  initial_thermal_power_W: null
+  initial_thermal_power_W: 350000000     # [원문] 350 MWt (R1 Table I.1, R19). 핵분열+붕괴열, 연료에 국부 침적
+  power_mode: specified_total            # [제안] mode_core_power. S0–S3는 지정 출력 이력, S4부터 점동특성 (담당 3)
+  average_power_density_W_m3: 5930000    # [원문] 5.93 MW/m³ (R1 Table I.2)
+  # 출력분포 [가정] 균일 (사용자 결정 2026-11-26). R1 Ex. 2 블록별 출력 파일(참가자 한정)을 대신한다.
+  #   노심 부피당 출력이 같다: 축방향은 연료 10층(높이 같음)에 0.1씩, 반경방향은 연료 기둥 66개에 같게.
+  #   반사체·우회유로에는 출력이 없다 (R1 §I.8.1: 열은 연료에 국부 침적).
+  #   결과: 고온채널 출력밀도 = 평균채널. R1 지정 분포(노심 상부 첨두)를 쓴 R3·R4보다 최고 연료온도가 낮게 나온다.
+  power_distribution:
+    type: uniform
+    # 노심 17셀 (geometry.yaml core.cell_region 순서, 위 → 아래), 합 1
+    axial_fraction: [0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0]
+    channel_fraction:                    # 연료 기둥 수 비례 (RSC 기둥도 표준 기둥과 같은 출력)
+      average: 0.98484848                # 65/66
+      hot: 0.01515152                    # 1/66
+      bypass: 0.0
+    hot_channel_peaking_factor: 1.0      # 균일 분포라 고온채널 = 평균채널
+
 primary:
-  initial_pressure_Pa: null
-  initial_temperature_K: null
-  initial_mass_flow_kg_s: null
+  initial_pressure_Pa: 6337300           # [계산] 6.3373 MPa(a). 하부(출구) 플레넘 절대압, 보고서 §4.4
+  initial_pressure_location: lower_plenum   # 노드 230. p_sys를 등록하는 노드 (interface_spec §5)
+  initial_temperature_K: 532.15          # [원문] 노심 입구 259.0 °C (R1 Table I.8, 벤치마크 고정 경계조건)
+  initial_temperature_location: upper_plenum  # 노드 150. 노드별 값은 initial_distribution
+  initial_mass_flow_kg_s: 157.1          # [원문] R1 Table I.1/I.8 (보고서 D3). 정격 유동 방향 +
+  #   열수지 검산 157.4 kg/s와 0.2 % 이내. 순환기 158.0, SG 157.3은 측정 경계 차이로 reference에만 기록
+
 compressor:
-  initial_rotation_rate_rad_s: null
+  initial_rotation_rate_rad_s: 649.26    # [원문] 6200 rpm (R19 p.5.3-21) × 2π/60
+  rated_speed_rpm: 6200
+  speed_range_fraction: [0.0, 1.2]       # [원문] 0–120 %, 정상 최대 110 % (R19 p.5.3-22)
+  rated_pressure_rise_Pa: 91000          # [원문] 13.2 psi (R19 Table 5.1-1)
+  rated_temperature_rise_K: 3.8          # [원문]
+  rated_heat_to_helium_W: 3100000        # [원문] 3.13 MW(t) (R22 Fig. 5.1-2). 전기 입력 3.60 MW(e)
+  motor_power_W: 3200000                 # [원문] 4300 hp (R19). R22는 4250 hp
+  pressurized_shutdown_speed_fraction: 0.20   # [원문] 가압 정지 시 20 % 속도 + 급수 15 % (R20 §7.3.2.4.3)
+
+# ---------------------------------------------------------------------
+# 2) 정격 압력·온도 분포 (보고서 §4.4) — 정상상태 초기 추정값
+#   순환기 토출 6.380 MPa(a)에서 PSID 설계 압력손실(geometry.yaml
+#   pressure_loss_calibration)을 차례로 뺀 값이다. 계산된 SG 입구 6.317 MPa와
+#   순환기 입구 6.289 MPa가 PSID 원문값(6.32, 6.29 MPa)과 같다.
+#   rho_kg_m3는 R1 이상기체 R = 2077.46 J/(kg·K)로 계산한 참고값이다 (보고서 표는 2077.3으로 계산,
+#   지점 1·3·13이 셋째 자리에서 1 작아짐. EOS provider는 담당 2).
+#   이 분포에는 정수압 ρgΔz가 들어 있지 않다. M08 고도(geometry.yaml)를 넣으면
+#   구간별로 최대 약 1.2 kPa(340 환형 상승부 20.7 m) 달라지므로, 중력항을 포함한
+#   정상해로 담당 2가 다시 구한다. 루프 전체 합은 개략 −0.4 kPa.
+#   loss_segment: 바로 앞 지점에서 이 지점까지의 압력손실 구간 이름
+# ---------------------------------------------------------------------
+initial_distribution:
+  stations:
+    - {station: 1,  node: 100, point: circulator_discharge,  p_Pa: 6380000, T_K: 531.95, rho_kg_m3: 5.773}
+    - {station: 3,  node: 130, point: rv_inlet_riser_inlet,  p_Pa: 6376600, T_K: 532.15, rho_kg_m3: 5.768,
+       loss_segment: mc_outlet_to_core_inlet}
+    - {station: 5,  node: 150, point: core_inlet,            p_Pa: 6371800, T_K: 532.15, rho_kg_m3: 5.764,
+       loss_segment: riser}
+    - {station: 7,  node: 230, point: core_outlet,           p_Pa: 6337300, T_K: 960.15, rho_kg_m3: 3.177,
+       loss_segment: core}
+    - {station: 8,  node: 240, point: hot_duct_inlet,        p_Pa: 6321500, T_K: 960.15, rho_kg_m3: 3.169,
+       loss_segment: core_outlet_plenum}
+    - {station: 9,  node: 300, point: sg_inlet_plenum,       p_Pa: 6316700, T_K: 959.15, rho_kg_m3: 3.170,
+       loss_segment: hot_duct}
+    - {station: 10, node: 310, point: sg_bundle_inlet,       p_Pa: 6314600, T_K: 959.15, rho_kg_m3: 3.169,
+       loss_segment: sg_inlet_plenum}
+    - {station: 11, node: 330, point: sg_bundle_outlet,      p_Pa: 6294600, T_K: 528.15, rho_kg_m3: 5.737,
+       loss_segment: sg_bundle}
+    - {station: 12, node: 340, point: sg_annulus_riser,      p_Pa: 6291200, T_K: 528.15, rho_kg_m3: 5.734,
+       loss_segment: sg_outlet}
+    - {station: 13, node: 350, point: circulator_inlet,      p_Pa: 6289200, T_K: 528.15, rho_kg_m3: 5.732,
+       loss_segment: mc_inlet}
+  # 온도(°C): 258.8 / 259.0 / 259.0 / 687.0 / 687.0 / 686.0 / 686.0 / 255.0 / 255.0 / 255.0
+  # 노심 출구 687 °C는 벤치마크 결과값이며 고정 경계조건이 아니다.
+
+  # 노심 병렬 유로 정격 유량 [계산·가정]: 연료 영역 유량(89 %)을 유로면적 비로 배분.
+  # 우회 11 %는 geometry.yaml core.channels.bypass.type_I_fraction 합과 같다.
+  channel_mass_flow_kg_s:
+    average: 137.7     # 노드 200
+    hot: 2.17          # 노드 210
+    bypass: 17.28      # 노드 220
+
+# ---------------------------------------------------------------------
+# 3) 공통 경계값
+# ---------------------------------------------------------------------
+boundaries:
+  # SG 2차측 (TDV 900/910). SG-2 상세 모델에서 사용 [원문] R19 Table 5.1-1
+  sg_secondary:
+    feedwater_mass_flow_kg_s: 137.4
+    feedwater_temperature_K: 466.15      # 193 °C
+    feedwater_pressure_Pa: 20700000      # 20.7 MPa
+    main_steam_temperature_K: 814.15     # 541 °C
+    main_steam_pressure_Pa: 17300000     # 17.3 MPa
+    # 2차측 압력강하 3344 kPa는 geometry.yaml pressure_loss_calibration
+
+  # SG-0 열침원 — 팀 결정 2026-11-26
+  #   1차계통 해석 코드이므로 SG 2차측은 일정량·일정 온도의 액체 물로 두고, He에서 물로
+  #   열이 빠져나가는 것만 모사한다. 2차측 유동·비등 등 상변화는 모사하지 않는다.
+  #   He 측 셀 i의 제거열: Q_i = U · A_i · (T_He,i − T_water)
+  #   (A_i = geometry.yaml heat_exchanger.heat_transfer_area_m2, 셀 9개)
+  sg_heat_sink:
+    model_level: SG-0
+    mode: fixed_temperature_liquid_water
+    phase_change: false
+    water_temperature_K: 466.15          # [제안] 급수 온도 193 °C (R19 Table 5.1-1). SG 냉단의 물 온도. 확인 필요
+    water_mass_kg: 5000                  # [원문] 2차측 물 재고 ≈ 5.0 t (보고서 §3.2, R21). 온도 일정이라 정상상태에는 쓰이지 않음
+    overall_U_W_m2K: null                # S0 system_loop 정상해에서 보정 (He 출구가 아래 정격 온도가 되도록)
+    overall_U_estimate_W_m2K: 421.5      # [계산] UA = 352.2 MW / LMTD 207.87 K = 1.694 MW/K, ÷ 4020 m²
+                                         #   LMTD: He 686 → 255 °C, 물 193 °C 일정
+    rated_heat_removal_W: 352200000      # [원문] 352.2 MW SG 순 열부하 (R19 Table 5.1-1). 보정 검산값
+    rated_helium_outlet_temperature_K: 528.15   # [원문] 255 °C. U 보정 목표
+    rated_helium_inlet_temperature_K: 959.15    # [원문] 686 °C
+
+  # RCCS-0 고정 온도 경계 [원문] R1 Table I.10 #4. 위치와 방사율 0.80은 geometry.yaml rccs.boundary
+  rccs:
+    model_level: RCCS-0
+    boundary_temperature_K: 303.15       # 30 °C. R3(INL)은 20 °C, 실제 플랜트 외기 설계값은 21 °C
+
+# ---------------------------------------------------------------------
+# 4) 헬륨 재고량
+# ---------------------------------------------------------------------
+helium_inventory:
+  reference_kg: 2585                     # [원문] 5,700 lb, RV + SG 용기 + cross duct (R22 Table F-1 각주 b)
+  conflicting_value_kg: 2900             # [원문] HPS 감압 요건 기준 (R19 Table 5.3-6) — 상충
+  # 정상 초기화 제약: 확인된 노드 체적이 He 약 1,123 kg분뿐이라(M10) 재고량 제약은 아직 쓸 수 없다.
+  # interface_spec §5에 따라 기준압 제약 p_sys − p_sys_initial = 0 을 쓰고 재고량은 정상해에서 유도해 2,585 kg과 비교한다.
+  steady_state_constraint: pressure
+  constraint_kg: null                    # M_he_loop_initial. 체적 확보 후 결정
+
+# ---------------------------------------------------------------------
+# 5) 출처별 정격·검산값 (초기값으로 직접 쓰지 않음)
+# ---------------------------------------------------------------------
+reference:
+  # OECD/NEA 벤치마크 Ex. I-2 (노심 단독). S0 벤치마크 비교용
+  benchmark_R1:
+    thermal_power_W: 350000000
+    core_inlet_temperature_K: 532.15     # 259.0 °C, 고정 경계조건
+    core_outlet_temperature_K: 960.15    # ≈687 °C, 결과값
+    mass_flow_kg_s: 157.1
+    core_outlet_pressure_Pa: 6390000     # Table I.8 '출구 압력'. 절대/게이지 미명시 (M06)
+    rccs_boundary_temperature_K: 303.15
+    helium_cp_J_kgK: 5195                # Table AIV.13. 열수지 검산용 (물성 모델은 담당 2)
+    helium_gas_constant_J_kgK: 2077.46   # 8.314 / 0.004002 (R1 Table AIV.13). 전 계통 통일값 (보고서 2077.3)
+    example_core_pressure_drop_Pa: 19950 # INL RELAP5-3D 결과 예 (R3 Table IV): 입구 6.39 → 출구 6.36 MPa
+
+  # 원설계 PSID 계통 정격점 (R19 Table 5.1-1 등)
+  psid_R19:
+    thermal_power_W: 350000000
+    sg_net_heat_load_W: 352200000
+    core_inlet_temperature_K: [531.75, 532.15]   # 258.6–259 °C
+    core_outlet_temperature_K: 960.15            # 687 °C
+    mass_flow_kg_s: {core: 157.0, sg: 157.3, circulator: 158.0}   # 측정 경계 차이 (보고서 D3: 기록만)
+    pressure_Pa:
+      circulator_discharge_core_inlet: 6380000   # 6.38 MPa(a) = 925 psia (R8 Table 1.3-1의 '925 psig' 표기와 상충)
+      sg_inlet: 6320000
+      circulator_inlet: 6290000
+    circulator_inlet_temperature_K: 528.15       # 255 °C
+    sg_helium_temperature_K: {inlet: 959.15, outlet: 528.15}   # 686 / 255 °C. 설계 최대 bulk 입구 691 °C
+    reactor_pressure_drop_Pa: 55000              # cold duct 출구 → hot duct 입구 기대값. 최적추정 31.4 kPa (R8)
+    active_core_pressure_drop_limit_Pa: 34500    # R8 §4.2. 평형주기 최대 29.9 kPa
+    rccs_heat_removal_W: 887000                  # 외기 21 °C, 패널 평균 82 °C, 공기 21 → 86 °C, 11.3 m³/s (R19 Table 5.5-1)
+    rccs_ambient_temperature_K: 294.15           # 21 °C
+    rpv_wall_temperature_K: {inner: 495.15, outer: 489.15}   # 222 / 216 °C, 정상운전 (R19 Table 5.5-1)
+    rpv_design_pressure_Pa: 7180000              # 7.07 MPa(g) = 7.18 MPa(a), 설계온도 288 °C
+    relief_setpoint_Pa: 7180000                  # 7.07 MPa(g) + 1 %
+    relief_reseat_Pa: 6100000                    # [원문] 6.10 MPa. 절대/게이지 기준 불명 (변수표 p_psrv_reseat은 비워 둠)
+
+  # 25 % 부분부하 (R19 Table 5.1-2)
+  partial_load_25pct_R19:
+    helium_mass_flow_kg_s: 50.7
+    helium_temperature_K: [527.15, 861.15]       # 254 → 588 °C (원문 표기 그대로)
+    main_steam_temperature_K: 811.15             # 538 °C
+    main_steam_pressure_Pa: 16700000             # 16.7 MPa
+    circulator_speed_ratio: 0.33
+
+  # SCS 가압 설계점 (R19 Table 5.4-7, 5.1-6). S1b에서만 사용
+  scs_design_R19:
+    helium_pressure_Pa: 6150000
+    helium_mass_flow_kg_s: 11.6
+    helium_temperature_K: {inlet: 892.15, outlet: 497.15}   # 619 → 224 °C
+    water_pressure_Pa: 4830000
+    water_mass_flow_kg_s: 29.2
+    water_temperature_K: {inlet: 316.15, outlet: 505.15}    # 43 → 232 °C
+    initial_heat_removal_W: 23700000             # 트립 후 7.5 min: 붕괴열 9.3 + 저장열 15.4 MW, 노심 He 10.2 kg/s
+    depressurized_maintenance_heat_removal_W: 3000000
+    circulator_speed_rpm: 10000                  # 2단 축류, 침수형 유도전동기 149 kW

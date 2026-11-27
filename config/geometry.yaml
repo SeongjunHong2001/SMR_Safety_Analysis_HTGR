@@ -1,11 +1,620 @@
-# TODO: Role 1 provides actual selected HTGR geometry; null means undecided.
+# =====================================================================
+# MHTGR-350 계통 형상 입력 (Role 1)
+# =====================================================================
+# 출처: 「SMR 안전해석 · HTGR 시스템 코드 개발 초기 조사 [1] 기준 설계와
+#   계통 구성 조사 보고서」 판 1.0, 담당 1, 2026-11-26 (이하 '보고서').
+#   SG·순환기 고도(M08)는 판 1.1 §3.4 (HTGR_기준설계와_계통구성[1]_M08보완.docx).
+#   R 번호는 보고서 9장 참고문헌이다. 노심·반사체는 R1(OECD/NEA 벤치마크
+#   NEA/NSC/R(2017)4), 노심 밖 1차계통은 R19·R8·R22(PSID 등 원설계)를 따른다.
+# SG 형상 기준: PSID Amd.3–6(R19 Table 5.3-8), 2026-11-26 팀 결정.
+#   보완본[4]의 DOE-HTGR-86-129 Rev.1(전열관 439개) 값과 섞지 않는다.
+#
+# 규약 (보고서 §1.4)
+#   - 단위: SI. 길이 m, 면적 m², 체적 m³, 압력 Pa. 원문 단위는 주석에 적는다.
+#   - z: R1 RPV 하부 외면 = 0, 위쪽이 +.  r: 노심 중심축 = 0.
+#     SG 쪽 노드는 음의 z를 가진다 (판 1.1 §3.4: 원점은 유지하고 음수 z 허용).
+#   - 수력 노드 고도: z_inlet_m / z_outlet_m = 입구·출구 연결부 고도.
+#     인접 노드의 출구·입구 고도가 같아 루프를 따라 고도가 닫힌다.
+#     z_bottom_m / z_top_m 은 체적이 차지하는 높이 범위다.
+#   - 배열 순서: 정격 유동 방향(입구 → 출구). cell 배열 (N,), face 배열 (N+1,).
+#     하향류인 노심과 SG He 측은 elevation 배열이 감소한다.
+#   - 노드 번호: 1xx 저온측, 2xx 노심·고온측, 3xx SG He 측, 4xx SCS,
+#     5xx SG 2차측, 9xx 경계, HS-xx 열구조체, Jxx 연결부 (보고서 그림 2).
+#   - null은 미정이며 0이 아니다.
+#   - 상태 표시: [원문] 원문 확인, [도면] 도면해석·2차 출처, [계산] 원문 기반
+#     계산값, [가정] 가정, [미확보] 자료 없음.
+# =====================================================================
+
+meta:
+  reference_design: MHTGR-350
+  source_report: "[1] 기준 설계와 계통 구성 조사 보고서 v1.0 (2026-11-26), M08 고도는 v1.1 §3.4"
+  sg_design_basis: "PSID Amd.3-6 (R19 Table 5.3-8)"
+  z_datum: rpv_bottom_outer_surface
+  array_order: rated_flow_direction
+
+# ---------------------------------------------------------------------
+# 노심 (Core Composite: fluid=Role 2, solid/power/coupling=Role 3)
+# ---------------------------------------------------------------------
 core:
-  axial_cells: null
-  channel_length_m: null
-  flow_area_m2: null
-  elevation_profile_m: null
+  # ----- 기존 스키마 키 (docs/config_schema.md) -----
+  axial_cells: 17                # [계산] 채널당 CRE 1 + 상부반사체 2 + 활성노심 10 + 하부 4 (보고서 §4.1)
+  channel_length_m: 11.4983      # [계산] z 13.4339 → 1.9356 (R1 Fig. I.10). 보고서 표 11.498
+  flow_area_m2: 1.3517           # [계산] 연료 냉각공 총 유로면적 = 54·A_std + 12·A_RSC (보고서 식 3).
+                                 #   200+210 채널의 합이며 우회유로 220은 제외. 17셀 전 구간에 같은 값 사용(보고서 노드표 가정).
+  # face 고도 (18,), 정격 유동 방향(위 → 아래). R1 Fig. I.10·Fig. II.7 층 경계 [원문]
+  elevation_profile_m: [13.4339, 13.0374, 12.2445, 11.8480, 11.0550, 10.2620,
+                        9.4690, 8.6760, 7.8830, 7.0900, 6.2970, 5.5041,
+                        4.7111, 3.9181, 3.3233, 2.9268, 2.5303, 1.9356]
+  #   상부반사체 [원문] R1 Fig. II.7: layer 14 = 1블록 (12.2445 → 13.0374, Δz 79.30 cm),
+  #   layer 13 = ½블록 (11.8480 → 12.2445, Δz 39.65 cm, 활성노심 바로 위).
+  #   2.9268은 R1 Fig. I.10·Table I.9 블록 높이 기준이다. Fig. II.7 보고 메시는 2.9261 (0.7 mm 차).
+
+  # cell (17,) 영역. fuel 10셀이 출력 q(z)을 받는다 (Role 3).
+  cell_region: [core_restraint_element, upper_reflector_block, upper_reflector_half_block,
+                fuel, fuel, fuel, fuel, fuel, fuel, fuel, fuel, fuel, fuel,
+                lower_reflector, lower_transition_reflector, flow_distribution_block,
+                support_post_block]
+  # cell별 R1 Fig. II.7 보고 층 번호. CRE는 보고 메시 밖(null). layer 1·2는 하부 셀 2개씩을 합친 층
+  r1_reporting_layer: [null, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 2, 1, 1]
+
+  # 블록 공극률 = He 유로 단면적 / 육각 블록 단면적. 셀별 유로면적 cell_flow_area_m2의 근거
+  #   팀 결정(2026-11-26): 비연료 블록은 PSID 설계값 적용 (수정 기록 #13·#14)
+  block_porosity:
+    fuel_standard: 0.186             # [원문] R1 Table I.9 (냉각공 치수로 계산하면 0.1868)
+    fuel_rsc: 0.165                  # [원문] RSC 구멍은 유로 아님 (치수 계산 0.1632)
+    top_reflector_standard: 0.1868   # [원문] '연료 블록과 같은 냉각공 배열' (R1 §I.5.1.4, PSID §4.2.4.1)
+    top_reflector_rsc: 0.1632
+    bottom_reflector_standard: 0.199 # [원문] R1 Table I.9
+    bottom_reflector_rsc: 0.177
+    transition_block: 0.1941         # [원문] 68 mm 유로 6개 (PSID §4.2, §4.4.4.1.1.2). RSC 기둥도 같게 [가정]
+    flow_distribution_block: 0.1885  # [원문] 67 mm 유로 6개 → 꼭짓점 부채꼴 유로 (PSID Fig. 4.4-8·9)
+    post_block: 0.1883               # [원문 해석] 꼭짓점 유로, 인접 3블록이 지름 116 mm 원 (PSID p.4.4-6, 4.4-25)
+    core_restraint_element: null     # [미확보] 금속 plenum element 유로 치수 없음 → 연료와 같게 [가정]
+  hex_block_area_m2: 0.112237        # [계산] √3/2 × 0.36²
+  # 하부 블록 유로 치수 (PSID Vol.1, DOE-HTGR-86-024 Amd.3). 116 mm = 67 mm × √3이라 두 형태의 면적이 같다
+  lower_block_channels:
+    transition_block: {count: 6, diameter_m: 0.068}            # 2.68 in, 연료형 냉각공이 모이는 중간 유로
+    flow_distribution_block: {count: 6, diameter_m: 0.067}     # 2.63 in (위쪽). 아래쪽은 post_block과 같은 꼭짓점 유로
+    post_block: {vertex_circle_count_per_block: 2, diameter_m: 0.116}   # 4.57 in, 꼭짓점 120° 부채꼴 6개 = 원 2개분
+
+  inlet_node: 150                # 상부(입구) 플레넘
+  outlet_node: 230               # 하부(출구) 플레넘
+
+  # 병렬 3유로 (보고서 §4.2 노드표). 세 유로 모두 위 elevation_profile_m을 공유한다.
+  channels:
+    average:
+      node_id: 200
+      fuel_columns: 65           # [계산] 표준 53 + RSC 12. 고온채널 1기둥 제외
+      flow_area_m2: 1.3308       # [계산] 1.3517 − 0.02096
+      hydraulic_diameter_m: 0.0157   # [계산] 블록 4A/P_w (대형·소형 냉각공 가중)
+      volume_m3: 15.433          # [계산] Σ 셀 면적 × 셀 길이. 보고서 노드표 15.30은 연료 면적 × L
+      # cell (17,) 유로면적 [m²]
+      #   셀 0 CRE: 연료와 같게 [가정] / 셀 1–2 상부반사체·셀 3–12 연료: 냉각공 치수 1.3308
+      #   셀 13 하부반사체: R1 공극률 (53 × 0.199 + 12 × 0.177) × 0.112237 = 1.4222
+      #   셀 14 전이: 65 × 6 × π/4 × 0.068² = 1.4164 / 셀 15 유량분배: 65 × 6 × π/4 × 0.067² = 1.3750
+      #   셀 16 포스트: 65 × 2 × π/4 × 0.116² = 1.3739 (PSID, RSC 기둥도 표준과 같게 [가정])
+      cell_flow_area_m2: [1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308, 1.3308,
+                          1.3308, 1.3308, 1.3308, 1.3308, 1.4222, 1.4164, 1.3750, 1.3739]
+    hot:
+      node_id: 210
+      fuel_columns: 1            # [가정] 최고 출력 표준 기둥 1개. 출력첨두계수는 Role 3
+      flow_area_m2: 0.02096      # [계산] 표준 블록 1개의 냉각 유로면적
+      hydraulic_diameter_m: 0.0157
+      volume_m3: 0.2423          # [계산] Σ 셀 면적 × 셀 길이 (보고서 노드표 0.241)
+      # 하부반사체 0.199 × 0.112237 = 0.022335 (R1), 전이·유량분배·포스트는 블록 1개의 PSID 유로면적
+      cell_flow_area_m2: [0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096, 0.02096,
+                          0.02096, 0.02096, 0.02096, 0.02096, 0.022335, 0.021790, 0.021154, 0.021137]
+    bypass:
+      node_id: 220
+      flow_area_m2: 0.51         # [계산·근사] 블록 간극·제어봉 채널·반사체 간극 합 (M03: 분율·ΔP로 역산 예정)
+      hydraulic_diameter_m: null # 두 유로 형태가 섞여 단일값 미정
+      hydraulic_diameter_candidates_m:
+        block_gap: 0.004         # [계산] 2 × 간극 2 mm
+        control_rod_channel: 0.102   # [원문] 상부 구간 반경 5.08 cm
+      # 제어봉 채널 반경 (R1 Table I.9, I.12) [원문]. 하부 구간은 유량 제한용으로 좁다
+      control_rod_channel:
+        - {z_m: [1.9356, 3.9181], radius_m: 0.0125}
+        - {z_m: [3.9181, 13.4339], radius_m: 0.0508}
+      volume_m3: 5.9             # [계산·근사]
+      # 벤치마크 Type I 고정 분율 (R1 Table I.11) [원문]. 총유량 대비 분율, 합 0.11
+      type_I_fraction:
+        intra_core: 0.0150
+        inner_reflector: 0.0050
+        inner_control_rod: 0.0120
+        outer_control_rod: 0.0180
+        outer_reflector_row1: 0.0138
+        outer_reflector_row2: 0.0162
+        permanent_reflector: 0.0300
+
+  # 노심 배치와 블록 (R1 Table I.2–I.4, I.12) [원문]
+  layout:
+    fuel_columns_standard: 54
+    fuel_columns_rsc: 12           # 예비정지(RSC) 채널이 있는 연료 기둥
+    blocks_per_column: 10
+    inner_reflector_columns: 19
+    outer_replaceable_reflector_columns: 78   # [도면] R1 Fig. I.12 판독
+    control_rods_startup: 6          # 내측 반사체
+    control_rods_operating: 24       # 외측 반사체
+    block_flat_to_flat_m: 0.360      # 14.172 in
+    block_height_m: 0.793            # 31.22 in
+    inter_block_gap_m: 0.002
+    permanent_reflector_barrel_gap_m: 0.0035  # INL RELAP5 모델(R3, R4)은 3 mm
+    active_core_inner_diameter_m: 1.65
+    active_core_outer_diameter_m: 3.50
+
+  fuel_block:
+    fuel_holes: {standard: 210, rsc: 186}
+    fuel_hole_radius_m: 0.00635
+    coolant_holes_large: {standard: 102, rsc: 88}
+    coolant_hole_large_radius_m: 0.00794     # Ø 0.625 in
+    coolant_holes_small: {standard: 6, rsc: 7}
+    coolant_hole_small_radius_m: 0.00635     # Ø 0.50 in
+    hole_pitch_m: 0.018796                   # 삼각배열 0.740 in
+    burnable_poison_holes: 6
+    burnable_poison_hole_radius_m: 0.005715
+    rsc_hole_diameter_m: 0.09525             # 정체 He, 유로 아님
+    coolant_flow_area_per_block_m2: {standard: 0.020962, rsc: 0.018316}  # [계산] 공극률 0.187/0.163 ≈ Table I.9의 0.186/0.165
+    unit_cell: {coolant_holes: 1, fuel_holes: 2}   # HS-01 단위격자 (보고서 §4.5)
+    compact_radius_m: 0.006225
+    compact_length_m: 0.04928
+    triso_packing_fraction: 0.35
+    compact_graphite_gap_m: 0.0001           # [원문] R1 §I.8.6 'Note that there is a 0.1 mm gap' (정체 He).
+                                             #   연료공·콤팩트 반경차는 0.125 mm이나 R1 명시값을 따름
+
+  # 반경 방향 등가 구조 (보고서 그림 1, HS-03~HS-07)
+  radial_m:
+    inner_reflector_outer: 0.824        # [계산] 육각 기둥 면적 보존 등가반경 (간극 포함 시 0.829)
+    active_core_outer: 1.743            # [계산] (간극 포함 시 1.752)
+    replaceable_reflector_outer: 2.413  # [계산] (간극 포함 시 2.427)
+    permanent_reflector_outer: 2.970    # [도면] 배럴 내면 − 3.5 mm 간극
+    core_barrel_inner: 2.973            # [원문] R1 Table I.6 (297.30 cm; 본문 279.3은 오타)
+    core_barrel_outer: 3.049            # [원문] 두께 76 mm
+    riser_outer: 3.201                  # [도면] riser 깊이 15.24 cm
+    rpv_inner: 3.275                    # [원문] ID 6.55 m
+    rpv_outer: 3.408                    # [원문] 두께 133 mm
+    rccs_boundary: 4.633                # [원문] R1 Table I.10, RPV 외면에서 1.225 m
+
+# ---------------------------------------------------------------------
+# RPV 내부 축방향 영역 (R1 Fig. I.10, 보고서 그림 1) — [z_bottom, z_top] m
+# ---------------------------------------------------------------------
+rpv_internals:
+  axial_regions_m:
+    rv_inlet_mcss: [0.13, 0.85]               # [가정] 노드 130
+    outlet_plenum: [1.0351, 1.9356]           # [원문 도면] 공극률 0.6
+    support_post_block: [1.9356, 2.5303]      # 2020 흑연
+    flow_distribution_block: [2.5303, 2.9268] # 2020 흑연 (Fig. II.7은 292.61 cm)
+    lower_transition_reflector: [2.9268, 3.3233]
+    lower_reflector: [3.3233, 3.9181]
+    active_core: [3.9181, 11.8480]            # 10층 × 0.793
+    upper_reflector: [11.8480, 13.0374]
+    core_restraint_element: [13.0374, 13.4339]
+    upper_plenum: [13.4339, 16.1779]          # [도면]
+    uptps_and_upper_head: [16.1779, 17.456]   # [도면] HS-10. 17.456 = 벤치마크 모델 RPV 상부
+  rccs_top_boundary_z_m: 18.6813              # [원문] R1 Table I.10, RPV 상부에서 1.225 m
+
+rpv:
+  inner_diameter_m: 6.55          # [원문] R1 §I.5.1
+  outer_diameter_m: 6.81          # [원문] R19 §5.2.2.4.2 (22.4 ft). R1 Table I.1은 6.8
+  wall_thickness_m: 0.133         # [원문] 5.25 in. R19 Table 5.2-2의 190 mm 병기는 적용 구간 미상 (M14)
+  overall_height_m: 22.0          # [원문] 72 ft (R19, R1 Table I.1). 벤치마크 R-Z 모델 상단은 z 17.456
+  material: SA533B_Cl1            # R19: SA533 Gr.B Cl.1 판재 + SA508 Cl.2 단조품 (R1은 SA-508 Cl.3로 기재)
+  # 실제 RV 범위는 z −4.14 ~ 17.85 (plant_elevations). R1 벤치마크 RPV는 z 0 ~ 17.456으로 잘라 단순화한 모델
+
+# ---------------------------------------------------------------------
+# 플랜트 수직 배치 (M08) — 보고서 판 1.1 §3.4, 그림 3
+#   R19 Fig. 5.2-1, 5.2-5, 5.2-8, 5.2-13, 5.3-10과 R8 Fig. 4.4-1의 도면 치수를
+#   더하고 뺀 값이다 (자로 잰 값 아님). 도면은 PSID Amd. 4(1986) 판.
+#   SG 용기는 heat_exchanger.vessel, FSH·EES 고도는 heat_exchanger.helium_side,
+#   노드별 고도는 flow_network.nodes에 있다.
+# ---------------------------------------------------------------------
+plant_elevations:
+  reference_plane_P_z_m: 1.58     # [도면해석] cross duct·hot duct 중심선. 식 (6a): 플레넘 바닥 1.035 + (40.0 − 6.0 − 12.5) in
+                                  #   RV와 SG 용기가 이 면에서 지지된다 (R19 §5.2.2.4.2)
+  rv_actual_top_z_m: 17.85        # [계산] RV 상부헤드 꼭대기, P + 16.27 (R19 Fig. 5.2-5)
+  rv_actual_bottom_z_m: -4.14     # [원문 도면] SCS 노즐 목 포함, P − 5.72 (18.8 ft)
+  crdm_top_z_m: 22.8              # [원문 도면] 제어봉 구동장치 상단, P + 21.2 (69.5 ft)
+  circulator_top_z_m: 10.7        # [계산] 전동기 하우징 상단, P + 9.1 (R19 Fig. 5.2-8)
+  sg_subassembly_top_z_m: 2.98    # [원문 도면] SGS 상단 = SG 입구 플레넘 상단, P + 1.4 (4.6 ft) (R19 Fig. 5.3-10)
+  sg_shroud_bottom_z_m: -12.5     # [계산] SGS 상단에서 15.5 m (50.8 ft)
+  sg_subassembly_bottom_z_m: -14.7   # [계산] 출구 cone 하단, SGS 상단에서 17.7 m (58.1 ft)
+  # 열중심 (식 6b): z_SG = f·z_FSH + (1 − f)·z_EES, Δz_th = z_core − z_SG
+  thermal_centers:
+    core_z_m: 7.88                # [계산] 활성노심 기하 중심. 출력분포 가중값은 담당 3 결과로 교체
+    fsh_center_z_m: -1.90
+    ees_center_z_m: -8.09
+    fsh_duty_fraction: 0.07       # [가정] 하한. 증기 17.3 MPa, 482 → 541 °C 엔탈피 증가 / 총 열부하
+    sg_z_m: -7.66                 # [가정] EES 안 축방향 열부하 균일. EES만 쓰면 −8.09
+    delta_z_m: 15.5               # [계산] EES만 쓰면 16.0, f = 0.10이면 15.4
+  # 남은 불확실성: 순환기 압축기 날개 고도(장착면 8.2 사용), FSH/EES 열부하 비율,
+  # PSID 최종판(Amd. 13, 1992)에서의 배치 변경 여부
+
+# ---------------------------------------------------------------------
+# 1차계통 수력 노드 (Core·SG 제외). 보고서 §4.2 노드표
+#   type: pump | branch | pipe | valve. dz_m = z_outlet − z_inlet
+# ---------------------------------------------------------------------
+flow_network:
+  nodes:
+    main_circulator:
+      node_id: 100
+      type: pump
+      location: SG 용기 상단, 수직 설치   # [원문] R19 §5.3.2
+      z_inlet_m: 8.2                    # [계산] SG 용기 상단 장착면 (M08). 압축기 날개 고도는 도면 치수 없음 [가정]
+      z_outlet_m: 8.2
+    mc_discharge_plenum:
+      node_id: 110
+      type: branch
+      cells: 1
+      volume_m3: null                   # [미확보] M10
+      z_inlet_m: 8.2                    # [계산] 순환기 토출
+      z_outlet_m: 1.58                  # [계산] cross duct 외측 환형부 입구 (기준면 P). SG 상부 용기 안 하강 경로 형상은 미확보
+      dz_m: -6.62
+    cold_annulus:
+      node_id: 120
+      type: pipe
+      cells: 2
+      flow_area_m2: 1.122               # [계산] r 0.673–0.900 m 환형
+      hydraulic_diameter_m: 0.454       # [계산] 2(r_o − r_i)
+      length_m: 6.5                     # [가정] M07. 대안 근사 1.5 + 2×2.76 = 7.02 m
+      volume_m3: 7.29                   # [계산]
+      z_inlet_m: 1.58                   # [계산] 기준면 P에서 수평 (M08). SG 안 수직 하강부는 110에 포함
+      z_outlet_m: 1.58
+      dz_m: 0.0
+    rv_inlet_mcss:
+      node_id: 130
+      type: branch
+      cells: 1
+      cross_section_area_m2: 33.70      # [가정] RPV 내경 원통, 구조물 미차감
+      length_m: 0.254
+      volume_m3: 8.6
+      z_bottom_m: 0.13                  # 체적 범위는 R1 R-Z 모델 값
+      z_top_m: 0.85
+      z_inlet_m: 1.58                   # [가정] cross duct(P)로 RV에 유입 → MCSS 하부 U-turn. 유입 경로 형상 미확보
+      z_outlet_m: 0.85                  # riser 입구
+    riser:
+      node_id: 140
+      type: pipe
+      cells: 5
+      channels: 12                      # [원문] inlet channel, 내부 152 × 660 mm
+      channel_depth_m: 0.1524
+      channel_width_m: 0.6604           # M04: '길이 66.04 cm' 해석 확인 필요
+      flow_area_m2: 1.2077              # [계산] 12 × 0.1524 × 0.6604
+      hydraulic_diameter_m: 0.2477      # [계산]
+      length_m: 12.74
+      volume_m3: 15.39
+      z_inlet_m: 0.85
+      z_outlet_m: 13.59
+      dz_m: 12.74
+    upper_plenum:
+      node_id: 150
+      type: branch
+      cells: 1
+      cross_section_area_m2: 33.70      # [가정] RPV 내경 원통 (상한). M02
+      length_m: 2.744
+      volume_m3: 92.5
+      z_bottom_m: 13.4339
+      z_top_m: 16.1779
+      z_inlet_m: 13.59                  # riser 출구
+      z_outlet_m: 13.4339               # 노심 상단 (CRE 상면)
+    lower_plenum:
+      node_id: 230
+      type: branch
+      cells: 1
+      cross_section_area_m2: 27.77      # [계산] 배럴 내경 원통
+      porosity: 0.6                     # [원문] R1 Table I.9
+      length_m: 0.9005
+      volume_m3: 15.0                   # [계산] A·L·공극률
+      z_bottom_m: 1.0351
+      z_top_m: 1.9356
+      z_inlet_m: 1.9356                 # 노심 하단 (포스트 블록 하면)
+      z_outlet_m: 1.58                  # [도면해석] hot duct 중심 = 플레넘 바닥 위 21.5 in (M08 식 6a)
+    hot_duct:
+      node_id: 240
+      type: pipe
+      cells: 2
+      flow_area_m2: 1.112               # [계산] D 1.19 m (R8). R1 내반경 0.597 m 기준이면 1.120
+      hydraulic_diameter_m: 1.19        # [원문] R8 §4.4.4.1.2.4
+      length_m: 6.5                     # [가정] 수평 2구간 × ≈2.76 m + 90° 엘보 (M07)
+      volume_m3: 7.23
+      z_inlet_m: 1.58                   # [계산] 기준면 P에서 수평 (M08)
+      z_outlet_m: 1.58
+      dz_m: 0.0
+    sg_inlet_plenum:
+      node_id: 300
+      type: branch
+      cells: 1
+      volume_m3: null                   # [미확보] 엘보·분배 cone
+      z_top_m: 2.98                     # [원문 도면] SGS 상단
+      z_inlet_m: 1.58                   # hot duct 유입 (P)
+      z_outlet_m: -1.47                 # [계산] FSH 번들 상단. P 기준 −3.05
+    sg_outlet_plenum:
+      node_id: 330
+      type: branch
+      cells: 1
+      volume_m3: null                   # [미확보] 180° 전환
+      z_bottom_m: -14.7                 # [계산] 출구 cone 하단
+      z_top_m: -12.02
+      z_inlet_m: -12.02                 # EES 번들 하단
+      z_outlet_m: -12.5                 # [계산] shroud 하단 = 환형 상승부 입구. 체적은 −14.7까지 내려갔다 돌아 나옴
+    sg_annulus_riser:
+      node_id: 340
+      type: pipe
+      cells: 3
+      flow_area_m2: null                # [미확보] M11 (shroud 외경 4.10 m vs 용기 내경 ≈4.02 m 불일치)
+      hydraulic_diameter_m: null
+      length_m: 20.7                    # [계산] 수직 상승 길이 (M08). 판 1.0 노드표의 가정 ≈10 m를 대체
+      volume_m3: null
+      z_inlet_m: -12.5
+      z_outlet_m: 8.2                   # 순환기 흡입 (SG 용기 상단)
+      dz_m: 20.7                        # PCC 때 주루프 자연순환·역류 판단의 부력항에 직접 들어감
+    mc_inlet_mlsv:
+      node_id: 350
+      type: valve                       # MLSV: 이중 flapper 체크밸브, 역류 차단
+      cells: 1
+      volume_m3: null
+      z_inlet_m: 8.2                    # [계산] SG 용기 상단
+      z_outlet_m: 8.2
+
+  # 정체 He 공간: 유로는 아니지만 He 재고량(목표 2,585 kg, R22)에 포함 (보고서 §4.6)
+  stagnant_volumes:
+    barrel_rpv_gap:
+      volume_m3: 19.6                   # [계산] r 3.201–3.275 m
+    uptps_upper_space:
+      volume_m3: 22.9                   # [계산]
+  # 확인된 체적 합 ≈ 210 m³(He ≈ 1,123 kg). 나머지 ≈ 1,462 kg은 SG 용기 내부(≈330 m³),
+  # 110·300·330·340·350 노드, 흑연 기공에 있다 (M10).
+
+# ---------------------------------------------------------------------
+# 증기발생기 (HeatExchanger Composite, Role 4) — PSID Amd.3–6, R19 Table 5.3-8
+#   수직 헬리컬 코일 관류식. He는 shell 측 하향(FSH → EES), 물·증기는 관내 상향.
+# ---------------------------------------------------------------------
 heat_exchanger:
-  axial_cells: null
-  heat_transfer_area_m2: null
+  # ----- 기존 스키마 키 -----
+  axial_cells: 9                 # [계산] He 측 FSH 1셀(310) + EES 8셀(320). 2차측 500도 9셀
+  # cell (9,), He 유동 순서(FSH → EES 위 → 아래). 관 외면 기준.
+  # 셀 면적은 번들 높이에 비례 배분 (FSH/EES별 관 길이 미공개). 합 4020.0 — 팀 결정 2026-11-26
+  heat_transfer_area_m2: [396.883, 452.890, 452.890, 452.890, 452.890,
+                          452.890, 452.890, 452.890, 452.890]
+  heat_transfer_area_total_m2: 4020.0    # [원문] = N·π·d_o·L (350 × π × 0.022225 × 164.5)
+  area_basis: tube_outer_surface
+
+  helium_side:
+    inlet_node: 300
+    outlet_node: 330
+    fsh_node_id: 310
+    ees_node_id: 320
+    cell_height_m: [0.861, 0.9825, 0.9825, 0.9825, 0.9825,
+                    0.9825, 0.9825, 0.9825, 0.9825]   # FSH 0.861 + EES 7.86/8
+    # 셀 경계 고도 (10,), He 유동 순서 (M08, 판 1.1 §3.4) [계산]
+    #   FSH −1.47 ~ −2.33, FSH–EES 간격 −2.33 ~ −4.16 (1.83 m), EES −4.16 ~ −12.02
+    #   간격(이종용접부 공간)은 전열면이 없어 FSH 셀(0)에 붙였다 — 팀 결정 2026-11-26 (보고서: '310 또는 320에 붙임').
+    #   간격의 He는 FSH 출구 온도이므로 셀 0의 출구 상태와 같다.
+    #   그래서 셀 0의 고도 범위는 2.69 m이고 전열 높이 cell_height_m[0] = 0.861 m와 다르다.
+    elevation_profile_m: [-1.47, -4.16, -5.1425, -6.125, -7.1075,
+                          -8.09, -9.0725, -10.055, -11.0375, -12.02]
+    fsh_ees_gap_attached_to_cell: 0
+    shell_flow_area_total_m2: 9.23       # [계산] shroud 환형 π/4(3.56² − 0.96²), 관 단면 미차감
+    min_free_flow_area_m2: null          # [미확보] M11, Zukauskas 상관식에 필요
+    hydraulic_diameter_m: null           # [미확보]
+
+  # 2차측 관내 유동(노드 500)은 SG-2 상세 모델용이다. 1차계통 해석 코드의 SG-0은 2차측을
+  # 일정 온도·일정량의 액체 물로 두고 열이 빠져나가는 것만 모사한다 (operation.yaml boundaries.sg_heat_sink)
+  secondary_side:
+    node_id: 500
+    inlet_boundary: 900                  # 급수 TDV
+    outlet_boundary: 910                 # 주증기 TDV
+    # 2차측 cell은 자기 유동 순서(아래 → 위). k번째 cell ↔ He cell (8 − k), 대향류
+    cell_to_helium_cell: [8, 7, 6, 5, 4, 3, 2, 1, 0]
+    tube_length_per_cell_m: [18.532, 18.532, 18.532, 18.532, 18.532,
+                             18.532, 18.532, 18.532, 16.241]   # 높이비례 (팀 결정), 합 164.5
+    flow_area_m2: 0.06708                # [계산] 350 × π/4 × d_i². 보고서 표는 반올림 치수로 0.0669
+    hydraulic_diameter_m: 0.015621       # [계산] d_i = d_o − 2t. 보고서 표 0.0156
+    length_m: 164.5
+    volume_m3: 11.03                     # [계산] 보고서 표 11.00
+
+  tubes:
+    count: 350                           # [원문] PSID Amd.3–6. 설계 개정에 따라 관 수 상이 가능
+    helix_rows: 34
+    outer_diameter_m: 0.022225           # [원문] 0.875 in (Table 5.3-8의 mm 값은 환산 오류 → in 값 사용)
+    wall_thickness_m: 0.003302           # [원문] 0.130 in
+    effective_length_m: 164.5            # [원문] 평균 유효 관 길이
+    inner_diameter_m: 0.015621           # [계산] d_o − 2t
+    inner_surface_area_total_m2: 2825.48 # [계산] 350 × π × d_i × 164.5 (보완본[4] 439관 판 2830.06 대체)
+    wall_volume_m3: 11.302               # [계산] 350 × π/4 × (d_o² − d_i²) × 164.5 (439관 판 11.32 대체)
+    pitch_radial_m: 0.0381
+    pitch_axial_m: 0.0366
+    material: {fsh: Alloy_800H, ees: 2.25Cr-1Mo}
+
+  bundle:
+    ees_height_m: 7.86                   # [원문] R22는 7.59 (상충)
+    fsh_height_m: 0.861                  # [원문] R22는 0.86
+    coil_outer_diameter_m: 3.518
+    coil_inner_diameter_m: 1.00
+    outer_shroud_inner_diameter_m: 3.56
+    inner_shroud_outer_diameter_m: 0.96
+    fsh_ees_gap_height_m: 1.83           # [원문 도면] 6 ft, 이종용접부 공간 (R19 Fig. 5.3-10). 간격 안 관 길이는 미확보
+
+  vessel:
+    outer_diameter_m: [4.18, 4.30]       # [원문] 구간별 범위 (R19 p.5.2-18)
+    length_m: 26.4
+    wall_thickness_candidates_m: [0.0826, 0.140]   # 적용 구간 미상
+    material: SA533B_Cl1                 # RV와 동일
+    z_bottom_m: -18.2                    # [원문 도면] 하부헤드·급수 노즐, P − 19.8 m (64.9 ft) (M08)
+    z_top_m: 8.2                         # [계산] 상부헤드 = 순환기 장착면, 바닥 + 용기 길이 26.4 m
+
+# ---------------------------------------------------------------------
+# 주순환기 (Compressor, Role 2)
+# ---------------------------------------------------------------------
 compressor:
-  location: null
+  location: main_circulator      # 기존 스키마 키. flow_network.nodes 인스턴스 ID (노드 100)
+  inlet_from: mc_inlet_mlsv      # 350
+  outlet_to: mc_discharge_plenum # 110
+  type: 단단 축류 압축기, 전동기 직결, 능동 자기베어링   # [원문] R19 §5.3.2
+  rotational_inertia_kg_m2: null # [미확보] M09. 코스트다운(≈94 s MLSV 닫힘)으로 역산 예정
+  performance_curve: null        # [미확보] M09
+
+# ---------------------------------------------------------------------
+# 연결부 (보고서 §4.3). from/to는 노드 번호. K_form은 압력손실 보정 후 기록
+# ---------------------------------------------------------------------
+junctions:
+  J01: {from: 100, to: 110}       # 순환기 토출
+  J02: {from: 110, to: 120}
+  J03: {from: 120, to: 130}
+  J04: {from: 130, to: 140}       # riser 입구
+  J05: {from: 140, to: 150}       # riser 출구
+  J06: {from: 150, to: 200}       # 노심 상단 분기
+  J07: {from: 150, to: 210}
+  J08: {from: 150, to: 220}
+  J09: {from: 200, to: 230}       # 노심 하단 합류
+  J10: {from: 210, to: 230}
+  J11: {from: 220, to: 230}
+  J12: {from: 230, to: 240}       # 출구 플레넘 → hot duct
+  J13: {from: 240, to: 300}       # hot duct → SG 입구 플레넘
+  J14: {from: 300, to: 310}       # 분배 cone → FSH
+  J15: {from: 310, to: 320}       # FSH → EES
+  J16: {from: 320, to: 330}       # EES → SG 출구 플레넘
+  J17: {from: 330, to: 340}       # 180° 전환
+  J18: {from: 340, to: 350}
+  J19: {from: 350, to: 100}       # MLSV → 순환기 흡입
+  J20: {from: 230, to: 400}       # SCS 운전 시만 유동 (중앙 덕트)
+  J21: {from: 400, to: 410}
+  J22: {from: 410, to: 420}
+  J23: {from: 420, to: 130}       # SLSV → RV 하부 토출
+  J90: {from: 900, to: 500}       # 급수 유입
+  J91: {from: 500, to: 910}       # 주증기 유출
+  # 모든 연결부의 K_form은 미정(null). 아래 보정 목표로 Role 2가 산정한다.
+
+# PSID 정격 압력손실 배분 (R19 Table 5.3-5) [원문] — K 보정 목표, Pa
+#   K_j = 2ρ_j(Δp_target,j − Δp_fric,j)/G_j² (보고서 식 7)
+#   목표값은 비가역 손실(마찰 + 형상)로 보고 정수압 ρgΔz는 노드 고도로 따로 계산한다 [가정].
+#   M08 고도와 정격 밀도로 개략 계산한 루프 정수압 합은 −0.39 ~ −0.46 kPa이다
+#   (정방향 유동을 거스름, 순환기 승압의 약 0.5 %).
+pressure_loss_calibration:
+  circulator_pressure_rise_Pa: 91000
+  segments:
+    mc_outlet_to_core_inlet:  {junctions: [J02, J03, J04], initial_Pa: 2700, margin_Pa: 690, design_Pa: 3400}
+    riser:                    {junctions: [J05], nodes: [140], initial_Pa: 4400, margin_Pa: 410, design_Pa: 4800}
+    core:                     {junctions: [J06, J07, J08, J09, J10, J11], nodes: [200, 210, 220],
+                               initial_Pa: 29800, margin_Pa: 4600, design_Pa: 34500}   # 우회 11 %가 되도록 K 보정
+    core_outlet_plenum:       {junctions: [J12], initial_Pa: 10300, margin_Pa: 5500, design_Pa: 15800}
+    hot_duct:                 {junctions: [J13], nodes: [240], initial_Pa: 3900, margin_Pa: 890, design_Pa: 4800}
+    sg_inlet_plenum:          {junctions: [J14], initial_Pa: 1700, margin_Pa: 340, design_Pa: 2100}
+    sg_bundle:                {junctions: [J15, J16], nodes: [310, 320], initial_Pa: 17600, margin_Pa: 2410, design_Pa: 20000}
+    sg_outlet:                {junctions: [J17], initial_Pa: 2700, margin_Pa: 690, design_Pa: 3400}
+    mc_inlet:                 {junctions: [J18, J19], initial_Pa: 1600, margin_Pa: 410, design_Pa: 2000}
+  # design 합 90.8 kPa ≈ 순환기 승압 91 kPa
+  secondary_side_pressure_drop_Pa: 3344000   # J90→J91, R19 Table 5.1-1
+
+# ---------------------------------------------------------------------
+# 열구조체 (보고서 §4.5). inner/outer = 내측(좌)·외측(우) 경계 노드
+# ---------------------------------------------------------------------
+heat_structures:
+  HS-01: {name: 연료블록(평균), material: [H-451, fuel_compact], inner: 200, outer: [HS-03, HS-04],
+          geometry: "단위격자(냉각공 1 + 연료공 2), 10 축셀", owner: 3}
+  HS-02: {name: 고온 연료블록, material: [H-451, fuel_compact], inner: 210, outer: null,
+          geometry: "1 기둥, 10 축셀, 출력첨두계수 적용", owner: 3}
+  HS-03: {name: 내측 반사체, material: H-451, r_m: [0.0, 0.824], inner: 220, outer: HS-01, owner: 3}
+  HS-04: {name: 외측 교체반사체, material: H-451, r_m: [1.743, 2.413], inner: 220, outer: HS-05, owner: 3}
+  HS-05: {name: 영구반사체, material: graphite_2020, r_m: [2.413, 2.970], inner: 220, outer: HS-06,
+          gap_to_outer_m: 0.0035, owner: 3}
+  HS-06: {name: 노심배럴, material: Alloy_800H, r_m: [2.973, 3.049], z_m: [1.04, 13.59],
+          inner: HS-05, outer: 140, owner: "3/4"}
+  HS-07: {name: RPV 측벽, material: SA533B_Cl1, r_m: [3.275, 3.408],
+          inner: stagnant_gap, outer: 930, owner: 4}   # 외측: RCCS 복사 + 자연대류
+  HS-08: {name: 축방향 반사체·CRE·포스트 블록, material: [H-451, graphite_2020, Alloy_800H],
+          z_m: [[1.94, 3.92], [11.85, 13.43]], inner: [200, 210, 220], outer: null, owner: 3}
+  HS-09: {name: MCSS·세라믹 타일·RPV 하부헤드, material: [Alloy_800H, ceramic, SA533B_Cl1],
+          z_m: [0.0, 1.04], inner: 130, outer: [230, cavity], owner: 4}   # 층 두께 M05
+  HS-10: {name: UPTPS·RPV 상부헤드, material: [Alloy_800H, SA533B_Cl1], z_m: [16.18, 17.46],
+          inner: 150, outer: 930, owner: 4}
+  HS-11: {name: Hot duct 벽·단열층, material: [Alloy_800H, fiber_insulation], r_m: [0.597, 0.673],
+          inner: 240, outer: 120, owner: "2/4"}   # R8: 외경 1.37 m, 벽 13 mm, 단열 76 mm
+  HS-12: {name: SG 전열관, material: [2.25Cr-1Mo, Alloy_800H], inner: [310, 320], outer: 500,
+          geometry: "heat_exchanger.tubes 참조", owner: 4}
+  HS-13: {name: SG 용기, material: SA533B_Cl1, inner: 340, outer: sg_cavity,
+          geometry: "heat_exchanger.vessel 참조", owner: 4}
+  HS-14: {name: SCHE 관, material: 2.25Cr-1Mo, inner: 400, outer: 920,
+          geometry: "scs.sche_tubes 참조", owner: 4}
+
+# ---------------------------------------------------------------------
+# 원자로공동냉각계통 (RCCS, Role 4)
+# ---------------------------------------------------------------------
+rccs:
+  # RCCS-0: 고정 온도 경계 (1차 구현). 경계 온도 30 °C는 시나리오 입력
+  boundary:
+    node_id: 930
+    radius_m: 4.633                # [원문] R1 Table I.10
+    top_z_m: 18.6813               # [원문]
+    emissivity: 0.80               # [원문] R1 §I.8.1
+    bottom: adiabatic              # 하부 단열
+    cavity_air: stagnant_1atm
+  # RCCS-1 패널 참고값 — 1차 구현에서는 사용하지 않음. 두 출처의 형상이 다르다.
+  panel_reference:
+    psid:                          # R19 §5.5.4.1
+      panels: 12                   # 4 사분면 × 3
+      upper_plenum_height_m: 4.6
+      heated_height_m: 17.0
+      material: carbon_steel
+    design_description:            # R23 §2.3, Table F-3
+      riser_tubes: 227
+      tube_outer_m: [0.0508, 0.254]   # 2 × 10 in
+      tube_wall_m: 0.0047625          # 0.1875 in
+      height_m: 19.2                  # 63 ft
+      air_flow_area_m2: 2.291         # 24.66 ft²
+      hydraulic_diameter_m: 0.0707    # 0.232 ft
+      loss_coefficient_K: 9.83
+      emissivity: 0.8
+    chimney_height_m: null            # 상충: 노심 상단 위 26 m / 지상 14 m(PSID) / 지상 29 m(R23)
+
+# ---------------------------------------------------------------------
+# 정지냉각계통 (SCS) — S1b에서만 사용, 그 외 시나리오에서는 상실 가정
+# ---------------------------------------------------------------------
+scs:
+  nodes:
+    sche_shell:
+      node_id: 400
+      type: pipe
+      cells: 2
+      flow_area_m2: 1.64            # [계산·근사]
+      length_m: 4.0                 # [가정] ≈4 m, 하향
+      volume_m3: null
+    scs_circulator:
+      node_id: 410
+      type: pump                    # 2단 축류, 149 kW, 10,000 rpm
+    slsv:
+      node_id: 420
+      type: valve                   # 정상운전 시 닫힘
+  sche_tubes:
+    count: 43
+    rows: 8
+    outer_diameter_m: 0.0222
+    wall_thickness_m: 0.00254
+    effective_length_m: 46.3
+    material: 2.25Cr-1Mo
+
+# ---------------------------------------------------------------------
+# 경계 노드 (9xx). 경계값(온도·압력·유량)은 operation/scenario 입력
+# ---------------------------------------------------------------------
+boundaries:
+  feedwater_tdv: {node_id: 900, medium: water}
+  main_steam_tdv: {node_id: 910, medium: water}
+  scs_water_tdv: {node_id: 920, medium: water}
+  rccs_boundary: {node_id: 930, medium: thermal}
+
+# ---------------------------------------------------------------------
+# 재료 (열구조체용). 온도·조사량 의존 물성 식은 data/properties/r1_benchmark_properties.yaml,
+# 비조사 표 값은 data/properties/graphite.csv·helium.csv (R1 Appendix IV)
+# ---------------------------------------------------------------------
+materials:
+  H-451:            {density_kg_m3: 1850, emissivity: 0.85, source: "R1 Tables AIV.2-3", k_and_cp: temperature_fluence_dependent}
+  graphite_2020:    {density_kg_m3: 1780, emissivity: 0.85, source: "R1 Tables AIV.4-5", k_and_cp: temperature_fluence_dependent}
+  Alloy_800H:       {density_kg_m3: 7800, conductivity_W_mK: 17.8, cp_J_kgK: 515, emissivity: 0.85,
+                     source: "R1 Table AIV.9"}
+  SA533B_Cl1:       {density_kg_m3: 7500, conductivity_W_mK: 40.0, cp_J_kgK: 580, emissivity: 0.85,
+                     effective_emissivity: 0.74, source: "R1 Table AIV.12"}
+  2.25Cr-1Mo:       {density_kg_m3: null, conductivity_W_mK: null, cp_J_kgK: null, source: null}   # [미확보]
+  ceramic:          {density_kg_m3: 1310, cp_J_kgK: 1100, emissivity: 0.85, source: "R1 Table AIV.10",
+                     conductivity: temperature_dependent}    # MCSS 위 세라믹 타일 (Ceraform 1000)
+  fiber_insulation: {density_kg_m3: 128, cp_J_kgK: 1130, emissivity: 0.85, source: "R1 Table AIV.11",
+                     conductivity: temperature_dependent}    # cross duct·UPTPS 단열재 (Kaowool)
+  fuel_compact:     {density_kg_m3: null, conductivity_W_mK: null, cp_J_kgK: null, source: null}   # Role 3
+  surface_roughness_m: 0.0          # [원문] R1 §I.8.1 매끈한 관 가정

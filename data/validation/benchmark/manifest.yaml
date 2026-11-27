@@ -1,0 +1,89 @@
+# =====================================================================
+# 벤치마크 비교 자료 목록 (Role 1)
+# =====================================================================
+# S0 core_benchmark(config/scenarios/steady_state.yaml)와 비교할 자료의 출처·위치·조건.
+# 저작권 때문에 원문 PDF는 저장소에 넣지 않고 위치만 기록한다. 그림 값은 디지털화하지 않았다.
+# 표에서 옮긴 숫자는 SI로 바꿔 적고 원문 단위를 주석에 남긴다.
+# 쪽 번호는 PDF 파일의 쪽 번호다 (인쇄 쪽 번호와 다를 수 있음). 2026-11-26 원문 대조.
+# 이 자료들은 코드 간 비교용 계산 결과이며 실험 측정값이 아니다.
+# =====================================================================
+
+definition:
+  id: R1
+  title: "Benchmark of the Modular High-Temperature Gas-Cooled Reactor (MHTGR)-350 MW Core Design, Volumes I and II"
+  report: NEA/NSC/R(2017)4
+  year: 2018
+  url: "https://oecd-nea.org/upload/docs/application/pdf/2020-01/dir1/nsc-r2017-4.pdf"
+  access: public
+  locations:
+    thermal_fluids_definition: "§I.8, pp.37–44"
+    main_flow_specifications: "Table I.8, p.40"
+    flow_parameters_porosity: "Table I.9, p.40"
+    boundary_conditions: "Table I.10, p.41"
+    bypass_type_I: "Table I.11, p.43"
+    bypass_gaps_type_II: "Table I.12, p.43"
+    exercise_2_subcases: "§II.1.1.2, p.47"
+    convergence_criteria: "Table II.1, p.48"
+    axial_reporting_mesh: "Figure II.7, p.53"
+    thermophysical_properties: "Appendix IV, pp.81–96"
+  exercise_2_subcases:            # R1 §II.1.1.2
+    2a: {bypass: none, properties: fixed}
+    2b: {bypass: type_I_11pct, properties: fixed}
+    2c: {bypass: type_I_11pct, properties: variable}
+    2d: {bypass: type_II_explicit_gaps, properties: variable}
+  participant_only_inputs:        # R1 Appendix VII·VIII: 벤치마크 참가자에게만 제공 → 미확보
+    - "OECD-MHGTR350-power.inp: Ex. 2 블록별 출력밀도"
+    - "조사량·연소도 맵 (Figure I.12/I.14 번호): Ex. 2c 가변 물성"
+    - "OECD-MHGTR350-decayheat.inp: Phase II 과도 붕괴열"
+    - "loaddist.f90, mtplook.f90: 분포 읽기·물성 계산 FORTRAN 루틴"
+
+results:
+  - id: R3
+    title: "RELAP5-3D Results for Phase I (Exercise 2) of the OECD/NEA MHTGR-350 MW Benchmark"
+    authors: "G. Strydom, A. Epiney"
+    report: "INL/CON-12-24604 (ICAPP'12, preprint)"
+    url: "https://www.osti.gov/biblio/1045487"
+    access: public
+    code: RELAP5-3D, 노심 3링(fuel ring) 모델
+    exercise: "Phase I Ex. 2, Type I 우회 (Table III에 영역별 우회분율 계 10.90 %)"
+    boundary_conditions: >-
+      입구 압력 6.39 MPa, 출력 350 MW, 노심 입·출구 259/687 °C를 경계로 주고 유량을 구함.
+      R1 Table I.8(출구 6.39 MPa, 유량 157.1 kg/s)과 다르다.
+    locations:
+      bypass_target_vs_model: "Table III, p.6"
+      global_parameters: "Table IV, p.6"
+      ring_averaged_power_density: "Fig. 6, p.7"
+      axial_solid_temperatures: "Fig. 7, p.7"
+    values:                       # R3 Table IV
+      core_inlet_temperature_K: 532.15     # 259 °C (경계)
+      core_outlet_temperature_K: 960.15    # 687 °C (경계)
+      inlet_mass_flow_kg_s: 154.33         # 결과
+      outlet_pressure_Pa: 6360000          # 6.36 MPa, 결과
+      core_pressure_drop_Pa: 19950         # 19.95 kPa, 결과
+      fuel_temperature_max_K: 1261.15      # 988 °C, 부수로 평균. TRISO 모델 없음
+      core_barrel_temperature_avg_K: 595.15   # 322 °C
+    digitized: table_only
+
+  - id: R4
+    title: "Comparison of the PHISICS/RELAP5-3D Ring and Block Model Results for Phase I of the OECD/NEA MHTGR-350 Benchmark"
+    authors: "G. Strydom, A. Epiney, A. Alfonsi, C. Rabiti"
+    report: "INL/JOU-14-33637 (2016, 저널 게재 승인 원고)"
+    url: "https://www.osti.gov/pages/servlets/purl/1248189"
+    access: public
+    code: PHISICS/RELAP5-3D, 링 모델과 블록 모델
+    exercise: "Phase I Ex. 2a–2d, Ex. 3a·3b"
+    boundary_conditions: >-
+      출구 압력 6.39 MPa, 입구 259 °C, 출력 350 MW. 출구 687 °C가 되도록 시간의존 junction이
+      입구 유량을 조절 (p.14). R1 Table I.8과 같은 압력 위치.
+    locations:
+      model_description: "§III.C, pp.13–19"
+      exercise_2_results_text: "§IV, pp.20–24"
+      exercise_2_definitions: "Table III, p.56"
+      fixed_properties_ex2ab: "Table VI(재료 물성), p.57 — R1 Table AIV.1과 같은 값"
+      block_9_fuel_temperatures_ex2a: "Fig. 16, p.46"
+    values: null                  # 주요 결과는 그림(온도 분포도)이라 디지털화 필요
+    digitized: false
+
+not_yet_obtained:
+  - "Phase I Ex. 2 전체 참가자 코드 간 비교 결과 (공개 여부 미확인)"
+  - "R5 Ex. 1(중성자) 결과는 S0 열수력 비교에 필요 없어 제외"
