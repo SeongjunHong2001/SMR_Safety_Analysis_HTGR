@@ -302,4 +302,3 @@ Protocol 만족, 파일 계수와 R = R_u/M·c_v = c_p − R 일관성, Role 1 `
   - 배관·SG: `inlet`/`outlet` 튜플
   - 노심: 유로별 `face_K`
 - S0 보정값은 `config/calibration/s0_pressure_loss_K.yaml`이다. 변수표 patch에 `K_form_fluid_fwd` 행을 추가했다 (46행).
-
