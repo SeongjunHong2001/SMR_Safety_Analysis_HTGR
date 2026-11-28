@@ -41,7 +41,7 @@ def test_constants_come_from_r1_file_and_are_consistent(he, r1_yaml):
     assert he.R == r1_yaml["specific_gas_constant_J_kgK"]
     assert math.isclose(he.R, r1_yaml["universal_gas_constant_J_molK"] / r1_yaml["molar_mass_kg_mol"], rel_tol=1e-6)
     assert he.cp_const == r1_yaml["cp_J_kgK"]
-    # 팀 결정(2026-11-26): R1 세트 R 2077.46, c_p 5195, c_v = c_p − R = 3117.54
+    # [제안] (2026-11-26): R1 세트 R 2077.46, c_p 5195, c_v = c_p − R = 3117.54
     assert math.isclose(he.R, 2077.46, rel_tol=1e-9)
     assert math.isclose(float(he.cv(6.39e6, 900.0)), 3117.54, abs_tol=1e-9)
     assert math.isclose(float(he.cp(6.39e6, 900.0) - he.cv(6.39e6, 900.0)), he.R, rel_tol=1e-12)

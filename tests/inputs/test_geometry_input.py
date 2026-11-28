@@ -208,7 +208,7 @@ def test_sg_area_cells_and_tubes_are_consistent():
 
     # 관 내경·내면적·벽 체적도 같은 PSID 관 세트(350관 × 164.5 m)에서 계산
     n_t, L_t, d_o = tubes["count"], tubes["effective_length_m"], tubes["outer_diameter_m"]
-    assert n_t == 350, "SG 관 수는 PSID 기준 (팀 결정 2026-11-26)"
+    assert n_t == 350, "SG 관 수는 PSID 기준 ([제안] 2026-11-26)"
     assert math.isclose(tubes["inner_diameter_m"], d_i, rel_tol=1e-4)
     assert math.isclose(tubes["inner_surface_area_total_m2"], n_t * math.pi * d_i * L_t, rel_tol=1e-4)
     assert math.isclose(tubes["wall_volume_m3"], n_t * math.pi / 4 * (d_o ** 2 - d_i ** 2) * L_t, rel_tol=1e-4)

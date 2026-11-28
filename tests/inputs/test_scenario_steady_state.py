@@ -155,7 +155,8 @@ def test_system_loop_values_match_operation():
     assert comp["circulator_inlet_pressure_Pa"] == psid["pressure_Pa"]["circulator_inlet"]
     assert comp["circulator_pressure_rise_Pa"] == _geo()["pressure_loss_calibration"]["circulator_pressure_rise_Pa"]
     assert comp["sg_heat_removal_W"] == psid["sg_net_heat_load_W"]
-    assert comp["helium_inventory_kg"] == op["helium_inventory"]["reference_kg"]
+    assert comp["helium_inventory_total_estimate_kg"] == op["helium_inventory"]["reference_kg"]
+    assert op["helium_inventory"]["stagnant_volume_temperature_K"] > 273.15
 
 
 def test_pressure_bases_differ_only_by_documented_offset():

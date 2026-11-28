@@ -22,19 +22,19 @@
 #   - 상태 표시: [원문] 원문 확인, [계산] 원문 기반 계산값, [제안] 보고서의
 #     담당 1 제안(팀 합의 대기), [가정] 가정, [미확보] 자료 없음.
 #
-# 압력 기준 — 팀 결정 2026-11-26 (보고서 D2): 압력 분포는 PSID 절대압 기준이다
+# 압력 기준 — [제안] 2026-11-26 (보고서 D2): 압력 분포는 PSID 절대압 기준이다
 #   (순환기 토출 6.38 MPa(a) = 925 psia). 노심 단독 벤치마크 비교 조건(S0 core_benchmark)만
 #   R1의 노심 출구 6.39 MPa를 경계로 쓴다 (절대압 해석은 M06 제안). 두 값의 차이는 약 0.8 %다.
-# 헬륨 물성 — 팀 결정 2026-11-26: R1 값으로 전 계통 통일 (R = 8.314/0.004002 = 2077.46, c_p = 5195)
+# 헬륨 물성 — [제안] 2026-11-26: R1 값으로 전 계통 통일 (R = 8.314/0.004002 = 2077.46, c_p = 5195)
 # =====================================================================
 
 meta:
   reference_design: MHTGR-350
   source_report: "[1] 기준 설계와 계통 구성 조사 보고서 v1.0 (2026-11-26)"
   operating_point: rated_100_percent
-  pressure_basis: psid_absolute_loop_distribution   # 팀 결정 2026-11-26 (보고서 D2)
+  pressure_basis: psid_absolute_loop_distribution   # [제안] 2026-11-26 (보고서 D2)
   pressure_reference: absolute
-  helium_property_set: data/properties/r1_benchmark_properties.yaml#helium   # 팀 결정: 전 계통 R1 값
+  helium_property_set: data/properties/r1_benchmark_properties.yaml#helium   # [제안] 전 계통 R1 값
 
 # ---------------------------------------------------------------------
 # 1) 초기값 (기존 스키마 키)
@@ -131,7 +131,7 @@ boundaries:
     main_steam_pressure_Pa: 17300000     # 17.3 MPa
     # 2차측 압력강하 3344 kPa는 geometry.yaml pressure_loss_calibration
 
-  # SG-0 열침원 — 팀 결정 2026-11-26
+  # SG-0 열침원 — [제안] 2026-11-26
   #   1차계통 해석 코드이므로 SG 2차측은 일정량·일정 온도의 액체 물로 두고, He에서 물로
   #   열이 빠져나가는 것만 모사한다. 2차측 유동·비등 등 상변화는 모사하지 않는다.
   #   He 측 셀 i의 제거열: Q_i = U · A_i · (T_He,i − T_water)
@@ -152,13 +152,19 @@ boundaries:
   # RCCS-0 고정 온도 경계 [원문] R1 Table I.10 #4. 위치와 방사율 0.80은 geometry.yaml rccs.boundary
   rccs:
     model_level: RCCS-0
-    boundary_temperature_K: 303.15       # 30 °C. R3(INL)은 20 °C, 실제 플랜트 외기 설계값은 21 °C
+    boundary_temperature_K: 303.15       # 30 °C. R3(INL)은 20 °C, 실제 플랜트 외기 설계값은 21 °C.
+                                         #   사용자 결정 2026-11-27: system_loop도 30 °C 유지 (21 °C는 패널이 아닌 외기 온도)
 
 # ---------------------------------------------------------------------
 # 4) 헬륨 재고량
 # ---------------------------------------------------------------------
 helium_inventory:
-  reference_kg: 2585                     # [원문] 5,700 lb, RV + SG 용기 + cross duct (R22 Table F-1 각주 b)
+  reference_kg: 2585                     # [원문] 5,700 lb, RV + SG 용기 + cross duct (R22 Table F-1 각주 b).
+                                         #   사용자 결정 2026-11-27: 비교 기준. 정체 공간을 포함한 총재고 추정값과 비교한다
+  # 정체 공간(geometry.yaml flow_network.stagnant_volumes)의 He 온도. 유로가 아니라 상태가 없으므로 비교용 재고 추정에만 쓴다.
+  #   과도 질량 보존 진단은 모델 유로 체적의 질량만 쓴다 (validation/conservation.helium_mass)
+  stagnant_volume_temperature_K: 532.15  # [가정] 노심 입구 저온 He와 같게. 배럴–RPV 간극은 riser(≈533 K)·RPV(≈463 K) 사이,
+                                         #   UPTPS 위 공간은 상부 플레넘(≈534 K) 위. 정상 압력 p_sys에서 밀도를 계산한다
   conflicting_value_kg: 2900             # [원문] HPS 감압 요건 기준 (R19 Table 5.3-6) — 상충
   # 정상 초기화 제약: 확인된 노드 체적이 He 약 1,123 kg분뿐이라(M10) 재고량 제약은 아직 쓸 수 없다.
   # interface_spec §5에 따라 기준압 제약 p_sys − p_sys_initial = 0 을 쓰고 재고량은 정상해에서 유도해 2,585 kg과 비교한다.

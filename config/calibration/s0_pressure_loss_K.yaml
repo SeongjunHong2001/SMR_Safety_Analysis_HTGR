@@ -1,0 +1,99 @@
+# 자동 생성: python main.py --calibrate (system/calibration.py). 손으로 고치지 말고 다시 보정한다.
+# builder는 --calibration 으로 넘길 때만 이 K를 쓴다.
+meta:
+  kind: calibration
+  quantity: 연결부 형상손실계수 K_form (정·역 대칭 [가정]), 무차원, K 면의 동압 기준
+  method: '보고서 식 7: K ← K + (Δp_target − Δp_irr)/q, 구간 비가역 손실 = 마찰 + 형상손실'
+  basis:
+    scenario: steady_state
+    condition: system_loop
+    targets: geometry.yaml pressure_loss_calibration.segments.*.design_Pa (PSID R19
+      Table 5.3-5)
+  created_utc: '2026-11-28T01:56:53+00:00'
+  code_version:
+    commit: 7bcb152e0e32d493c7c2dd9e70360144ce68def1
+    branch: role5/s0-builder-calibration
+    dirty: true
+  depends_on_assumptions: []
+  input_fingerprint:
+    version: 1
+    sha256: 3638a791182f01e80dcfc0701cb1d6d5e55c9430d55049d8503fb9ac7c1c17f5
+    parts:
+      geometry: 4d43929ff49cb36eb1c630cd4728f1df30ea7f2559150e099ade4d01217c4d85
+      operation: a11679e9fca9d6c9163c01c0063e01a2fe921ba597d69bceffca27c7a5269c40
+      condition: b8d702c3a1ef0fbfdc3ab3a51906b0845428ed75c2a9ca0b0932391162f0a430
+      helium_properties: 596374f6b7e6a0168ba4966e885f644488d6b718b37e5f890a525c653dd88144
+      solid_properties: ba6d1e04f99331c0439ede45920675c7e1b6cf5f019af5a1e12def3efe228488
+  iterations: 3
+  segments_Pa:
+    mc_outlet_to_core_inlet:
+      target: 3400.0
+      irreversible: 3400.0
+      gravity: 0.0
+      acceleration: 1476.829
+    riser:
+      target: 4800.0
+      irreversible: 4800.0
+      gravity: 714.547
+      acceleration: -1473.445
+    core:
+      target: 34500.0
+      irreversible: 34499.997
+      gravity: -463.659
+      acceleration: 759.397
+    core_outlet_plenum:
+      target: 15800.0
+      irreversible: 15800.0
+      gravity: 0.0
+      acceleration: 3141.509
+    hot_duct:
+      target: 4800.0
+      irreversible: 4800.0
+      gravity: 0.0
+      acceleration: -3141.509
+    sg_inlet_plenum:
+      target: 2100.0
+      irreversible: 2100.0
+      gravity: 0.0
+      acceleration: 79.084
+    sg_bundle:
+      target: 20000.0
+      irreversible: 20000.0
+      gravity: -473.82
+      acceleration: -110.032
+    sg_outlet:
+      target: 3400.0
+      irreversible: 3400.0
+      gravity: 0.0
+      acceleration: 344.015
+    mc_inlet:
+      target: 2000.0
+      irreversible: 2000.0
+      gravity: 1172.48
+      acceleration: -344.015
+  circulator_pressure_rise_Pa: 91926.0
+  reversible_net_Pa: 1126.0
+  note: input_fingerprint와 같은 입력(형상·운전점·시나리오 조건·참조 물성·적용한 가정)에서만 유효하다. 다르면 builder가
+    적용을 거부하므로 python main.py --calibrate로 다시 만든다.
+geometry:
+  junctions:
+    J02:
+      K_form: -0.067651
+    J05:
+      K_form: 1.653685
+    J06:
+      K_form: 14.812714
+    J07:
+      K_form: 14.812714
+    J12:
+      K_form: 4.52943
+    J13:
+      K_form: 0.484297
+    J14:
+      K_form: 26.053923
+    J16:
+      K_form: 409.195161
+    J17:
+      K_form: 9.383296
+    J18:
+      K_form: 4.225278

@@ -3,7 +3,7 @@
 ``R1HeliumProperties``는 ``interfaces.contracts.HeliumProperties``의 9개 메서드를
 OECD/NEA MHTGR-350 벤치마크 물성(R1 = NEA/NSC/R(2017)4, Table AIV.13)으로 구현한다.
 계수는 ``data/properties/r1_benchmark_properties.yaml``의 ``helium`` 절에서 읽으며
-코드에 숫자를 따로 두지 않는다 (팀 결정 2026-11-26: 헬륨 물성은 R1 세트로 전 계통 통일).
+코드에 숫자를 따로 두지 않는다 ([제안] 2026-11-26: 헬륨 물성은 R1 세트로 전 계통 통일).
 
 식 (SI, T [K], p [Pa], h [J/kg])
     상태방정식   rho = p / (R T)                       이상기체

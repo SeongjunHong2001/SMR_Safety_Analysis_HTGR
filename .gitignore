@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 output/results/*.csv
+output/results/*.json
 output/logs/*
 output/figures/*
 outputs/

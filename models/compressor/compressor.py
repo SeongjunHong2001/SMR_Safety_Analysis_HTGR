@@ -3,7 +3,7 @@
 체적 없는 두 포트 장치. 포트는 ``helium_inlet``(흡입), ``helium_outlet``(토출)이다.
 
 모드 (``mode``)
-    "prescribed_flow"  S0 정상 초기화용 (팀 결정 2026-11-26: 성능곡선 미확보 → 유량 지정, 승압은 결과).
+    "prescribed_flow"  S0 정상 초기화용 ([제안] 2026-11-26: 성능곡선 미확보 → 유량 지정, 승압은 결과).
                        미지수 dp_comp (algebraic)와 유량식 ṁ_in − ṁ_set = 0. 과도 사고 해석에 쓰지 않는다.
     "performance"      승압 = performance.evaluate(speed=ω(t), mass_flow, inlet_state, geometry)["pressure_rise"].
                        ``performance``(CompressorPerformance)와 ``speed_schedule``(t → rad/s)을 반드시 준다.
