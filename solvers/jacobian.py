@@ -44,7 +44,9 @@ def finite_difference_jacobian(fun, x, *, rel_step=None, step_scales=1.0,
 
 
 def _sparse_jacobian(fun, x, f0, steps, sparsity):
-    pattern = sparse.csc_matrix(sparsity, dtype=bool)
+    # copy=True: 일부 SciPy(1.15.x)는 dtype 변환에서도 입력 행렬의 인덱스 배열을 공유한다.
+    # 아래 sum_duplicates/eliminate_zeros가 호출자의 행렬을 바꾸지 않도록 사본을 만든다.
+    pattern = sparse.csc_matrix(sparsity, dtype=bool, copy=True)
     if pattern.shape != (f0.size, x.size):
         raise ValueError("Jacobian sparsity must match residual and state dimensions")
     pattern.sum_duplicates()

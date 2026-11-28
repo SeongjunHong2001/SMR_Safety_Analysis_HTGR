@@ -72,3 +72,14 @@ def test_dassl_sparse_pattern_matches_dense_and_calls_preflight():
     assert len(checks) == 1
     assert checks[0][0] == 0.0 and checks[0][1] == pytest.approx(10.0)
     assert checks[0][2] < 1e-8
+
+
+def test_sparse_pattern_input_is_not_modified():
+    # 패턴 행렬에 명시적 0이 있어도 호출자의 행렬(값·인덱스)은 그대로여야 한다 (SciPy 1.15.x 인덱스 공유 회귀)
+    pattern = sparse.csc_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
+    pattern.data[0] = 0.0                      # 저장된 명시적 0
+    before = (pattern.data.copy(), pattern.indices.copy(), pattern.indptr.copy(), pattern.nnz)
+    finite_difference_jacobian(lambda x: 2.0 * x, np.ones(2), sparsity=pattern)
+    assert pattern.nnz == before[3]
+    assert np.array_equal(pattern.data, before[0]) and np.array_equal(pattern.indices, before[1])
+    assert np.array_equal(pattern.indptr, before[2])
