@@ -30,7 +30,7 @@ from solvers import DASSL
 from solvers.initialization import consistent_initialize
 from solvers.jacobian import finite_difference_jacobian
 from solvers.newton import NewtonOptions, newton_solve
-from system.builder import ROOT, BuiltSystem, build_system, load_inputs
+from system.builder import ROOT, BuiltSystem, build_system, fingerprint_of, load_inputs
 from validation import conservation
 
 SG_U_KEY = "sg.secondary.U_overall"
@@ -86,20 +86,23 @@ def settings_from_scenario(inputs) -> RunSettings:
 # =====================================================================
 # 공통 도구
 # =====================================================================
-def jacobian_pattern(system, t, y, ydot):
+def residual_pattern(residual, t, y, ydot, *, scale=None):
     """F_y와 F_ydot 비영 패턴의 합집합 + 대각 (bool 밀집 행렬).
 
-    y와 ydot을 같은 열에서 서로 다른 배율(1, 0.37)로 함께 섭동해 유한차분 한 번으로 합집합을 얻는다.
+    두 도함수를 따로 유한차분해 합친다. y와 ydot을 한 열에서 함께 섭동하면 F_y + c·F_ydot의 패턴이 되어,
+    두 항이 상쇄되는 열(예: F0 = y0 − c·y1 + ẏ1)에서 각각 비영인 성분이 빠진다.
+    ``scale``(상태 척도)로 나눈 변수에서 차분한다.
     """
     y, ydot = np.asarray(y, dtype=float), np.asarray(ydot, dtype=float)
-    scale = system.registry.scale_vector()
+    s = np.ones_like(y) if scale is None else np.asarray(scale, dtype=float)
+    J_y = finite_difference_jacobian(lambda z: residual(t, z * s, ydot), y / s, step_scales=1.0)
+    J_ydot = finite_difference_jacobian(lambda z: residual(t, y, z * s), ydot / s, step_scales=1.0)
+    return (J_y != 0) | (J_ydot != 0) | np.eye(y.size, dtype=bool)
 
-    def g(z):
-        d = (z - y / scale) * scale
-        return system.residual(t, y + d, ydot + 0.37 * d)
 
-    J = finite_difference_jacobian(g, y / scale, step_scales=1.0)
-    return (J != 0) | np.eye(y.size, dtype=bool)
+def jacobian_pattern(system, t, y, ydot):
+    """``residual_pattern``을 조립된 계에 적용 (상태 척도 = registry.scale_vector())."""
+    return residual_pattern(system.residual, t, y, ydot, scale=system.registry.scale_vector())
 
 
 def scaled_norm(system, t, y, ydot):
@@ -221,8 +224,13 @@ def summary(built: BuiltSystem, t, y) -> dict:
     s = {"p_sys_Pa": get("p_sys"),
          "fuel_temperature_max_K": float(out["core.solid.T_fuel_max"]),
          "core_outlet_temperature_K": float(out["core.fluid.T_outlet_mixed"]),
-         "rpv_temperature_max_K": float(out["rpv.T_max"]),
-         "helium_inventory_kg": conservation.helium_mass(built, t, y)}
+         "rpv_temperature_max_K": float(out["rpv.T_max"])}
+    # He 재고: 모델 유로 체적(과도 질량 보존 진단과 같은 정의)과, 정체 공간을 더한 비교용 총재고 추정을 따로 둔다
+    m_model = conservation.helium_mass(built, t, y)
+    stagnant = conservation.stagnant_helium_mass(built, t, y)
+    s["helium_inventory_model_kg"] = m_model
+    s["helium_inventory_stagnant_kg"] = stagnant["mass_kg"]
+    s["helium_inventory_total_estimate_kg"] = m_model + stagnant["mass_kg"]
     bal = conservation.boundary_rates(built, t, y)
     s["rccs_heat_removal_W"] = bal["rccs_removed_W"]
     order = built.flow_order
@@ -399,7 +407,8 @@ class RunReport:
                     "wall_s": self.hold.wall_s, "method": r.method}
         return {"kind": "HTGR primary system run (S0 steady state)", "started_utc": self.started_utc,
                 "code_version": _code_version(),
-                "input_sha256": {k: _sha256(v) for k, v in b.inputs.files.items()},
+                "input_sha256": {k: _sha256(v) for k, v in b.inputs.files.items()},   # 원시 파일 해시 (출처 기록용)
+                "input_fingerprint": fingerprint_of(b.inputs),                        # 유효 입력값 지문
                 **relevant,
                 "unknowns": {"steady": b.system.registry.size,
                              "transient": self.transient.built.system.registry.size if self.transient else None},

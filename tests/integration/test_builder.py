@@ -14,7 +14,7 @@ import yaml
 from interfaces.state_registry import StateRegistry
 from models._inputs import ModelInputMissing
 from system.builder import MissingInputsError, build_system, check_inputs, load_inputs
-from system.simulation import flatten_names, settings_from_scenario
+from system.simulation import flatten_names, residual_pattern, settings_from_scenario
 
 ROOT_CONFIG = Path(__file__).resolve().parents[2] / "config"
 NODE_110 = "flow_network.nodes.mc_discharge_plenum.volume_m3"
@@ -186,3 +186,14 @@ def test_solid_sensible_energy_integrates_temperature_dependent_capacity():
     T = np.array([500.0, 1200.0])
     exact = np.sum(2.0 * (T - SOLID_T_REF_K) + 0.005 * (T ** 2 - SOLID_T_REF_K ** 2))
     assert _sensible_energy(C, T) == pytest.approx(exact, rel=1e-12)
+
+
+def test_residual_pattern_keeps_cancelling_y_and_ydot_terms():
+    # PR #11 검토 사례: F0 = y0 − 0.37 y1 + ẏ1, F1 = y1. y와 ẏ를 0.37 배율로 함께 섭동하면 (0,1)이 상쇄돼 빠졌다
+    def F(t, y, ydot):
+        return np.array([y[0] - 0.37 * y[1] + ydot[1], y[1]])
+
+    P = residual_pattern(F, 0.0, np.zeros(2), np.zeros(2))
+    assert P.tolist() == [[True, True], [False, True]]
+    # 척도를 줘도 같다
+    assert residual_pattern(F, 0.0, np.zeros(2), np.zeros(2), scale=np.array([1e3, 1e-2])).tolist() == P.tolist()

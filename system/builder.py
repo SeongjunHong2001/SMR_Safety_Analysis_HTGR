@@ -26,6 +26,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -161,7 +163,7 @@ def load_inputs(scenario="steady_state", condition=None, *, config_dir=None, ass
         raise KeyError(f"{_rel(paths['scenario'])}: condition {condition!r} not in {sorted(conditions)}")
     applied: list[Assumption] = []
     files = {k: _rel(p) for k, p in paths.items()}
-    calibrations = []
+    calibrations, fingerprints = [], []
     for i, a in enumerate(assumptions or ()):
         a = Path(a)
         a = a if a.is_absolute() else ROOT / a
@@ -174,8 +176,15 @@ def load_inputs(scenario="steady_state", condition=None, *, config_dir=None, ass
         _fill_nulls(operation, data.get("operation") or {}, "operation", source, applied)
         meta = data.get("meta") or {}
         if meta.get("kind") == "calibration":           # 보정 결과 파일 (system/calibration.py가 씀)
+            extra = set(data.get("geometry") or {}) - {"junctions"}
+            extra |= {f"junctions.{j}.{k}" for j, d in ((data.get("geometry") or {}).get("junctions") or {}).items()
+                      for k in (d or {}) if k != "K_form"}
+            if extra or data.get("operation"):
+                raise ValueError(f"{source}: a calibration file may only set geometry.junctions.<J>.K_form "
+                                 f"(found {sorted(extra) or ['operation']})")
             files[f"calibration[{i}]"] = source
             calibrations.append((source, tuple(meta.get("depends_on_assumptions") or ())))
+            fingerprints.append((source, meta.get("input_fingerprint")))
             basis = (meta.get("basis") or {}).get("condition")
             if basis is not None and basis != condition:
                 raise ValueError(f"{source} was calibrated for condition '{basis}', not '{condition}'")
@@ -186,8 +195,85 @@ def load_inputs(scenario="steady_state", condition=None, *, config_dir=None, ass
         missing = [d for d in deps if d not in loaded]
         if missing:
             raise ValueError(f"{source} was calibrated with {missing}; load those assumption files too")
+    if calibrations:
+        # 보정 K는 그 K를 만든 입력에서만 유효하다. 적용 전에 유효 입력값 지문을 대조한다
+        current = input_fingerprint(geometry, operation, conditions[condition])
+        for source, expected in fingerprints:
+            _check_calibration_fingerprint(source, expected, current)
     return ScenarioInputs(scenario, condition, geometry, operation, scen, copy.deepcopy(conditions[condition]),
                           files, tuple(applied))
+
+
+# =====================================================================
+# 유효 입력값 지문 (K 보정 파일 검증)
+# =====================================================================
+FINGERPRINT_VERSION = 1
+_CONDITION_DOC_KEYS = ("description", "outputs", "comparison", "acceptance")   # 풀이에 쓰지 않는 설명·비교 항목
+
+
+class CalibrationInputMismatch(ValueError):
+    """보정 파일을 만든 입력과 현재 입력이 다르다 (다시 보정해야 함)."""
+
+
+def _normalize(obj):
+    """YAML 파싱값을 지문용으로 정규화: 수는 float, 키는 문자열, 그 밖은 그대로 (bool·None·문자열)."""
+    if isinstance(obj, dict):
+        return {str(k): _normalize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_normalize(v) for v in obj]
+    if isinstance(obj, bool) or obj is None or isinstance(obj, str):
+        return obj
+    if isinstance(obj, (int, float)):
+        return float(obj)
+    return str(obj)                      # 날짜 등
+
+
+def _digest(obj) -> str:
+    text = json.dumps(_normalize(obj), sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=True)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def input_fingerprint(geometry, operation, condition) -> dict:
+    """주석·개행·수 표기에 영향받지 않는 유효 입력값 지문.
+
+    부분: geometry(연결부 K_form과 meta 제외), operation(meta·reference 제외), condition(설명·비교 항목 제외),
+    helium_properties(참조 파일의 helium 절), solid_properties(참조 파일 전체). 가정 파일로 채운 값은 이미
+    geometry·operation에 들어 있으므로 함께 들어간다. 부분별 SHA-256과 전체 SHA-256을 돌려준다.
+    """
+    geo = copy.deepcopy(geometry)
+    geo.pop("meta", None)
+    for j in (geo.get("junctions") or {}).values():
+        if isinstance(j, dict):
+            j.pop("K_form", None)
+    op = {k: v for k, v in operation.items() if k not in ("meta", "reference")}
+    # 물성 파일은 경로가 아니라 내용으로 지문에 넣는다 (아래 helium/solid_properties)
+    cond = {k: v for k, v in condition.items()
+            if k not in _CONDITION_DOC_KEYS and k not in ("helium_properties", "solid_properties")}
+    he_ref = str(condition.get("helium_properties") or "")
+    he_file, _, section = he_ref.partition("#")
+    he_data = _load_yaml(ROOT / he_file) if he_file else {}
+    he_part = (he_data or {}).get(section or "helium") if isinstance(he_data, dict) else None
+    solid_file = condition.get("solid_properties") or he_file
+    solid_part = _load_yaml(ROOT / solid_file) if solid_file else None
+    parts = {"geometry": _digest(geo), "operation": _digest(op), "condition": _digest(cond),
+             "helium_properties": _digest(he_part), "solid_properties": _digest(solid_part)}
+    return {"version": FINGERPRINT_VERSION, "sha256": _digest(parts), "parts": parts}
+
+
+def _check_calibration_fingerprint(source, expected, current):
+    hint = "입력이 바뀌었으면 `python main.py --calibrate`로 보정 파일을 다시 만든다."
+    if not isinstance(expected, dict) or "sha256" not in expected:
+        raise CalibrationInputMismatch(f"{source}: meta.input_fingerprint가 없다 (이전 형식). {hint}")
+    if expected.get("version") != current["version"]:
+        raise CalibrationInputMismatch(f"{source}: 지문 형식 {expected.get('version')} ≠ {current['version']}. {hint}")
+    if expected["sha256"] != current["sha256"]:
+        differ = sorted(k for k, v in current["parts"].items() if (expected.get("parts") or {}).get(k) != v)
+        raise CalibrationInputMismatch(f"{source}: 보정 K를 만든 입력과 현재 입력이 다르다 (다른 부분: "
+                                       f"{', '.join(differ) or '알 수 없음'}). {hint}")
+
+
+def fingerprint_of(inputs: "ScenarioInputs") -> dict:
+    return input_fingerprint(inputs.geometry, inputs.operation, inputs.condition)
 
 
 def _get(mapping, dotted):
@@ -420,6 +506,7 @@ def check_inputs(inputs: ScenarioInputs) -> list:
             need(cond, "sg_heat_sink.calibration_target_helium_outlet_K", sf, f"{cpath}.")
     need(cond, "reactor.thermal_power_W", sf, f"{cpath}.")
     need(cond, "rccs.boundary_temperature_K", sf, f"{cpath}.")
+    need(op, "helium_inventory.stagnant_volume_temperature_K", of, note="정체 공간 He 재고 추정")
     for k in ("rccs.boundary.radius_m", "rccs.boundary.emissivity", "core.radial_m.core_barrel_outer",
               "core.radial_m.core_barrel_inner", "core.radial_m.riser_outer", "core.radial_m.rpv_inner"):
         need(geo, k, gf)

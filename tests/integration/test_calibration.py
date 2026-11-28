@@ -3,12 +3,15 @@
 보정 자체는 S0 system_loop 정상해 3번(약 20 s). 저장된 config/calibration/s0_pressure_loss_K.yaml이 현재 입력으로
 다시 보정한 값과 같은지도 본다 — 입력이 바뀌면 이 시험이 실패하고 파일을 다시 만들어야 한다 (python main.py --calibrate).
 """
+import copy
 import dataclasses
+import shutil
 
 import pytest
 import yaml
 
-from system.builder import ROOT, build_system, load_inputs
+from system.builder import (ROOT, CalibrationInputMismatch, build_system, fingerprint_of, input_fingerprint,
+                            load_inputs)
 from system.calibration import calibrate_pressure_losses, segments, with_junction_k
 from system.simulation import run_hold, settings_from_scenario, verify_steady
 
@@ -87,6 +90,9 @@ def test_saved_calibration_file_is_current(cal):
     for j, v in cal.K.items():
         assert K_saved[j] == pytest.approx(v, rel=1e-4, abs=1e-5), f"{j}: rerun python main.py --calibrate"
     assert saved["meta"]["depends_on_assumptions"] == []
+    # 저장된 유효 입력값 지문 = 현재 입력 (K 적용 전 builder가 대조하는 값)
+    assert saved["meta"]["input_fingerprint"] == fingerprint_of(load_inputs("steady_state", "system_loop"))
+    assert "input_sha256" not in saved["meta"]                  # 원시 바이트 해시는 쓰지 않음
 
 
 def test_calibrated_loop_holds_steady(cal):
@@ -96,3 +102,73 @@ def test_calibrated_loop_holds_steady(cal):
     hold = run_hold(ver, dataclasses.replace(settings.hold, t_end_s=5.0), settings)
     assert hold.drift_scaled_max < 1e-6
     assert hold.balance["mass_error_rel_max"] < 1e-10 and hold.balance["energy_error_rel_max"] < 1e-8
+
+
+# ------------------------------------------------------------------ 보정 입력 지문 (PR #11 검토)
+def _copy_config(tmp_path):
+    cfg = tmp_path / "config"
+    shutil.copytree(ROOT / "config", cfg)
+    return cfg
+
+
+def _rewrite(path, fn):
+    raw = path.read_bytes().decode("utf-8")
+    path.write_bytes(fn(raw).encode("utf-8"))
+
+
+def test_fingerprint_ignores_comments_and_line_endings(tmp_path):
+    cfg = _copy_config(tmp_path)
+    for name in ("geometry.yaml", "operation.yaml", "scenarios/steady_state.yaml"):
+        # 주석 추가, 줄 끝 주석 삭제 대신 공백 추가, 개행을 CRLF ↔ LF로 바꿈
+        _rewrite(cfg / name, lambda s: "# 검토용 주석 추가\n" + s.replace("\r\n", "\n").replace("\n", "\r\n"))
+    inputs = load_inputs("steady_state", "system_loop", config_dir=cfg, assumptions=[ROOT / CAL_FILE])
+    assert fingerprint_of(inputs) == fingerprint_of(load_inputs("steady_state", "system_loop"))
+    assert len(build_system(inputs).k_form) == 10                 # 보정 K가 그대로 적용됨
+
+
+def test_fingerprint_rejects_changed_numbers(tmp_path):
+    cfg = _copy_config(tmp_path)
+    # 검토 재현: cold_annulus 길이 5.52 → 5.796 m (보정 당시와 다른 형상)
+    _rewrite(cfg / "geometry.yaml", lambda s: s.replace("      length_m: 5.52                    # [가정] M07",
+                                                        "      length_m: 5.796                   # [가정] M07", 1))
+    assert load_inputs("steady_state", "system_loop", config_dir=cfg).geometry["flow_network"]["nodes"][
+        "cold_annulus"]["length_m"] == 5.796
+    with pytest.raises(CalibrationInputMismatch, match=r"다른 부분: geometry\).*--calibrate"):
+        load_inputs("steady_state", "system_loop", config_dir=cfg, assumptions=[ROOT / CAL_FILE])
+    # 수 표기만 바뀐 경우(5.52 → 5.520)는 같은 입력
+    cfg2 = _copy_config(tmp_path / "b")
+    _rewrite(cfg2 / "geometry.yaml", lambda s: s.replace("      length_m: 5.52                    # [가정] M07",
+                                                         "      length_m: 5.520                   # [가정] M07", 1))
+    load_inputs("steady_state", "system_loop", config_dir=cfg2, assumptions=[ROOT / CAL_FILE])
+
+
+def test_fingerprint_rejects_changed_properties_and_assumptions(tmp_path):
+    base = load_inputs("steady_state", "system_loop")
+    fp = fingerprint_of(base)
+    # 참조 물성: helium 절의 c_p를 바꾼 사본을 가리키면 helium_properties 부분이 달라진다
+    props = yaml.safe_load((ROOT / "data/properties/r1_benchmark_properties.yaml").read_text(encoding="utf-8"))
+    props["helium"]["cp_J_kgK"] = float(props["helium"].get("cp_J_kgK", 5195.0)) + 1.0
+    alt = tmp_path / "props.yaml"
+    alt.write_text(yaml.safe_dump(props, allow_unicode=True), encoding="utf-8")
+    cond = dict(base.condition, helium_properties=f"{alt}#helium", solid_properties=str(alt))
+    other = input_fingerprint(base.geometry, base.operation, cond)
+    assert other["sha256"] != fp["sha256"]
+    assert {k for k in fp["parts"] if fp["parts"][k] != other["parts"][k]} == {"helium_properties", "solid_properties"}
+    # 적용한 가정 입력: 가정으로 채운 값도 geometry 지문에 들어간다
+    geo = copy.deepcopy(base.geometry)
+    geo["flow_network"]["nodes"]["mc_inlet_mlsv"]["volume_m3"] = 3.0
+    assert input_fingerprint(geo, base.operation, base.condition)["parts"]["geometry"] != fp["parts"]["geometry"]
+    # 보정 결과(K_form)와 설명·비교 항목은 지문에 들어가지 않는다
+    geo = copy.deepcopy(base.geometry)
+    geo["junctions"]["J05"]["K_form"] = 99.0
+    cond = dict(base.condition, comparison={}, description="x")
+    assert input_fingerprint(geo, base.operation, cond)["sha256"] == fp["sha256"]
+
+
+def test_calibration_file_may_only_carry_junction_k(tmp_path):
+    saved = yaml.safe_load((ROOT / CAL_FILE).read_text(encoding="utf-8"))
+    saved["geometry"]["flow_network"] = {"nodes": {"riser": {"roughness_m": 1e-5}}}
+    bad = tmp_path / "cal_extra.yaml"
+    bad.write_text(yaml.safe_dump(saved, allow_unicode=True), encoding="utf-8")
+    with pytest.raises(ValueError, match="only set geometry.junctions"):
+        load_inputs("steady_state", "system_loop", assumptions=[bad])

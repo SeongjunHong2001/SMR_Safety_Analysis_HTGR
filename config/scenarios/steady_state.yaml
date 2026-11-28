@@ -155,7 +155,8 @@ conditions:
       - sg_heat_removal_W
       - rccs_heat_removal_W
       - rpv_temperature_K
-      - helium_inventory_kg                # 정상해에서 유도한 재고량
+      - helium_inventory_model_kg          # 모델 유로 체적의 He (과도 질량 보존 진단과 같은 정의)
+      - helium_inventory_total_estimate_kg # + 정체 공간 추정 (operation.yaml helium_inventory.stagnant_volume_temperature_K)
       - fuel_temperature_max_K
 
     comparison:                            # PSID 정격값 (판정 기준 아님)
@@ -164,8 +165,8 @@ conditions:
       circulator_pressure_rise_Pa: 91000   # [원문]
       core_inlet_temperature_K: 532.15     # [원문] 259 °C (PSID 258.6–259)
       sg_heat_removal_W: 352200000         # [원문]
-      helium_inventory_kg: 2585            # [원문] R22, 비교 기준 (사용자 결정 2026-11-27). 노드 체적은 #31·#32에서 확보.
-                                           #   정상해 재고는 유로 체적만 세므로 정체 공간(배럴 간극·UPTPS 위)을 더해 비교
+      helium_inventory_total_estimate_kg: 2585   # [원문] R22 (RV + SG 용기 + cross duct), 비교 기준 (사용자 결정 2026-11-27).
+                                           #   R22 값은 정체 공간을 포함하므로 모델 유로 질량 + 정체 공간 추정과 비교한다
       # PSID의 RCCS 887 kW, RPV 벽 222/216 °C는 외기 21 °C 실제 플랜트 값이라
       # 30 °C 고정 경계인 RCCS-0 결과와 직접 비교하지 않는다 (operation.yaml reference.psid_R19).
 

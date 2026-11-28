@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from models._inputs import ModelInputMissing
 from system.boundaries import PortBoundary
 
 
@@ -41,8 +42,31 @@ def _enthalpy_keys(component):
 
 
 def helium_mass(built, t, y) -> float:
-    """M_he_loop [kg]."""
+    """M_he_loop [kg]: 모델 유로 체적의 He. 과도 질량 보존 진단은 이 값만 쓴다."""
     return built.total_inventory(t, y)
+
+
+def stagnant_helium_mass(built, t, y) -> dict:
+    """정체 공간 He 추정 [kg] (비교용, 상태 없음).
+
+    체적은 geometry.yaml ``flow_network.stagnant_volumes``, 온도는 operation.yaml
+    ``helium_inventory.stagnant_volume_temperature_K`` [가정], 압력은 현재 p_sys다.
+    """
+    inputs = built.inputs
+    volumes = (inputs.geometry.get("flow_network") or {}).get("stagnant_volumes") or {}
+    T = (inputs.operation.get("helium_inventory") or {}).get("stagnant_volume_temperature_K")
+    if T is None:
+        raise ModelInputMissing(f"{inputs.files['operation']}: missing helium_inventory.stagnant_volume_temperature_K "
+                                f"(scenario '{inputs.scenario_name}', condition '{inputs.condition_name}')")
+    V = 0.0
+    for name, v in volumes.items():
+        if v.get("volume_m3") is None:
+            raise ModelInputMissing(f"{inputs.files['geometry']}: missing flow_network.stagnant_volumes.{name}.volume_m3")
+        V += float(v["volume_m3"])
+    he = built.parts["he"]
+    p_sys = float(built.system.context.get(y, "p_sys"))
+    rho = float(he.density(p_sys, he.enthalpy(p_sys, float(T))))
+    return {"volume_m3": V, "temperature_K": float(T), "density_kg_m3": rho, "mass_kg": rho * V}
 
 
 def helium_energy(built, t, y) -> float:

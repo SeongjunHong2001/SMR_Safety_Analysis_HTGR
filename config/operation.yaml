@@ -160,7 +160,11 @@ boundaries:
 # ---------------------------------------------------------------------
 helium_inventory:
   reference_kg: 2585                     # [원문] 5,700 lb, RV + SG 용기 + cross duct (R22 Table F-1 각주 b).
-                                         #   사용자 결정 2026-11-27: 비교 기준. S0 system_loop 정상해 2,547.8 kg (−1.4 %, 정체 공간 포함)
+                                         #   사용자 결정 2026-11-27: 비교 기준. 정체 공간을 포함한 총재고 추정값과 비교한다
+  # 정체 공간(geometry.yaml flow_network.stagnant_volumes)의 He 온도. 유로가 아니라 상태가 없으므로 비교용 재고 추정에만 쓴다.
+  #   과도 질량 보존 진단은 모델 유로 체적의 질량만 쓴다 (validation/conservation.helium_mass)
+  stagnant_volume_temperature_K: 532.15  # [가정] 노심 입구 저온 He와 같게. 배럴–RPV 간극은 riser(≈533 K)·RPV(≈463 K) 사이,
+                                         #   UPTPS 위 공간은 상부 플레넘(≈534 K) 위. 정상 압력 p_sys에서 밀도를 계산한다
   conflicting_value_kg: 2900             # [원문] HPS 감압 요건 기준 (R19 Table 5.3-6) — 상충
   # 정상 초기화 제약: 확인된 노드 체적이 He 약 1,123 kg분뿐이라(M10) 재고량 제약은 아직 쓸 수 없다.
   # interface_spec §5에 따라 기준압 제약 p_sys − p_sys_initial = 0 을 쓰고 재고량은 정상해에서 유도해 2,585 kg과 비교한다.

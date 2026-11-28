@@ -173,6 +173,12 @@ python main.py --scenario steady_state --condition system_loop --calibration con
   - `meta.kind: calibration`이다.
   - 다른 조건에 넘기면 오류다. `basis.condition`이 그 조건과 다르면 막는다. 예: core_benchmark에 노심 K가 들어가면 R1/R3 비교가 깨진다.
   - `depends_on_assumptions` 파일을 함께 넘기지 않아도 오류다.
+  - 보정 파일에는 `geometry.junctions.<J>.K_form`만 들어갈 수 있다.
+  - **입력 지문 (PR #11 검토 반영):** `meta.input_fingerprint`에 보정에 쓴 유효 입력값의 지문을 남긴다.
+    builder는 K를 적용하기 전에 현재 입력의 지문과 대조하고, 다르면 `CalibrationInputMismatch`로 멈춘다(다른 부분 이름과 재보정 안내).
+    - 지문은 파싱한 YAML 값의 SHA-256이라 주석·개행(CRLF/LF)·수 표기(5.52/5.520)에 영향받지 않는다.
+    - 들어가는 것: geometry(연결부 K_form·meta 제외), operation(meta·reference 제외), 시나리오 조건(설명·출력·비교·판정 항목과 물성 경로 문자열 제외), 참조 헬륨 물성(helium 절)·고체 물성 파일 내용. 가정 파일로 채운 값은 geometry·operation에 들어 있으므로 함께 들어간다.
+    - 실행 메타데이터(`*_meta.json`)에도 같은 지문을 남긴다(원시 파일 해시는 출처 기록용으로만 둠).
   - 메타데이터에는 가정과 따로 `calibration` 항목으로 남는다.
 - **회귀 시험:** `tests/integration/test_calibration.py`는 현재 입력으로 다시 보정한 K가 저장 파일과 같은지 본다.
   입력이 바뀌어 실패하면 `--calibrate`로 파일을 다시 만든다.
@@ -195,7 +201,10 @@ python main.py --scenario steady_state --condition system_loop --calibration con
 - **순환기 승압:** 91.93 kPa = 비가역 90.80 + 가역 순합 1.13 kPa. PSID 91.0 kPa보다 1.0 % 높다.
 - **지점 압력:** PSID 대비 3.5 kPa 이내다 (시험). 지점 3과 지점 8의 차이는 지점 정의 때문이다.
 - **노심:** Δp 34.7 kPa, 연료 최고 1119.2 K, 배럴 평균 559 K, RPV 최고 462.5 K, RCCS 425 kW.
-- **He 재고량:** 유로 2,304.2 kg + 정체 공간 243.6 kg = 2,547.8 kg. R22 2,585 kg(비교 기준) 대비 −1.4 %다.
+- **He 재고량:** 유로 2,304.2 kg + 정체 공간 243.6 kg = 2,547.8 kg. R22 2,585 kg(비교 기준) 대비 −1.4 %(−37.2 kg)다.
+  - 요약에는 `helium_inventory_model_kg`(모델 유로 체적, 과도 질량 보존 진단과 같은 정의), `helium_inventory_stagnant_kg`,
+    `helium_inventory_total_estimate_kg`(합)를 따로 낸다. R22 값은 정체 공간을 포함하므로 마지막 값과 비교한다 (PR #11 검토 반영).
+  - 정체 공간 온도는 operation.yaml `helium_inventory.stagnant_volume_temperature_K` 532.15 K [가정], 압력은 p_sys다.
 - **유지 적분:** 10 s 표류 2.3e-8, 질량 오차 4e-16, 에너지 오차 5e-10.
 - **core_benchmark:** 가정 파일 없이 돈다. 노심 Δp 20.7 kPa로 R3 19.95 kPa와 +3.6 % 차이다 (보정 전 23.1 kPa).
   연료 최고는 1124.7 K다.

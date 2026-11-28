@@ -9,16 +9,21 @@ meta:
     condition: system_loop
     targets: geometry.yaml pressure_loss_calibration.segments.*.design_Pa (PSID R19
       Table 5.3-5)
-  created_utc: '2026-11-27T07:36:08+00:00'
+  created_utc: '2026-11-28T01:56:53+00:00'
   code_version:
-    commit: bd516d112735bcd76118e9db0abdb9580216d8c3
+    commit: 7bcb152e0e32d493c7c2dd9e70360144ce68def1
     branch: role5/s0-builder-calibration
     dirty: true
   depends_on_assumptions: []
-  input_sha256:
-    geometry: 94ca4c05480fddf8bbab1d0a1e18c721ee6a6bc9a9a684fb9836cf794a10c567
-    operation: c24c7e85ccda6c35e31ebec172b58511345b0570fc78afe0f3b3de2b81488956
-    scenario: b200b05cfb34ba73e724480e441c7263387332bf1979215cf39b412696481040
+  input_fingerprint:
+    version: 1
+    sha256: 3638a791182f01e80dcfc0701cb1d6d5e55c9430d55049d8503fb9ac7c1c17f5
+    parts:
+      geometry: 4d43929ff49cb36eb1c630cd4728f1df30ea7f2559150e099ade4d01217c4d85
+      operation: a11679e9fca9d6c9163c01c0063e01a2fe921ba597d69bceffca27c7a5269c40
+      condition: b8d702c3a1ef0fbfdc3ab3a51906b0845428ed75c2a9ca0b0932391162f0a430
+      helium_properties: 596374f6b7e6a0168ba4966e885f644488d6b718b37e5f890a525c653dd88144
+      solid_properties: ba6d1e04f99331c0439ede45920675c7e1b6cf5f019af5a1e12def3efe228488
   iterations: 3
   segments_Pa:
     mc_outlet_to_core_inlet:
@@ -68,7 +73,8 @@ meta:
       acceleration: -344.015
   circulator_pressure_rise_Pa: 91926.0
   reversible_net_Pa: 1126.0
-  note: 가정 입력(depends_on_assumptions)과 함께만 유효하다. M10·M11·우회 D_h가 바뀌면 다시 보정한다.
+  note: input_fingerprint와 같은 입력(형상·운전점·시나리오 조건·참조 물성·적용한 가정)에서만 유효하다. 다르면 builder가
+    적용을 거부하므로 python main.py --calibrate로 다시 만든다.
 geometry:
   junctions:
     J02:

@@ -45,13 +45,32 @@ def test_loop_heat_balance_and_sg_calibration(run):
     assert s["core_outlet_temperature_K"] == pytest.approx(960.15, abs=3.0)
     assert run.checks["acceptance"]["rpv_temperature_max_K"]["pass"]
     assert 0.0 < s["circulator_pressure_rise_Pa"] < 9.1e4                       # K 미보정: PSID 91 kPa보다 작음
-    # He 재고량: 유로 체적 + 정체 공간(배럴–RPV 간극, UPTPS 위, 저온 He) ≈ R22 2,585 kg (RV + SG 용기 + cross duct)
-    geo = run.steady.built.inputs.geometry
-    he = run.steady.built.parts["he"]
+    assert set(run.checks["comparison"]) >= {"circulator_pressure_rise_Pa", "sg_heat_removal_W",
+                                             "helium_inventory_total_estimate_kg"}
+
+
+def test_loop_inventory_outputs_and_comparison_basis(run):
+    # PR #11 검토: 모델 유로 체적 질량과, 정체 공간을 더한 비교용 추정값을 따로 내고 R22 2,585 kg은 후자와 비교한다
+    s, built, ver = run.summary, run.transient.built, run.transient
+    model = built.total_inventory(0.0, ver.y)                   # 과도 질량 보존 진단과 같은 정의
+    assert s["helium_inventory_model_kg"] == pytest.approx(model, rel=1e-12)
+    assert "helium_inventory_kg" not in s                       # 뜻이 모호한 키는 없앰
+    geo, op, he = built.inputs.geometry, built.inputs.operation, built.parts["he"]
+    T_stag = op["helium_inventory"]["stagnant_volume_temperature_K"]
+    assert T_stag == 532.15                                      # [가정] 설정에 명시
     V_stag = sum(v["volume_m3"] for v in geo["flow_network"]["stagnant_volumes"].values())
-    m_stag = V_stag * float(he.density(s["p_sys_Pa"], he.enthalpy(s["p_sys_Pa"], 532.15)))
-    assert s["helium_inventory_kg"] + m_stag == pytest.approx(2585.0, rel=0.03)
-    assert set(run.checks["comparison"]) >= {"circulator_pressure_rise_Pa", "sg_heat_removal_W", "helium_inventory_kg"}
+    assert V_stag == pytest.approx(42.5)
+    rho = float(he.density(s["p_sys_Pa"], he.enthalpy(s["p_sys_Pa"], T_stag)))
+    assert s["helium_inventory_stagnant_kg"] == pytest.approx(V_stag * rho, rel=1e-12)
+    assert s["helium_inventory_stagnant_kg"] == pytest.approx(243.6, abs=0.1)
+    total = s["helium_inventory_model_kg"] + s["helium_inventory_stagnant_kg"]
+    assert s["helium_inventory_total_estimate_kg"] == pytest.approx(total, rel=1e-12)
+    assert s["helium_inventory_model_kg"] == pytest.approx(2304.2, abs=0.1)
+    assert total == pytest.approx(2547.8, abs=0.1)
+    row = run.checks["comparison"]["helium_inventory_total_estimate_kg"]
+    assert row["reference"] == 2585.0 and row["computed"] == pytest.approx(total, rel=1e-12)
+    assert row["difference"] == pytest.approx(total - 2585.0, rel=1e-12)
+    assert row["difference"] == pytest.approx(-37.2, abs=0.1)    # 모델 체적만 비교하던 −280.8 kg이 아님
 
 
 def test_loop_hold_transient_and_metadata(run):

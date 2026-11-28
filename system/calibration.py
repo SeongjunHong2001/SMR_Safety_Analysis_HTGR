@@ -31,7 +31,8 @@ import yaml
 from models._inputs import ModelInputMissing
 from system.builder import (ROOT, ScenarioInputs, _get, _units, _connections, build_system, core_channel_nodes,
                             junction_face)
-from system.simulation import _code_version, _sha256, settings_from_scenario, solve_steady
+from system.builder import fingerprint_of
+from system.simulation import _code_version, settings_from_scenario, solve_steady
 
 
 class CalibrationError(RuntimeError):
@@ -272,14 +273,16 @@ def write_calibration(cal: Calibration, path, *, log=print) -> Path:
             "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "code_version": _code_version(),
             "depends_on_assumptions": assumption_files,
-            "input_sha256": {k: _sha256(v) for k, v in inputs.files.items() if not k.startswith("calibration")},
+            # 유효 입력값 지문 (주석·개행 무관, K_form 제외). builder.load_inputs가 K 적용 전에 대조한다
+            "input_fingerprint": fingerprint_of(inputs),
             "iterations": cal.iterations,
             "segments_Pa": {k: {"target": cal.targets[k], "irreversible": round(v["irreversible"], 3),
                                 "gravity": round(v["gravity"], 3), "acceleration": round(v["acceleration"], 3)}
                             for k, v in cal.losses.items() if k in cal.targets},
             "circulator_pressure_rise_Pa": round(cal.summary["circulator_pressure_rise_Pa"], 1),
             "reversible_net_Pa": round(cal.summary["reversible_net_Pa"], 1),
-            "note": "가정 입력(depends_on_assumptions)과 함께만 유효하다. M10·M11·우회 D_h가 바뀌면 다시 보정한다.",
+            "note": "input_fingerprint와 같은 입력(형상·운전점·시나리오 조건·참조 물성·적용한 가정)에서만 유효하다. "
+                    "다르면 builder가 적용을 거부하므로 python main.py --calibrate로 다시 만든다.",
         },
         "geometry": {"junctions": {j: {"K_form": round(float(v), 6)} for j, v in sorted(cal.K.items())}},
     }

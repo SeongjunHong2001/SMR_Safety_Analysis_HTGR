@@ -79,7 +79,8 @@ builder는 실행 전에 조건의 계산 영역에 필요한 키를 모두 검�
 | `compressor.*` (`rated_heat_to_helium_W` 등) | W, rad/s, Pa | 순환기 입열 Q = Q_rated (ṁ/ṁ_rated)³ |
 | `boundaries.sg_heat_sink.{mode, phase_change, water_temperature_K, overall_U_estimate_W_m2K}` | –, K, W/(m²·K) | SG-0 (조건의 물 온도와 같아야 함) |
 | `initial_distribution.stations[].{node, T_K, p_Pa}` | K, Pa | 초기 추정 온도, 지점 압력 비교 |
-| `helium_inventory.reference_kg` | kg | 재고량 비교 기준 (R22 2,585 kg) |
+| `helium_inventory.reference_kg` | kg | 재고량 비교 기준 (R22 2,585 kg, 정체 공간 포함 총재고와 비교) |
+| `helium_inventory.stagnant_volume_temperature_K` | K | 정체 공간 He 온도 [가정]. 비교용 총재고 추정에만 쓰며 과도 질량 보존 진단에는 쓰지 않음 |
 
 ### `scenarios/steady_state.yaml`
 
@@ -111,5 +112,6 @@ builder는 실행 전에 조건의 계산 영역에 필요한 키를 모두 검�
   - config의 `null`/누락 키만 채운다. 원문 값을 바꾸면 오류다.
   - 메타데이터의 `assumptions`에 기록된다. 형식은 `config/assumptions/README.md`.
 - **`config/calibration/*.yaml` (`--calibration`, `python main.py --calibrate`로 생성):**
+  - `geometry.junctions.<J>.K_form`만 담는다. `meta.input_fingerprint`(유효 입력값 지문)가 현재 입력과 다르면 적용하지 않고 멈춘다.
   - `meta.kind: calibration`, `meta.basis.condition`, `meta.depends_on_assumptions`, 입력 해시를 담는다.
   - 다른 조건에 넘기거나 의존 가정 파일 없이 넘기면 오류다.
