@@ -1,0 +1,157 @@
+# =====================================================================
+# OECD/NEA MHTGR-350 벤치마크 물성 (R1 = NEA/NSC/R(2017)4, Appendix IV)
+# =====================================================================
+# 원문 표의 식과 계수를 그대로 옮겼다 (Role 1, 2026-11-26). 쪽수는 PDF 쪽 번호.
+# graphite.csv / helium.csv의 표 값은 이 파일의 식으로 계산한 것이다
+# (tests/inputs/test_property_data.py가 일치를 검사).
+# 물성 provider 구현과 적용 범위 검증은 담당 2(헬륨)·3(흑연·연료)이 맡는다.
+# 단위 SI, 온도 T [K], 압력 P [Pa].
+# 숫자 주의: PyYAML은 지수 부호 없는 표기(1e5)를 문자열로 읽으므로 1.0e+5처럼 쓴다.
+# =====================================================================
+
+meta:
+  source: "R1 OECD/NEA, Benchmark of the MHTGR-350 MW Core Design, NEA/NSC/R(2017)4, 2018"
+  url: "https://oecd-nea.org/upload/docs/application/pdf/2020-01/dir1/nsc-r2017-4.pdf"
+  note: >-
+    벤치마크 비교(S0 core_benchmark)용 물성이다. Ex. 2a·2b는 fixed_properties_ex2ab를,
+    Ex. 2c·2d·3은 온도·조사량 의존 식을 쓴다 (R1 §II.1.1.2).
+
+# ---------------------------------------------------------------------
+# 헬륨 냉각재 — R1 Table AIV.13 (p.96)
+# ---------------------------------------------------------------------
+helium:
+  source: "R1 Table AIV.13"
+  density_model: ideal_gas               # rho = P / (R_specific · T)
+  universal_gas_constant_J_molK: 8.314
+  molar_mass_kg_mol: 0.004002
+  specific_gas_constant_J_kgK: 2077.46   # [계산] 8.314 / 0.004002. 보고서 2077.3(M = 4.0026), 변수표 2077.27과 다름
+  cp_J_kgK: 5195
+  viscosity:                             # mu = a · T^b  [Pa·s]
+    a: 3.674e-7
+    b: 0.7
+  conductivity:                          # k = a · (1 + b·P) · T^(c·(1 − d·P))  [W/(m·K)]
+    a: 2.682e-3
+    b: 1.123e-8
+    c: 0.71
+    d: 2.0e-9
+  nusselt: "Nu = 0.021 Re^0.8 Pr^0.4 (Tw/Tb)^-0.5 (R1 참고문헌 [20], 변수표 mode_nu = mceligot)"
+
+# ---------------------------------------------------------------------
+# H-451 흑연 (연료·RSC·교체반사체·상하부 반사체) — R1 Table AIV.2, AIV.3 (pp.84–85)
+#   밀도는 대체 재료 PCEA AG 값, k와 cp는 H-451 값 (R1 §I.8.1)
+# ---------------------------------------------------------------------
+graphite_H451:
+  source: "R1 Table AIV.2, AIV.3"
+  density_kg_m3: 1850
+  emissivity: 0.85
+  cp:                                    # cp = 4184 · (c0 + c1·T + c2/T + c3/T² + c4/T³ + c5/T⁴)  [J/(kg·K)]
+    multiplier: 4184
+    c: [0.54212, -2.42667e-6, -9.02725e+1, -4.34493e+4, 1.59309e+7, -1.43688e+9]
+  conductivity:                          # k = a0 + a1·T + a2·T² + a3·T³  [W/(m·K)]
+    fluence_unit_n_m2: 1.0e+25
+    temperature_clamp_K: [300, 1900]     # 범위 밖은 가까운 끝값 유지 (R1)
+    fluence_clamp: 8                     # 8 × 10²⁵ n/m² 초과는 끝값 유지
+    empirical_range_K: [500, 1800]
+    interpolation: linear_in_fluence     # 표의 조사량 사이는 선형 보간
+    table:
+      - {fluence: 0.0, a: [1.692145e+2, -1.24890e-1, 3.28248e-5, 0.0]}           # 비조사
+      - {fluence: 0.2, a: [1.31991e+2, -8.03309e-2, 1.34998e-5, 2.63319e-9]}
+      - {fluence: 0.5, a: [1.17459e+2, -6.38157e-2, 6.45202e-6, 3.60774e-9]}
+      - {fluence: 1.0, a: [9.55394e+1, -4.14540e-2, -1.86131e-6, 4.47613e-9]}
+      - {fluence: 3.0, a: [5.41993e+1, -2.13523e-2, 4.19346e-6, 0.0]}
+      - {fluence: 8.0, a: [5.04684e+1, -1.89383e-2, 3.63529e-6, 0.0]}
+
+# ---------------------------------------------------------------------
+# 2020 흑연 (영구반사체·유량분배·포스트·중심반사체 지지 블록) — R1 Table AIV.4, AIV.5 (p.87)
+# ---------------------------------------------------------------------
+graphite_2020:
+  source: "R1 Table AIV.4, AIV.5"
+  density_kg_m3: 1780
+  emissivity: 0.85
+  cp: same_as_graphite_H451
+  conductivity:                          # 구간별: poly k = a0 + a1·T + a2·T² + a3·T³ / exp k = A·exp(B·T)
+    fluence_unit_n_m2: 1.0e+22           # H-451과 단위가 다름 (10²² n/m²)
+    temperature_clamp_K: [300, 2000]
+    fluence_clamp: 20                    # 2 × 10²³ n/m² 초과는 끝값 유지
+    interpolation: linear_in_fluence
+    note: "1000 K 초과의 지수 꼬리는 보수성을 위해 덧붙인 외삽 (R1 AIV-6). 경험 범위 295–1073 K"
+    table:
+      - fluence: 0.0
+        segments:
+          - {T_K: [300, 1000], poly: [2.65411e+1, 2.18725e-1, -3.73458e-4, 1.71039e-7]}
+          - {T_K: [1000, 2000], exp: [5.88000e+1, -3.365e-4]}
+      - fluence: 0.4
+        segments:
+          - {T_K: [300, 673], poly: [6.971052632e+1, -2.63158e-2, 0.0, 0.0]}
+          - {T_K: [673, 1000], poly: [1.11808e+2, -1.28522e-1, 5.89227e-5, 0.0]}
+          - {T_K: [1000, 2000], exp: [7.05600e+1, -5.188e-4]}
+      - fluence: 1.0
+        segments:
+          - {T_K: [300, 1000], poly: [6.98153e+1, -3.46161e-2, 7.53255e-6, 0.0]}
+          - {T_K: [1000, 2000], exp: [7.30870e+1, -5.781e-4]}
+      - fluence: 4.0
+        segments:
+          - {T_K: [300, 1000], poly: [4.32150e+1, 1.08450e-2, -1.26995e-5, 0.0]}
+          - {T_K: [1000, 2000], exp: [7.42190e+1, -6.057e-4]}
+      - fluence: 10.0
+        segments:
+          - {T_K: [300, 650], poly: [3.955224e+1, 0.0, 0.0, 0.0]}
+          - {T_K: [650, 1000], poly: [2.02541e+1, 4.83551e-2, -2.87164e-5, 0.0]}
+          - {T_K: [1000, 2000], exp: [7.24290e+1, -6.190e-4]}
+      - fluence: 20.0
+        segments:
+          - {T_K: [300, 650], poly: [3.434069e+1, 0.0, 0.0, 0.0]}
+          - {T_K: [650, 1000], poly: [-7.13659e-1, 8.18658e-2, -4.29785e-5, 0.0]}
+          - {T_K: [1000, 2000], exp: [6.97580e+1, -6.075e-4]}
+
+# ---------------------------------------------------------------------
+# 금속·세라믹·단열재 — R1 Table AIV.9–AIV.12 (pp.94–95)
+# ---------------------------------------------------------------------
+alloy_800H:                              # 노심배럴·CRE·MCSS·UPTPS
+  source: "R1 Table AIV.9"
+  conductivity_W_mK: 17.8
+  density_kg_m3: 7800
+  cp_J_kgK: 515
+  emissivity: 0.85
+pressure_vessel_SA533B:
+  source: "R1 Table AIV.12"
+  conductivity_W_mK: 40.0
+  density_kg_m3: 7500
+  cp_J_kgK: 580
+  emissivity: 0.85
+  effective_emissivity: 0.74             # RPV와 공동 공기를 묶은 대안 (RCCS ε 0.80 대신)
+ceramic_tile:                            # Ceraform 1000, MCSS 위
+  source: "R1 Table AIV.10"
+  conductivity_poly: [3.454e-1, 1.318e-4, 1.681e-7, 1.0e-10]   # k = a0 + a1·T + a2·T² + a3·T³
+  density_kg_m3: 1310
+  cp_J_kgK: 1100
+  emissivity: 0.85
+thermal_insulation:                      # Kaowool, cross duct·UPTPS
+  source: "R1 Table AIV.11"
+  conductivity_poly: [-2.49e-2, 1.0e-4, 1.0e-7, 0.0]
+  density_kg_m3: 128
+  cp_J_kgK: 1130
+  emissivity: 0.85
+
+# ---------------------------------------------------------------------
+# Ex. 2a·2b 고정 물성 — R1 Table AIV.1 (p.81)
+#   null transient로 정상해를 구하면 열용량은 1000 K 값을 쓴다. 공극률 보정 없음.
+# ---------------------------------------------------------------------
+fixed_properties_ex2ab:
+  source: "R1 Table AIV.1"
+  conductivity_W_mK:
+    fuel_compact: 20.0
+    fuel_block: 37.0
+    graphite_H451: 66.0
+    graphite_2020: 35.0
+    alloy_800H: 17.8                     # 노심배럴·CRE·MCSS·UPTPS
+    ceramic_tile: 0.91
+    thermal_insulation: 0.175
+    pressure_vessel: 40.0
+    coolant: 0.41
+    air: 0.068
+  emissivity: 0.85                       # 고체 공통. RCCS 열침원은 0.8
+
+# 이 파일에 옮기지 않은 R1 물성 (담당 3이 필요 시 원문에서 확인):
+#   TRISO·콤팩트 유효 물성 AIV-2·3, 단위격자 AIV-4, PyC·다공성 탄소 AIV-7 (Table AIV.6),
+#   콤팩트 기지 흑연 AIV-8 (Table AIV.7), SiC AIV-9 (Table AIV.8), UO2 커널 AIV-10~13, 공기 AIV-19 (Table AIV.14)
